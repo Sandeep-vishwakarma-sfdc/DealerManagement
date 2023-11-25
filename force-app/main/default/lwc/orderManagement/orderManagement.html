@@ -1,0 +1,166 @@
+<template>
+  
+    <div class="slds-box slds-theme_default" style="background:#fff;">
+
+      <div class="slds-section__title-action" style="background:#262626; color:#fff; font-weight:600; border-top-left-radius:4px; border-bottom-left-radius:4px; border-top-right-radius:4px; border-bottom-right-radius:4px; font-size:18px; padding:5px;">
+        <lightning-icon label="" icon-name="utility:orders" style="color:#fff!important;"></lightning-icon>
+        <span style="margin-left:10px; font-size: 16px; font-weight: 500;">Search Products</span>
+      </div>
+
+    <div class="wrapper">
+      <header class="header">
+      <!--Search -->
+        <div class="row">
+          <div class="col-md-3" align="left" style="margin-bottom:5px;">
+            <lightning-radio-group name="radioGroup"
+              label=""
+              options={options}
+              value={value}
+              type="button"
+              onchange={handleOrderTypeChange}
+              style="font-size:13px; font-weight: 700; margin-bottom:0;"
+              >
+            </lightning-radio-group>
+          </div>
+        
+          <div class="col-md-7" style="margin-bottom:5px;">
+            <div class="input-group">
+              <div class="input-group-btn search-panel" data-search="students">
+                <!-- <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                  <span class="search_by">Filter by</span> <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" role="menu">
+                  <li><a data-search="students">Product Name</a></li>
+                  <li><a data-search="teachers">Size</a></li>
+                  <li><a data-search="rooms">Pattern</a></li>
+                  <li class="divider"></li>
+                  <li><a data-search="all">All</a></li>
+                </ul> -->
+
+                <lightning-button-menu label={menuFilterLabel}  onselect={handleActionsMenuSelect} style="width: 150px !important;">
+                  <lightning-menu-item label="Product Name" value="name"></lightning-menu-item>
+                  <lightning-menu-item label="Size" value="size"></lightning-menu-item>
+                  <lightning-menu-item label="Pattern" value="pattern"></lightning-menu-item>
+                </lightning-button-menu>
+
+              </div>   
+              <!-- <lightning-input type="text" class="form-control" name="x" placeholder="Search By Product Name, Size or Pattern"></lightning-input> -->
+              <input type="text" lwc:ref="searchinput" class="form-control" style="text-align: left !important;padding-left: 10px !important;" name="x" placeholder="Search By Product Name, Size or Pattern"/>
+              <span class="input-group-btn">
+                <button class="btn btn-default" type="button" onclick={handleSearch}><i class="fa fa-search"></i></button>
+              </span>
+            </div> 
+          </div>
+        
+          <!-- Search Ends -->
+        
+          <div class="col-md-2 col-xs-12 gridlist">
+          <!-- <i class="[ icon  icon--grid ]  [ fa  fa-th ]  [ icon ]  activeic"></i>
+          <i class="[ icon  icon--list ]  [ fa  fa-list ]  [ icon ]"></i> -->
+
+            <lightning-icon icon-name="utility:apps" alternative-text="Grid" title="Grid" size="medium" data-id="Green_Button" label="Grid" onclick={handleGridView}></lightning-icon> &nbsp;
+            <lightning-icon icon-name="utility:picklist_type" alternative-text="List" size="medium" title="List" data-id="Blue_Button" label="List" onclick={handleListView}></lightning-icon>
+          </div>
+        </div>
+      </header>
+        
+      <section class="products grid group">
+        <div style="clear:both;"></div>
+        <div class="col-md-1 col-xs-3">
+        <div class="btn-holder"> 
+        <p>Trending</p>
+        <div class="toggle-switch">
+          <label for="cb-switch">
+            <input type="checkbox" lwc:ref="trendingSKU" data-name="trendingSKU" id="cb-switch" value="" onchange={handleChangeToggle}>
+            <span>
+              <small></small>
+            </span>
+          </label>
+        </div>
+        </div>
+        </div>
+        <div class="col-md-1 col-xs-3">
+        <div class="btn-holder"> 
+        <p>Weekly</p>
+          <div class="toggle-switch1">
+            <label for="cb-switch1">
+              <input type="checkbox" lwc:ref="weekOfTheSKU" data-name="weekOfTheSKU" id="cb-switch1" value="" onchange={handleChangeToggle}>
+              <span>
+                <small></small>
+              </span>
+            </label>
+          </div>
+        </div>
+        </div>
+        
+        <div class="col-md-8" align="right">
+        </div>
+        
+        <div class="col-md-2 col-xs-6" align="right">
+        <div class="cart">
+        <a href="cartdetails.html" target="_blank">
+        <span class="count">{CartDetailLength}</span><i class="fa fa-shopping-cart material-icons"></i>
+        </a>
+        </div>
+        </div>
+        
+        
+        <div style="clear:both;"></div>
+        <div if:false={isLoading}>
+        <template for:each={productswrapper} for:item="productWrap" for:index="index">
+            <article key={productWrap.Id} class={productCSSClass}>
+              <div class="product__inner">
+                <section class="product__image">   
+                <div lwc:if={productWrap.trendingSKU} class="label-top shadow-sm">Trending</div>
+                  <div lwc:if={productWrap.weekOfTheSKU} class="label-right shadow-sm">Weekly</div>     
+                  <img src={geolander} />          
+                </section>
+                
+                <div class="product__details">
+                  <section class="product__name">Geolandar X-CV</section>
+                  <section class="product__short-description">
+                  Tyre Size: 145/80R13 75S | Tread Pattern: E400 | FG-F8669
+                  <div class="wcf-left"><span class="qty">Quantity: </span></div>
+                  <div class="wcf-right">         
+                    <div class="center">
+                    <div class="input-group">
+                    <span class="input-group-btn">
+                    <button type="button" class="btn btn-default btn-number" disabled="disabled" data-type="minus" data-field="quant[1]">
+                    <span class="glyphicon glyphicon-minus"></span>
+                    </button>
+                    </span>
+                     <input type="text" name="quant[1]" class="form-control input-number" value={productWrap.quantity} min="8" max="30">
+                    <span class="input-group-btn">
+                    <button type="button" class="btn btn-default btn-number" data-type="plus" data-field="quant[1]">
+                    <span class="glyphicon glyphicon-plus"></span>
+                    </button>
+                    </span>
+                    </div>
+                    
+                    </div>
+                  </div>
+                  </section>
+                  
+                  <div class="card-footer">              
+                      <div class="wcf-left"><span class="price">Unit Price: ₹ {productWrap.pricebookEntry.UnitPrice}.00</span>
+                      </div>
+                      <div class="wcf-right"><a data-index={index} onclick={handleCartAdd} class="buy-btn"><i class="fa fa-shopping-cart zmdi zmdi-shopping-basket"></i></a></div>
+                  </div>
+                </div>
+                <!-- /product__details -->
+              </div>
+            </article>
+        </template> 
+        </div>  
+          </section>
+          <!-- /products -->
+          
+        </div><!-- /wrapper -->
+   
+    </div>
+
+    <div lwc:if={isLoading} style="height: 200px; position:relative">
+      <lightning-spinner variant="base" size="medium"></lightning-spinner>
+    </div>
+    
+</template>
