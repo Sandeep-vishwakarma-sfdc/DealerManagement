@@ -1,0 +1,8 @@
+List<ProductWrapper> ProductWrappers = OrderManagementController.getProducts('0010T00000fYTVBQA4','All');
+System.debug('ProductWrappers '+ProductWrappers.size());
+
+List<ProductWrapper> productsWrappers = OrderManagementController.getCartDetails('0010T00000fYTVBQA4');
+System.debug(productsWrappers);
+
+List<ProductWrapper> productsWrappers = new GetDiscountProductImpl().getProducts('0010T00000fYTVBQA4');
+System.debug(productsWrappers);

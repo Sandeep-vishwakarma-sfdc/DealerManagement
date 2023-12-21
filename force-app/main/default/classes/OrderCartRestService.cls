@@ -1,17 +1,17 @@
 @RestResource(urlMapping='/api/cart')
 global with sharing class OrderCartRestService {
-    @HttpGet
-    global static String getCartLineItems(){
-        // 1. Get Both Parameter via URL
-        String accountId = RestContext.request.params.get('orderType');
+    // @HttpGet
+    // global static String getCartLineItems(){
+    //     // 1. Get Both Parameter via URL
+    //     String accountId = RestContext.request.params.get('orderType');
 
-        // 2. Call Service Method
-        List<CartLineItem__c> cartLineItems = OrderManagementController.getCreditLimits(accountId);
+    //     // 2. Call Service Method
+    //     List<CartLineItem__c> cartLineItems = OrderManagementController.getCreditLimits(accountId);
 
-        // 3. Convert and return JSON response
-        String jsonLineItems = JSON.serialize(cartLineItems);
-        return jsonLineItems;
-    }
+    //     // 3. Convert and return JSON response
+    //     String jsonLineItems = JSON.serialize(cartLineItems);
+    //     return jsonLineItems;
+    // }
 
     @HttpPost
     global static String addToCart (String requestBody,String recId){

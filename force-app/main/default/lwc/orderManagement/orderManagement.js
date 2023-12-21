@@ -1,14 +1,13 @@
-import { LightningElement,wire,api } from 'lwc';
+import { LightningElement,wire,api,track } from 'lwc';
 import getCurrentUser from '@salesforce/apex/OrderManagementController.getCurrentUser';
 import getExperienceUserProfiles from '@salesforce/apex/OrderManagementController.getExperienceUserProfiles';
 import getExperienceUserAccount from '@salesforce/apex/OrderManagementController.getExperienceUserAccount';
+import getProducts from '@salesforce/apex/OrderManagementController.getProducts';
+import getAccount from '@salesforce/apex/OrderManagementController.getAccount';
+import addToCart from '@salesforce/apex/OrderManagementController.addToCart';
+import getCartDetails from '@salesforce/apex/OrderManagementController.getCartDetails';
 import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
-import bootstrap from '@salesforce/resourceUrl/resource';
-import customcss from '@salesforce/resourceUrl/resource';
-import allcss from '@salesforce/resourceUrl/resource';
-import custom from '@salesforce/resourceUrl/resource';
-import jquerymin from '@salesforce/resourceUrl/resource';
-import images from '@salesforce/resourceUrl/resource';
+import customcss from '@salesforce/resourceUrl/resourceOrderMangmt';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 /**
@@ -33,21 +32,34 @@ export default class OrderManagement extends LightningElement {
     accountId = {};
     experienceUserProfiles = [];
     hasRendered = false;
-    value = 'All Products'; // what filter applied e.g All Product || Discounted Product
+    value = 'All'; // what filter applied e.g All Product || Discounted Product
     productCSSClass ='green'; // use to switch views e.g green = Grid View and blue = List view
-    productswrapper = [];
+    @track productswrapper = [];
     productswrapperVirtual = []; // Copy of productswrapper to minimize apex request
     menuFilterLabel = 'Product Name';
     selectedMenu = 'name'; 
     isLoading = false;
+    isHomePage = true; // use to display Landing Page on load
     cartDetails = [];// Cart Details
     CartDetailLength = 0;
+    accountDetails = {}
+    shippingAddress = '';
+    billingAddress = '';
+
+    selectedOrderType ={
+        all:true,
+        discount:false
+    }
+
+    varientOptions = {}
+    varientValue = '';
+
 
      /* Add Design code */
-    geolander = images + '/resource/images/geolander.jpg';
-    geolander1 = images + '/resource/images/geolander1.jpg';
-    geolander2 = images + '/resource/images/geolander2.jpg';
-    geolander3 = images + '/resource/images/geolander3.jpg';
+    geolander = customcss + '/resource/images/geolander.jpg';
+    geolander1 = customcss + '/resource/images/geolander1.jpg';
+    geolander2 = customcss + '/resource/images/geolander2.jpg';
+    geolander3 = customcss + '/resource/images/geolander3.jpg';
  
      /* End */
 
@@ -56,8 +68,8 @@ export default class OrderManagement extends LightningElement {
     
     get options() {
         return [
-            { label: 'All Products', value: 'All Products' },
-            { label: 'Discounted Products', value: 'Discounted Products' },
+            { label: 'All Products', value: 'All' },
+            { label: 'Discounted Products', value: 'Discount' },
         ];
     }
 
@@ -77,13 +89,37 @@ export default class OrderManagement extends LightningElement {
             this.accountId = this.recordId;
         }
         console.log('Account Id ',this.accountId);
+        
+        // Loading All Products from Normal price book
         this.loadProducts('All');// by default load all product, TODO : Edit All string from metadata configuration
+        
+        // Loading Account Details of current account Id
+        this.accountDetails = await getAccount({accountId:this.accountId});
+
+        // Loading existing cart order details
+        this.cartDetails = await getCartDetails({accountId:this.accountId});
+        this.CartDetailLength = this.cartDetails.length;
+
+        this.billingAddress = `${this.accountDetails.BillingStreet}  ,${this.accountDetails.BillingCity}  ,${this.accountDetails.BillingState}  ${this.accountDetails.BillingPostalCode}  ${this.accountDetails.BillingCountry}`;
+
+        this.shippingAddress = `${this.accountDetails.ShippingStreet}  ,${this.accountDetails.ShippingCity}  ,${this.accountDetails.ShippingState} ${this.accountDetails.ShippingPostalCode}  ${this.accountDetails.ShippingCountry}`;                              
         this.isLoading = false;
     }
 
     async handleOrderTypeChange(event){
         let orderType = event.target.value;
         console.log('order type ',orderType);
+        if(orderType=='All'){
+            this.selectedOrderType = {
+                all:true,
+                discount:false
+            }
+        }else{
+            this.selectedOrderType = {
+                all:false,
+                discount:true
+            }
+        }
         await this.loadProducts(orderType);
         this.isLoading = true;
         // reset filters
@@ -114,10 +150,14 @@ export default class OrderManagement extends LightningElement {
     }
 
     async loadProducts(OrderType){// This will load Products based on orderType (i.e All, Discount)
-        const products = await this.prepareData(this.accountId,OrderType);
+        const products = await getProducts({accountId:this.accountId,OrderType:OrderType});
         this.productswrapper = products;
         this.productswrapperVirtual = products;
         console.log('Product ',products);
+        
+        // Creating Options of varients
+        this.createVariantOption();
+        
     }
 
     renderedCallback(){
@@ -128,25 +168,63 @@ export default class OrderManagement extends LightningElement {
         }
     }
 
+    createVariantOption(){
+        const uniqueArray = [];
+        const uniqueValuesSet = new Set();
+        this.productswrapperVirtual.forEach(item => {
+            const { Name, Id } = item.pricebookEntry.Product2?.Variant__r;
+            if (!uniqueValuesSet.has(Id)) {
+                uniqueValuesSet.add(Id);
+                uniqueArray.push({ label: Name, value: Id });
+            }
+        });
+        this.varientOptions = uniqueArray;
+    }
+
     async loadStyling(){
+        console.log('css resource ',customcss);
         Promise.all([
-            loadStyle(this, allcss + '/resource/Fontawesome/css/all.css'),
-            loadStyle(this, bootstrap + '/resource/bootstrap.css'),
+            loadStyle(this, customcss + '/resource/Fontawesome/css/all.css'),
+            loadStyle(this, customcss + '/resource/Fontawesome/css/regular.css'),
+            loadStyle(this, customcss + '/resource/bootstrap.css'),
+            loadStyle(this, customcss + '/resource/cartcss.css'),
             loadStyle(this, customcss + '/resource/customcss.css'),
-            loadScript(this, custom + '/resource/js/custom.js'),         
-            loadScript(this, jquerymin + '/resource/js/jquerymin.js'),   
+            loadScript(this, customcss + '/resource/js/custom.js'),         
+            loadScript(this, customcss + '/resource/js/jquerymin.js'), 
+            loadStyle(this, customcss + '/resource/Fontawesome/css/regular.css')
         ]).then(() => { /* callback */ });
     }
 
     // Add to Cart
-    handleCartAdd(event){
+    async handleCartAdd(event){
         let index = event.currentTarget.dataset.index;
         // console.log('Add to Cart index',index);
-        // if(this.cartDetails.findIndex())
-        this.cartDetails.push(this.productswrapper[index]);
-        console.log('cart Detais ',this.cartDetails);
-        this.CartDetailLength = this.cartDetails.length;
-        this.showToast('Success ','Added to Cart','success','dismissable');
+        if(this.cartDetails.findIndex(ele=>ele.productId==this.productswrapper[index].productId)==-1){
+            // Adding sub-total for cart line-item
+            let productWrap = this.productswrapper[index];
+            productWrap.lineItemSubTotal = productWrap.pricebookEntry.UnitPrice * productWrap.quantity;
+            this.cartDetails.push(productWrap);
+            console.log('cart Details ',this.cartDetails);
+            let isAddedToCart = await addToCart({productWrapper:JSON.stringify(productWrap),accountId:this.accountId});
+            console.log(' isAddedToCart ',isAddedToCart);
+            this.CartDetailLength = this.cartDetails.length;
+            this.showToast('Success ','Added to Cart','success','dismissable');
+        }else{
+            this.showToast('Warning ','Already added to cart','warning','dismissable');    
+        }
+    }
+
+    handleChangeVarient(event){
+        let selectedVarient = event.detail.value;
+        this.productswrapper = this.productswrapperVirtual.filter(ele=>ele.pricebookEntry.Product2?.Variant__c==selectedVarient)
+    }
+
+    // switch to cart page
+    handleShowCart(){
+        this.isHomePage = false;
+    }
+    handleHideCart(){
+        this.isHomePage = true;
     }
 
     // Search Bar Menu Action
@@ -183,26 +261,25 @@ export default class OrderManagement extends LightningElement {
     handleListView(event){
         this.productCSSClass = 'blue';
     }
- 
-    /* Preparing Dummy Data To Test UI */
-    async prepareData(accountId,OrderType){
-        let data = [];
-        for(let i=1;i<=50;i++){
-            let val = Math.floor(1000 + Math.random() * 9000);
-            let obj = {
-                pricebookEntry:{Id:'01u',Name:'pbe1',UnitPrice:val,Product2Id:{Id:'01t'+i,Name:'pName'},Pricebook2Id:{Id:'01s',Type__c:i%2==0?'Customer':'Customer Group',IsDiscount__c:i%2==0,IsActive:true}},
-                productId:'01t'+i,
-                weekOfTheSKU:i%2==0,
-                trendingSKU:i%3==0 || i%4==0,
-                lockingSKU:false,
-                cappingSKU:false,
-                quantity:0
-            }
-        data.push(obj);
-        }
-        return data;
+
+    handleCheckout(event){
+
     }
 
+    changeQuantity(event){
+        let type = event.currentTarget.dataset.type;
+        let index = event.currentTarget.dataset.index;
+        if(type=='minus' && this.productswrapper[index].quantity > 1){
+            this.productswrapper[index].quantity = this.productswrapper[index].quantity - 1;
+        }
+        if(type=='plus'){
+            this.productswrapper[index].quantity = this.productswrapper[index].quantity + 1
+        }
+        console.log(' this.productswrapper[index].quantity '+this.productswrapper[index].quantity);
+
+        this.productswrapperVirtual = this.productswrapper;
+    }
+ 
     showToast(title,message,variant,mode) {
         const event = new ShowToastEvent({
             title: title,
