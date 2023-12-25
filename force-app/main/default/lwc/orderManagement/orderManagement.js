@@ -6,8 +6,10 @@ import getProducts from '@salesforce/apex/OrderManagementController.getProducts'
 import getAccount from '@salesforce/apex/OrderManagementController.getAccount';
 import addToCart from '@salesforce/apex/OrderManagementController.addToCart';
 import getCartDetails from '@salesforce/apex/OrderManagementController.getCartDetails';
+import deleteCartItem from '@salesforce/apex/OrderManagementController.deleteCartItem';
 import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
 import customcss from '@salesforce/resourceUrl/resourceOrderMangmt';
+
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 /**
@@ -40,11 +42,12 @@ export default class OrderManagement extends LightningElement {
     selectedMenu = 'name'; 
     isLoading = false;
     isHomePage = true; // use to display Landing Page on load
-    cartDetails = [];// Cart Details
+    @track cartDetails = [];// Cart Details
     CartDetailLength = 0;
     accountDetails = {}
     shippingAddress = '';
     billingAddress = '';
+    TotalGST = 0;
 
     selectedOrderType ={
         all:true,
@@ -76,7 +79,7 @@ export default class OrderManagement extends LightningElement {
     
 
     async connectedCallback(){
-
+        this.isLoading = true;
         // check whether current user is Sales Representative OR Digital Experience User
         this.experienceUserProfiles = await getExperienceUserProfiles();
         this.user = await getCurrentUser();
@@ -106,6 +109,15 @@ export default class OrderManagement extends LightningElement {
         this.isLoading = false;
     }
 
+    cartCalculation(){
+        let GSTAmount = 0;
+        /*this.cartDetails.forEach(item=>{
+            let discountDecimal = isNaN((item.discountPercentage / 100))?0:(item.discountPercentage / 100);
+            let price = item.pricebookEntry.UnitPrice * (item.pricebookEntry.UnitPrice * discountDecimal);
+
+        })*/
+    }
+
     async handleOrderTypeChange(event){
         let orderType = event.target.value;
         console.log('order type ',orderType);
@@ -124,7 +136,7 @@ export default class OrderManagement extends LightningElement {
         this.isLoading = true;
         // reset filters
         this.refs.trendingSKU.checked = false;
-        this.refs.weekOfTheSKU.checked = false;
+        this.refs.productOfTheMonth.checked = false;
         setTimeout(() => {// TODO: Remove setTimout once working on real time Data
             this.isLoading = false;
         }, 200);
@@ -132,15 +144,15 @@ export default class OrderManagement extends LightningElement {
 
     handleChangeToggle(event){
         let trendingSKU = this.refs.trendingSKU.checked;
-        let weekOfTheSKU = this.refs.weekOfTheSKU.checked;
+        let productOfTheMonth = this.refs.productOfTheMonth.checked;
 
-        if(trendingSKU && !weekOfTheSKU){
+        if(trendingSKU && !productOfTheMonth){
             this.productswrapper = this.productswrapperVirtual.filter(ele=>ele['trendingSKU']==true);
-        }else if(!trendingSKU && weekOfTheSKU){
-            this.productswrapper = this.productswrapperVirtual.filter(ele=>ele['weekOfTheSKU']==true);
-        }else if(trendingSKU && weekOfTheSKU){
-            this.productswrapper = this.productswrapperVirtual.filter(ele=>ele['weekOfTheSKU']==true && ele['trendingSKU']==true);
-        }else if(!trendingSKU && !weekOfTheSKU){// reset products
+        }else if(!trendingSKU && productOfTheMonth){
+            this.productswrapper = this.productswrapperVirtual.filter(ele=>ele['productOfTheMonth']==true);
+        }else if(trendingSKU && productOfTheMonth){
+            this.productswrapper = this.productswrapperVirtual.filter(ele=>ele['productOfTheMonth']==true && ele['trendingSKU']==true);
+        }else if(!trendingSKU && !productOfTheMonth){// reset products
             this.productswrapper = this.productswrapperVirtual;
         }
         this.isLoading = true;
@@ -172,12 +184,15 @@ export default class OrderManagement extends LightningElement {
         const uniqueArray = [];
         const uniqueValuesSet = new Set();
         this.productswrapperVirtual.forEach(item => {
-            const { Name, Id } = item.pricebookEntry.Product2?.Variant__r;
-            if (!uniqueValuesSet.has(Id)) {
-                uniqueValuesSet.add(Id);
-                uniqueArray.push({ label: Name, value: Id });
+            if(item?.priceList){
+                const { Variant_Code__c, Id } = item?.priceList?.Variant__r;
+                if (!uniqueValuesSet.has(Id)) {
+                    uniqueValuesSet.add(Id);
+                    uniqueArray.push({ label: Variant_Code__c, value: Id });
+                }
             }
         });
+        uniqueArray.push({ label: 'None', value: '' });
         this.varientOptions = uniqueArray;
     }
 
@@ -204,9 +219,7 @@ export default class OrderManagement extends LightningElement {
             let productWrap = this.productswrapper[index];
             productWrap.lineItemSubTotal = productWrap.pricebookEntry.UnitPrice * productWrap.quantity;
             this.cartDetails.push(productWrap);
-            console.log('cart Details ',this.cartDetails);
             let isAddedToCart = await addToCart({productWrapper:JSON.stringify(productWrap),accountId:this.accountId});
-            console.log(' isAddedToCart ',isAddedToCart);
             this.CartDetailLength = this.cartDetails.length;
             this.showToast('Success ','Added to Cart','success','dismissable');
         }else{
@@ -214,9 +227,35 @@ export default class OrderManagement extends LightningElement {
         }
     }
 
+    async handleCartDelete(event){
+        this.isLoading = true;
+        let index = event.currentTarget.dataset.index;
+        console.log('Delete index',index);
+        let cartIndex = this.cartDetails.findIndex(ele=>ele.productId==this.cartDetails[index].productId);
+        if(cartIndex!=-1){
+            let productWrap = this.cartDetails[cartIndex];
+            console.log(' productWrap ',JSON.stringify(productWrap));
+            let response = await deleteCartItem({productWrapper:JSON.stringify(productWrap),accountId:this.accountId});
+            console.log('resp ',response);
+            if(response=='success'){
+                console.log('this.cartDetails ',this.cartDetails.length);
+                this.cartDetails.splice(cartIndex,1);
+                console.log('this.cartDetails ',this.cartDetails.length);
+                this.cartDetails = this.cartDetails;
+            }
+        }else{
+            this.showToast('Error ','Unable to find selected Item','warning','dismissable'); 
+        }
+        this.isLoading = false;
+    }
+
     handleChangeVarient(event){
         let selectedVarient = event.detail.value;
-        this.productswrapper = this.productswrapperVirtual.filter(ele=>ele.pricebookEntry.Product2?.Variant__c==selectedVarient)
+        if(selectedVarient){
+            this.productswrapper = this.productswrapperVirtual.filter(ele=>ele?.priceList?.Variant__c==selectedVarient)
+        }else{
+            this.productswrapper = this.productswrapperVirtual;
+        }
     }
 
     // switch to cart page

@@ -87,7 +87,7 @@
               <p>Weekly</p>
               <div class="toggle-switch1">
                 <label for="cb-switch1">
-                  <input type="checkbox" lwc:ref="weekOfTheSKU" data-name="weekOfTheSKU" id="cb-switch1" value=""
+                  <input type="checkbox" lwc:ref="productOfTheMonth" data-name="productOfTheMonth" id="cb-switch1" value=""
                     onchange={handleChangeToggle}>
                   <span>
                     <small></small>
@@ -131,7 +131,7 @@
                 <div class="product__inner">
                   <section class="product__image">
                     <div lwc:if={productWrap.trendingSKU} class="label-top shadow-sm">Trending</div>
-                    <div lwc:if={productWrap.weekOfTheSKU} class="label-right shadow-sm">Weekly</div>
+                    <div lwc:if={productWrap.productOfTheMonth} class="label-right shadow-sm">Weekly</div>
                     <img src={geolander} />
                   </section>
 
@@ -282,7 +282,7 @@
           <label class="product-line-price label1">Sub Total</label>
         </div>
 
-        <template for:each={cartDetails} for:item="cartDetail">
+        <template for:each={cartDetails} for:item="cartDetail" for:index="index">
           <div key={cartDetail.combinationKey} class="product">
             <div class="product-image">
               <img src={geolander} />
@@ -295,7 +295,9 @@
                 <div>Tread Pattern: E400 => TODO</div>
                 <div>Item Number: 20 => TODO</div>
                 <div class="product-removal">
+                  <a data-index={index} onclick={handleCartDelete} class="buy-btn">
                   <i class="fa fa-trash fa-2x"></i>
+                  </a>
                 </div>
               </div>
             </div>

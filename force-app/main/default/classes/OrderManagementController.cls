@@ -4,6 +4,8 @@ Created Date       : Nov 16, 2023
 @description       : This is class is used for handling LWC request.
 @author            : Sandeep Vishwakarma <sandeep.vishwakarma@skinternational.com>
 */
+
+
 public with sharing class OrderManagementController {
     
     @AuraEnabled(cacheable=true)
@@ -13,15 +15,35 @@ public with sharing class OrderManagementController {
 
     @AuraEnabled(cacheable=true)
     public static User getCurrentUser(){
-        User user = [select id,Profile.Name from User where Id=:Userinfo.getUserId()];
+        UserSelector userSelector = (UserSelector)Application.selector.newInstance(User.SObjectType);
+        List<User> users = userSelector.getUserbyId(Userinfo.getUserId());
+        User user = new User();
+        if(users.size()>0){
+            user = users[0];
+        }
         return user;
     }
 
     @AuraEnabled
     public static string getExperienceUserAccount(){
         try {
-            String contactId = [Select contactid from User where id =: Userinfo.getUserid()].contactId;
-            String accountId  = [Select AccountID from Contact where id =: contactId].AccountId;
+            String contactId = '';
+            String accountId = '';
+            UserSelector userSelector = (UserSelector)Application.selector.newInstance(User.SObjectType);
+            ContactSelector contactSelector = (ContactSelector)Application.selector.newInstance(Contact.SObjectType);
+            
+            List<User> users = userSelector.getUserbyId(Userinfo.getUserid());
+            if(users.size()>0){
+                contactId = users[0].contactId;
+                List<Contact> contacts = contactSelector.selectById(new Set<Id>{contactId});
+                if(contacts.size()>0){
+                    accountId = contacts[0].AccountId;
+                }else{
+                    // Monitor Log Exception : No contact found
+                }
+            }else{
+                    // Monitor Log Exception : No User found
+            }
             return accountId;
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
@@ -31,7 +53,13 @@ public with sharing class OrderManagementController {
     @AuraEnabled
     public static Account getAccount(String accountId){
         try {
-            Account account = [Select Id, Name, BillingCity, BillingStreet, BillingState, BillingPostalCode, BillingCountry, BillingLatitude, BillingLongitude, BillingGeocodeAccuracy, BillingAddress, ShippingStreet, ShippingCity, ShippingState, ShippingPostalCode, ShippingCountry, ShippingLatitude, ShippingLongitude, ShippingGeocodeAccuracy, ShippingAddress, Phone, Website from Account where Id=:accountId];
+
+            AccountSelector accountSelector = (AccountSelector)Application.selector.newInstance(Account.SObjectType);
+            List<Account> accounts = accountSelector.getAccounts(new List<String>{accountId});
+            Account account = new Account();
+            if(accounts.size()>0){
+                account = accounts[0];
+            }
             return account;
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
@@ -73,15 +101,18 @@ public with sharing class OrderManagementController {
     @AuraEnabled
     public static boolean addToCart(String productWrapper,String accountId){
         try {
-            // 1. Get Cart of Current Account
-            List<Order> cartOrders = [select Id,Name,Order_Status__c from Order where AccountId=:accountId and Status='Draft' limit 1];
+            LibISobjectUnitOfWork unitofwork = Application.unitofwork.newInstance();
+
+            // 1. Get Draft Cart of Current Account
+            OrderSelector orderSelector = (OrderSelector)Application.selector.newInstance(Order.SObjectType);
+            List<Order> cartOrders = orderSelector.selectRecentOrderOfAccountByStatus(accountId,'Draft');
 
             // 2. convert JSON to Apex class
             ProductWrapper wrapperProduct = (ProductWrapper)JSON.deserialize(productWrapper,ProductWrapper.class);
             if(cartOrders.size()>0){
                 
                 // 3. Add Product Wrapper to Cart Line Item and Create Cart Line Item
-                return addToCartLineItem(cartOrders[0].Id,wrapperProduct);
+                return addToCartLineItem(cartOrders[0],wrapperProduct,unitofwork);
             }else{
 
                 // Getting Account Details to store information like Addresses in Cart Order
@@ -109,45 +140,52 @@ public with sharing class OrderManagementController {
 
                 cartOrder.Pricebook2Id = wrapperProduct.pricebookEntry.Pricebook2Id;
 
-                    // add Some Extra field
+                // Save Cart Order to Database
+                unitofwork.registerNew(cartOrder);    
 
-                Database.SaveResult result =Database.insert(cartOrder);
-                if(result.isSuccess()){
-                    // 4. Add Product Wrapper to Cart Line Item and Create Cart Line Item
-                    return addToCartLineItem(result.getId(),wrapperProduct);
-                }
-                return false;
+                addToCartLineItem(cartOrder,wrapperProduct,unitofwork);
+                
+                return true;
             }
         } catch (Exception e) {
+            System.debug('Message '+e.getMessage() +' LineNumber '+e.getLineNumber());
             throw new AuraHandledException('Message '+e.getMessage() +' LineNumber '+e.getLineNumber());
         }
     }
 
-    private static boolean addToCartLineItem(Id cartOrderId,ProductWrapper wrapperProduct){
-        
-        OrderItem lineItem = new OrderItem();
-        lineItem.Product2Id = wrapperProduct.productId;
-        // Add Some extra fields..
-        lineItem.OrderId = cartOrderId;
-        lineItem.Quantity = wrapperProduct.quantity;
-        lineItem.UnitPrice = wrapperProduct.pricebookEntry.UnitPrice;
-        lineItem.ListPrice = wrapperProduct.pricebookEntry.UnitPrice;
-        lineItem.Description = wrapperProduct.pricebookEntry.Product2.Description;
-        lineItem.PricebookEntryId =  wrapperProduct.pricebookEntry.Id;
-        Database.SaveResult result = Database.insert(lineItem);
-        return result.isSuccess();
+    private static boolean addToCartLineItem(Order cartOrder,ProductWrapper wrapperProduct,LibISobjectUnitOfWork unitofwork){
+        try {
+            OrderItem lineItem = new OrderItem();
+            lineItem.Product2Id = wrapperProduct.productId;
+            // Add Some extra fields..
+            lineItem.OrderId = cartOrder.Id;
+            lineItem.Quantity = wrapperProduct.quantity;
+            lineItem.UnitPrice = wrapperProduct.pricebookEntry.UnitPrice;
+            lineItem.ListPrice = wrapperProduct.pricebookEntry.UnitPrice;
+            lineItem.Description = wrapperProduct.pricebookEntry.Product2.Description;
+            lineItem.PricebookEntryId =  wrapperProduct.pricebookEntry.Id;
+            
+            unitofwork.registerNew(lineItem, OrderItem.OrderId, cartOrder);
+            unitofwork.commitWork();
+            return true;
+        } catch (Exception e) {
+            System.debug('Message '+e.getMessage() +' LineNumber '+e.getLineNumber());
+            throw new AuraHandledException('Message '+e.getMessage() +' LineNumber '+e.getLineNumber());
+        }
     } 
     
     @AuraEnabled
     public static List<ProductWrapper> getCartDetails(String accountId){
         try {
-            // 1. Get Cart of Current Account
-            List<Order> cartOrders = [select Id,Name,Order_Status__c from Order where AccountId=:accountId and Status='Draft' limit 1];
+            // 1. Get Draft Cart of Current Account
+            OrderSelector orderSelector = (OrderSelector)Application.selector.newInstance(Order.SObjectType);
+            List<Order> cartOrders = orderSelector.selectRecentOrderOfAccountByStatus(accountId,'Draft');
 
             // Map => {Key = Product__c,value = Account_product_Mapping__c}
             Map<Id,Account_product_Mapping__c> accountProductMappingByProduct = new Map<Id,Account_product_Mapping__c>();
             
-            List<Account_product_Mapping__c> accountProducts = [select Id,Name,Account__c,Product__c,Locking_status__c,Locking_Start_Date__c,Locking_End_Date__c,Minimum_Order_Quantity__c,Maximum_Order_Quantity__c from Account_product_Mapping__c where Product__c!=null and Account__c=:accountId];
+            AccountProductMappingSelector accountProductSelector = (AccountProductMappingSelector)Application.selector.newInstance(Account_product_Mapping__c.SObjectType);
+            List<Account_product_Mapping__c> accountProducts = accountProductSelector.selectByAccount(accountId);
 
             for (Account_product_Mapping__c accountProduct : accountProducts) {
                 accountProductMappingByProduct.put(accountProduct.Product__c,accountProduct);
@@ -155,28 +193,36 @@ public with sharing class OrderManagementController {
 
             // 2. Get CartLineItem__c By cart Order
             if(cartOrders.size()>0){
-                List<OrderItem> orderProducts = [Select id,OrderId,Quantity,UnitPrice,Discount_Percent__c,TotalPrice,GST__c,Description,PricebookEntryId,PricebookEntry.Pricebook2Id from OrderItem where OrderId=:cartOrders[0].Id];
+                 
+                 OrderItemSelector orderItemSelector = (OrderItemSelector)Application.selector.newInstance(OrderItem.SObjectType);
+                List<OrderItem> orderProducts = orderItemSelector.selectByOrder(cartOrders[0].Id);
 
                 if(orderProducts.size()>0){
 
                     List<PricebookEntry> pricebookentries = getPriceBookEntries(new List<Id>{orderProducts[0].PricebookEntry.Pricebook2Id});
+
+                    Map<Id,PricebookEntry> priceBookEntriesByProductId = new Map<Id,PricebookEntry>();
+                    for(PricebookEntry entry:pricebookentries){
+                        priceBookEntriesByProductId.put(entry.Product2Id,entry);
+                    }
+
                     if(pricebookentries.size()>0){
                         List<ProductWrapper>  wrapperProducts = new List<ProductWrapper>();
                         for(OrderItem item:orderProducts){
                             ProductWrapper wrapperProduct = new ProductWrapper();
-                            wrapperProduct.pricebookEntry = pricebookentries[0];
-                            wrapperProduct.productId = pricebookentries[0].Product2Id;
-                            wrapperProduct.weekOfTheSKU = false;
+                            wrapperProduct.pricebookEntry = priceBookEntriesByProductId.get(item.Product2Id);
+                            wrapperProduct.productId = item.Product2Id;
+                            wrapperProduct.productOfTheMonth = false;
                             wrapperProduct.trendingSKU = false;
-                            wrapperProduct.lockingSKU = accountProductMappingByProduct.get(pricebookentries[0].Product2Id)?.Locking_status__c;
+                            // wrapperProduct.lockingSKU = accountProductMappingByProduct.get(item.Product2Id)?.Locking_status__c;
                             wrapperProduct.cappingSKU = false;
-                            wrapperProduct.maximum_Order_Quantity = accountProductMappingByProduct.get(pricebookentries[0].Product2Id)?.Maximum_Order_Quantity__c;
-                            wrapperProduct.minimum_Order_Quantity = accountProductMappingByProduct.get(pricebookentries[0].Product2Id)?.Minimum_Order_Quantity__c;
+                            wrapperProduct.maximum_Order_Quantity = accountProductMappingByProduct.get(item.Product2Id)?.Maximum_Order_Quantity__c;
+                            wrapperProduct.minimum_Order_Quantity = accountProductMappingByProduct.get(item.Product2Id)?.Minimum_Order_Quantity__c;
                             wrapperProduct.quantity = item.Quantity;
                             wrapperProduct.discountPercentage = item.Discount_Percent__c;
                             wrapperProduct.lineItemSubTotal = item.TotalPrice;
                             wrapperProduct.GSTPercentage = item.GST__c;
-                            wrapperProduct.combinationKey = pricebookentries[0].Product2.ProductCode + pricebookentries[0].Product2.Variant__r.Variant_Code__c;
+                            wrapperProduct.combinationKey = item.Product2.ProductCode;
 
                             wrapperProducts.add(wrapperProduct);
                         }
@@ -210,18 +256,24 @@ public with sharing class OrderManagementController {
         }  
     }
 
-    /* Commented because Order__c Object is not created Yet
     @AuraEnabled
-    public static Order__c createOrder(String accountId){
+    public static string deleteCartItem(String productWrapper,String accountId){
         try {
-            // 1. convert cart and cartLineItem to Order and OrderLineItem
-            return new Order__c();
+            ProductWrapper wrapperProduct = (ProductWrapper)JSON.deserialize(productWrapper,ProductWrapper.class);
+            OrderSelector orderSelector = (OrderSelector)Application.selector.newInstance(Order.SObjectType);
+            OrderItemSelector orderItemSelector = (OrderItemSelector)Application.selector.newInstance(OrderItem.SObjectType);
+            LibISobjectUnitOfWork unitofwork = Application.unitofwork.newInstance();
+            List<Order> cartOrders = orderSelector.selectRecentOrderOfAccountByStatus(accountId,'Draft');
+            if(cartOrders.size()>0){
+                List<OrderItem> orderItems = orderItemSelector.selectByOrderAndProduct(cartOrders[0].Id,wrapperProduct.productId);
+                unitofwork.registerDeleted(orderItems);
+                unitofwork.commitWork();
+            }
+            return 'success';
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
         }
     }
-    */
-
 
 /*
     *********************************************************
@@ -259,22 +311,26 @@ public with sharing class OrderManagementController {
     }
 
     private static List<PriceBook2> getPriceBookByCustomer(String accountId){
-        List<PriceBook2>  priceboooks = [select id,Customer__c,Customer_Group__c,Is_Discount_Price_Book__c,Type__c,Combination_Key__c,IsActive from PriceBook2 where Customer__c=:accountId and Type__c='Customer' and IsActive=true];
+        PriceBookSelector priceBookSelector = (PriceBookSelector)Application.selector.newInstance(PriceBook2.SObjectType);
+        List<PriceBook2>  priceboooks = priceBookSelector.selectPriceBookByCustomer(accountId);
         return priceboooks;
     }
 
     private static List<PriceBook2> getPriceBookByCustomerGroup(List<String> customerGroups){
-        List<PriceBook2>  priceboooks = [select id,Customer__c,Customer_Group__c,Is_Discount_Price_Book__c,Type__c,Combination_Key__c,IsActive from PriceBook2 where Customer_Group__c IN:customerGroups and Type__c='Customer Group'  and IsActive=true];
+        PriceBookSelector priceBookSelector = (PriceBookSelector)Application.selector.newInstance(PriceBook2.SObjectType);
+        List<PriceBook2>  priceboooks = priceBookSelector.selectPriceBookByCustomerGroup(customerGroups);
         return priceboooks;
     }
 
     private static List<PriceBook2> getCommonPriceBook(){
-        List<PriceBook2>  priceboooks = [select id,Customer__c,Customer_Group__c,Is_Discount_Price_Book__c,Type__c,Combination_Key__c,IsActive from PriceBook2 where Customer_Group__c=null and Customer__c=null and Type__c='Common'  and IsActive=true];
+        PriceBookSelector priceBookSelector = (PriceBookSelector)Application.selector.newInstance(PriceBook2.SObjectType);
+        List<PriceBook2>  priceboooks = priceBookSelector.priceBookbyCustomerComman();
         return priceboooks;
     }
 
     public static List<String> getCustomerGroupByCustomer(String accountId){
-        List<Account>  accounts = [select id,Name,Customer_Group__c from Account where Id=:accountId limit 1];
+        AccountSelector accountSelector = (AccountSelector)Application.selector.newInstance(Account.SObjectType);
+        List<Account> accounts = accountSelector.getAccounts(new List<String>{accountId});
         List<String> customerGroups = new List<String>();
         for(Account acount:accounts){
             customerGroups.add(acount.Customer_Group__c);
@@ -284,7 +340,8 @@ public with sharing class OrderManagementController {
 
     public static List<PricebookEntry> getPriceBookEntries(List<Id> priceBookIds){
         try {
-            List<PricebookEntry> pricebookEntries = [SELECT Id, Name, Pricebook2Id, Product2Id, UnitPrice, IsActive, UseStandardPrice, ProductCode, End_Date__c, Start_Date__c, Combination_Key__c, Product2.Name,Product2.ProductCode, Product2.Description, Product2.IsActive, Product2.DisplayUrl, Product2.Product_Code__c, Product2.Variant__c, Product2.Minimum_Quantity__c, Product2.Size__c, Product2.Thread__c, Product2.StockKeepingUnit,Product2.Variant__r.Name,Product2.Variant__r.Variant_Code__c,Product2.Variant__r.Description__c FROM PricebookEntry where IsActive=true and Pricebook2Id IN:priceBookIds];
+            PriceBookEntrySelector priceBookEntrySelector1 = (PriceBookEntrySelector)Application.selector.newInstance(PricebookEntry.SObjectType);
+            List<PricebookEntry> pricebookEntries = priceBookEntrySelector1.selectPriceBookEntriesByPricebook(priceBookIds);
             return pricebookEntries;
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());

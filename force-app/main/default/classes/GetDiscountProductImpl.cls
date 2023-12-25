@@ -7,23 +7,52 @@ public with sharing class GetDiscountProductImpl implements IGetProducts {
         List<ProductWrapper> productWrappers = new GetAllProductImpl().getProducts(accountId);
 
         //2. Bring all Discounted Product in a wrapper (let's say discountedpriceList)
-        List<Price_List__c> discountedpriceList = getDiscountedPriceList(accountId);
+        List<Price_List__c> discountedPriceList = getDiscountedPriceList(accountId);
 
-        //3. create a Map<combinationKey,Price_List__c> where {key='combinationKey',value=Price_List__c}
-        Map<String,Price_List__c> priceListByCombinationKey = new Map<String,Price_List__c>();
-        for(Price_List__c priceList:discountedpriceList){
-            priceListByCombinationKey.put(priceList.SKU__r.Product_Code__c+priceList.SKU__r.Variant__r.Variant_Code__c,priceList);
+        //3. Store Product and its related prices in a Map
+        Map<String,List<Price_List__c>> priceListByProductId = new Map<String,List<Price_List__c>>();
+        for(Price_List__c price :discountedPriceList){
+            if(!priceListByProductId.containsKey(price.Product__c)){
+                priceListByProductId.put(price.Product__c,new List<Price_List__c>());
+            }
+            priceListByProductId.get(price.Product__c).add(price);
         }
 
-        //4. Add only those product which exist in discount product wrapper
-        for (ProductWrapper productWrapper : productWrappers) {
-            if(priceListByCombinationKey.get(productWrapper.combinationKey)!=null){
-                // setting Discount Price TODO: update Unit_price__c with Discount Percentage Field
-                productWrapper.discountPercentage = priceListByCombinationKey.get(productWrapper.combinationKey).Unit_Price__c;
-                discountProductWrappers.add(productWrapper);
+        //4. filter productWrappers to minimize search processing time
+        List<ProductWrapper> newProductWrapper = new List<ProductWrapper>();
+        for(ProductWrapper originalWrapper:productWrappers){
+            if(priceListByProductId.containsKey(originalWrapper.productId)){
+                // Adding productWrapper Which has Product same as PriceList
+                newProductWrapper.add(originalWrapper);
             }
         }
+        //5. Finally creating Discounted Product 
+        for( ProductWrapper originalWrapper:newProductWrapper){
+        List<Price_List__c> prices = priceListByProductId.get(originalWrapper.productId);
+            if(prices.size()>0){
+                for(Price_List__c price:prices){
+                    ProductWrapper discountWrapper = new ProductWrapper();
 
+                    discountWrapper.pricebookEntry = originalWrapper.pricebookEntry;
+                    discountWrapper.productId = originalWrapper.productId;
+                    discountWrapper.productOfTheMonth = originalWrapper.productOfTheMonth;
+                    discountWrapper.trendingSKU = originalWrapper.trendingSKU;
+                    discountWrapper.lockingSKU = originalWrapper.lockingSKU;
+                    discountWrapper.cappingSKU = originalWrapper.cappingSKU;
+                    discountWrapper.maximum_Order_Quantity = originalWrapper.maximum_Order_Quantity;
+                    discountWrapper.quantity = originalWrapper.quantity;
+                    discountWrapper.lineItemSubTotal = originalWrapper.lineItemSubTotal;
+                    discountWrapper.GSTPercentage = originalWrapper.GSTPercentage;
+
+                    discountWrapper.discountPercentage = price.Discount_Price__c;// TODO: Change Discount Price to Discount Percentage
+                    discountWrapper.discountType = price.Discount_Type__c;
+                    discountWrapper.priceList = price;
+                    discountWrapper.minimum_Order_Quantity = price.Minimum_Quantity__c;
+                    discountWrapper.combinationKey = price.Product__r.Product_Code__c + price.Variant__r.Variant_Code__c + price.Minimum_Quantity__c;
+                    discountProductWrappers.add(discountWrapper);
+                }
+            }
+        }
         return discountProductWrappers;
     }
 
@@ -49,17 +78,20 @@ public with sharing class GetDiscountProductImpl implements IGetProducts {
     }
 
     private static List<Price_List__c> getPriceListByCustomer(String accountId){
-        List<Price_List__c> priceList = [select Id,Name,Dealer__c,Unit_Price__c,Customer_Group__c,SKU__c,SKU__r.Product_Code__c,SKU__r.Variant__r.Variant_Code__c,SKU__r.Variant__c,Discount_Type__c from Price_List__c where Dealer__c=:accountId and Start_Date__c <= TODAY and End_Date__c>=TODAY];
+        PriceListSelector priceListSelector = (PriceListSelector)Application.selector.newInstance(Price_List__c.SObjectType);
+        List<Price_List__c> priceList = priceListSelector.selectPriceListByCustomer(accountId);
         return priceList;
     }
 
     private static List<Price_List__c> getPriceListByCustomerGroup(List<String> customerGroups){
-        List<Price_List__c> priceList = [select Id,Name,Dealer__c,Unit_Price__c,Customer_Group__c,SKU__c,SKU__r.Product_Code__c,SKU__r.Variant__r.Variant_Code__c,SKU__r.Variant__c,Discount_Type__c from Price_List__c where Customer_Group__c IN:customerGroups and Start_Date__c <= TODAY and End_Date__c>= TODAY];
+        PriceListSelector priceListSelector = (PriceListSelector)Application.selector.newInstance(Price_List__c.SObjectType);
+        List<Price_List__c> priceList = priceListSelector.selectPriceListByCustomerGroup(customerGroups);
         return priceList;
     }
 
     private static List<Price_List__c> getCommonPriceList(){
-        List<Price_List__c> priceList = [select Id,Name,Dealer__c,Unit_Price__c,Customer_Group__c,SKU__c,SKU__r.Product_Code__c,SKU__r.Variant__r.Variant_Code__c,SKU__r.Variant__c,Discount_Type__c from Price_List__c where Customer_Group__c=null and Dealer__c=null and Start_Date__c <= TODAY and End_Date__c>= TODAY];
+        PriceListSelector priceListSelector = (PriceListSelector)Application.selector.newInstance(Price_List__c.SObjectType);
+        List<Price_List__c> priceList = priceListSelector.selectCommonPriceList();
         return priceList;
     }
 }

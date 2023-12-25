@@ -40,7 +40,32 @@ public List<Schema.SObjectField> getSObjectFieldList() {
         //Account.Status__c,
         Account.City__r.id,
         Account.Area__r.id,
-        Account.SFDC_Customer_Code__c     //Amol Patil
+        Account.SFDC_Customer_Code__c,     //Amol Patil
+
+        // Start Added by Sandeep Vishwakarma
+        Account.BillingCity, 
+        Account.BillingStreet, 
+        Account.BillingState, 
+        Account.BillingPostalCode, 
+        Account.BillingCountry, 
+        Account.BillingLatitude, 
+        Account.BillingLongitude, 
+        Account.BillingGeocodeAccuracy, 
+        Account.BillingAddress, 
+        Account.ShippingStreet, 
+        Account.ShippingCity, 
+        Account.ShippingState, 
+        Account.ShippingPostalCode, 
+        Account.ShippingCountry, 
+        Account.ShippingLatitude, 
+        Account.ShippingLongitude, 
+        Account.ShippingGeocodeAccuracy, 
+        Account.ShippingAddress, 
+        Account.Phone, 
+        Account.Website,
+        Account.Customer_Group__c,
+        Account.Location__c
+        // End Adding by Sandeep Vishwakarma
     };
 }
 
