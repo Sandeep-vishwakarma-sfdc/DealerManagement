@@ -12,24 +12,24 @@ System.debug('Wrapper '+wrapper);
 
 FFlib
 ----------------------------
-OrderItemSelector orderItemSelector1 = (OrderItemSelector)Application.selector.newInstance(OrderItem.SObjectType);
+OrderItemSelector orderItemSelector1 = (OrderItemSelector)YINApplication.selector.newInstance(OrderItem.SObjectType);
 Id orderid = '8010T000000N0VoQAK';
 List<OrderItem> orderProducts = orderItemSelector1.selectByOrder(orderid);
 System.debug('orderProducts '+orderProducts);
 
-PriceBookSelector priceBookSelector1 = (PriceBookSelector)Application.selector.newInstance(Pricebook2.SObjectType);
+PriceBookSelector priceBookSelector1 = (PriceBookSelector)YINApplication.selector.newInstance(Pricebook2.SObjectType);
 Id accountid = '0010T00000fYTVBQA4';
 List<PriceBook2> PriceBooks = priceBookSelector1.selectPriceBookByCustomer(accountid);
 System.debug('PriceBooks '+PriceBooks);
 
-PriceBookEntrySelector priceBookEntrySelector1 = (PriceBookEntrySelector)Application.selector.newInstance(PricebookEntry.SObjectType);
+PriceBookEntrySelector priceBookEntrySelector1 = (PriceBookEntrySelector)YINApplication.selector.newInstance(PricebookEntry.SObjectType);
 List<PricebookEntry> priceBookEntries = priceBookEntrySelector1.selectPriceBookEntriesByPricebook(new List<String>{'01s0T000000BM0sQAG'});
 System.debug('priceBookEntries '+priceBookEntries[0].Product2.Product_Code__c);
 
-AccountProductMappingSelector selector = (AccountProductMappingSelector)Application.selector.newInstance(Account_product_Mapping__c.SObjectType);
+AccountProductMappingSelector selector = (AccountProductMappingSelector)YINApplication.selector.newInstance(Account_product_Mapping__c.SObjectType);
 List<Account_product_Mapping__c> records = selector.selectByAccount('0010T00000fYTVBQA4');
 System.debug('records '+records);
 
-PriceListSelector selector = (PriceListSelector)Application.selector.newInstance(Price_List__c.SObjectType);
+PriceListSelector selector = (PriceListSelector)YINApplication.selector.newInstance(Price_List__c.SObjectType);
 List<Price_List__c> records = selector.selectPriceListByCustomer('0010T00000fYTVBQA4');
 System.debug('records '+records[0].Product__r.Product_Code__c);
