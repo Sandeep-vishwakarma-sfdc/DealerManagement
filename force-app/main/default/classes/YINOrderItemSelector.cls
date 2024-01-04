@@ -14,7 +14,11 @@ public with sharing class YINOrderItemSelector extends LibSObjectSelector{
             OrderItem.TotalPrice,
             OrderItem.GST__c,
             OrderItem.Description,
-            OrderItem.PricebookEntryId
+            OrderItem.PricebookEntryId,
+            OrderItem.Total_Amount__c,
+            OrderItem.GST_Amount__c,
+            OrderItem.TCS__c,
+            OrderItem.Variant__c
         };
     }
 
@@ -27,6 +31,8 @@ public with sharing class YINOrderItemSelector extends LibSObjectSelector{
         String query =  newQueryFactory()
                             .selectField('PricebookEntry.Pricebook2Id')
                             .selectField('Product2.ProductCode')
+                            .selectField('Product2.Size__c')
+                            .selectField('Variant__r.Variant_Code__c')
                             .setCondition('OrderId = :orderId')
                             .toSOQL();
         return (List<OrderItem>) Database.query(query);

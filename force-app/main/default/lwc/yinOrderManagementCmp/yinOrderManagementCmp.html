@@ -22,16 +22,6 @@
               <div class="col-md-7" style="margin-bottom:5px;">
                 <div class="input-group">
                   <div class="input-group-btn search-panel" data-search="students">
-                    <!-- <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-                    <span class="search_by">Filter by</span> <span class="caret"></span>
-                  </button>
-                  <ul class="dropdown-menu" role="menu">
-                    <li><a data-search="students">Product Name</a></li>
-                    <li><a data-search="teachers">Size</a></li>
-                    <li><a data-search="rooms">Pattern</a></li>
-                    <li class="divider"></li>
-                    <li><a data-search="all">All</a></li>
-                  </ul> -->
   
                     <lightning-button-menu label={menuFilterLabel} onselect={handleActionsMenuSelect}
                       style="width: 150px !important;">
@@ -41,7 +31,7 @@
                     </lightning-button-menu>
   
                   </div>
-                  <!-- <lightning-input type="text" class="form-control" name="x" placeholder="Search By Product Name, Size or Pattern"></lightning-input> -->
+                  
                   <input type="text" lwc:ref="searchinput" class="form-control"
                     style="text-align: left !important;padding-left: 10px !important;" name="x"
                     placeholder="Search By Product Name, Size or Pattern" autocomplete="off"/>
@@ -55,9 +45,7 @@
               <!-- Search Ends -->
   
               <div class="col-md-2 col-xs-12 gridlist">
-                <!-- <i class="[ icon  icon--grid ]  [ fa  fa-th ]  [ icon ]  activeic"></i>
-            <i class="[ icon  icon--list ]  [ fa  fa-list ]  [ icon ]"></i> -->
-  
+                
                 <lightning-icon icon-name="utility:apps" alternative-text="Grid" title="Grid" size="medium"
                   data-id="Green_Button" label="Grid" onclick={handleGridView}></lightning-icon> &nbsp;
                 <lightning-icon icon-name="utility:picklist_type" alternative-text="List" size="medium" title="List"
@@ -126,6 +114,7 @@
             <div style="clear:both;"></div>
   
             <div if:false={isLoading}>
+              <div class="containerscroll" onscroll={handleScroll} style="overflow-y: auto;max-height: 33rem;">
               <template for:each={productswrapper} for:item="productWrap" for:index="index">
                 <article key={productWrap.Id} class={productCSSClass}>
                   <div class="product__inner">
@@ -150,7 +139,7 @@
                                   <span class="glyphicon glyphicon-minus"></span>
                                 </button>
                               </span>
-                              <input type="text" class="form-control input-number" value={productWrap.quantity}>
+                              <input type="text" class="form-control input-number" value={productWrap.quantity} data-index={index} data-type="change" onkeyup={changeQuantity}>
                               <span class="input-group-btn">
                                 <button type="button" class="btn btn-default btn-number" data-index={index}
                                   data-type="plus" onclick={changeQuantity}>
@@ -165,9 +154,14 @@
   
                       <div class="card-footer">
                         <template lwc:if={selectedOrderType.discount}>
-                          <div class="wcf-left"><span class="price">Discount : 
+                          <!-- <div class="wcf-left"><span class="price">Discount : 
                             {productWrap.discountPercentage} %</span>
-                          </div>
+                          </div> -->
+                          <template for:each={productWrap.discountTable} for:item="discount">
+                            <div class="wcf-left" key={discount.minimumOrderQuantity}>
+                              <p style="color: red;">Save {discount.discountPercentage} % on min {discount.minimumOrderQuantity} Quantity</p>
+                            </div>
+                          </template>
                         </template>
                         <template lwc:else>
                           <div class="wcf-left"><span class="price">Unit Price: ₹
@@ -182,6 +176,7 @@
                   </div>
                 </article>
               </template>
+              </div>
             </div>
   
           </section>
@@ -260,10 +255,10 @@
               <h2 style="font-weight: bold;font-size: 12px;padding:3px 0 3px 3px;margin-top: 0;margin-bottom: 0;border-bottom: 1px solid #f1eef1;background: #4f4d4d;color: #fff;letter-spacing: 2px;"><lightning-icon label="" icon-name="utility:checkin" size="small"
                   style="color:#fff!important;"></lightning-icon> Shipping Address</h2>
               <div style="line-height:24px; border:1px solid #f1eef1; padding:5px">
-                Name: <strong>{accountDetails.Name}</strong><br />
+                <lightning-combobox name="Shipping Account" variant="label-hidden" value={shippingAccountValue} placeholder="Select Address" options={shippingAddressOption} onchange={handleChangeShippingAddress} ></lightning-combobox>
                 Address: <strong>{shippingAddress}</strong>.<br />
-                Email: <strong>TODO</strong><br />
-                Telephone/Mobile: <strong>{accountDetails.Phone}</strong>
+                Email: <strong>{selectedShippingAccount.Contact_Person_Email__c}</strong><br />
+                Telephone/Mobile: <strong>{selectedShippingAccount.Contact_Person_Phone__c}</strong>
               </div>
             </div>
   
@@ -291,28 +286,29 @@
                 <div class="product-title">{cartDetail.pricebookEntry.Name}</div>
                 <div class="product-description">
                   <div>Product Code: <strong>{cartDetail.pricebookEntry.Product2.Product_Code__c}</strong></div>
-                  <div>Tyre Size: {cartDetail.pricebookEntry.Product2.Size__c}</div>
-                  <div>Tread Pattern: E400 => TODO</div>
-                  <div>Item Number: 20 => TODO</div>
+                  <div>Tyre Size: {cartDetail.pricebookEntry.Product2.Size__c} inch</div>
+                  <div>Tread Pattern: {cartDetail.pricebookEntry.Product2.Tread_Pattern__c}</div>
+                  <div lwc:if={cartDetail.variantCode}>Variant Code: {cartDetail.variantCode}</div>
+                  <!-- <div>Item Number: {cartDetail.pricebookEntry.Product2.ProductCode}</div> -->
                   <div class="product-removal">
                     <a data-index={index} onclick={handleCartDelete} class="buy-btn">
-                    <i class="fa fa-trash fa-2x"></i>
+                    <i class="fa fa-trash fa-1x" style="color: #fff;"></i>
                     </a>
                   </div>
                 </div>
               </div>
               <div class="product-price"> {cartDetail.pricebookEntry.UnitPrice}</div>
-              <div class="product-discount"><input type="number" value={cartDetail.discount} min="1"></div>
+              <div class="product-discount">{cartDetail.discountPercentage} %</div>
               <div class="product-finalqty">
-                <input type="number" value={cartDetail.quantity} min="1">
+                <input type="number" data-index={index} value={cartDetail.quantity} min="0" onchange={changeCartQuantity}>
               </div>
               <!--<div class="product-removal">
           <button class="remove-product">
             Remove
           </button>
         </div>-->
-              <div class="product-gst"> {cartDetail.percentage} %</div>
-              <div class="product-line-price"> {cartDetail.lineItemSubTotal}</div>
+              <div class="product-gst"> {cartDetail.gstPercentage} %</div>
+              <div class="product-line-price"> {cartDetail.totalAmount}</div>
             </div>
           </template>
           <div class="totals">
@@ -322,7 +318,7 @@
         </div>-->
             <div class="totals-item">
               <label style="color:#333; background:#fff;">GST %</label>
-              <div class="totals-value" id="cart-tax"> 800</div>
+              <div class="totals-value" id="cart-tax"> {totalGSTAmount} </div>
             </div>
             <!--    <div class="totals-item">
           <label>Shipping Total Price</label>
@@ -330,7 +326,7 @@
         </div>-->
             <div class="totals-item totals-item-total">
               <label style="color:#333; background:#fff;">Final Price</label>
-              <div class="totals-value" id="cart-total"> 7,029.44</div>
+              <div class="totals-value" id="cart-total"> {finalPrice}</div>
             </div>
           </div>
   

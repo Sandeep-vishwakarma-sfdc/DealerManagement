@@ -2,8 +2,8 @@
  * @description       : This class provides methods to query and filter Account records.
  * @author            : Saurabh Pandey
  * @group             : 
- * @last modified on  : 12-26-2023
- * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+ * @last modified on  : 03-01-2024
+ * @last modified by  : Amol Patil/amol.patil@skinternational.com
  **/
 public class YINAccountSelector extends LibSObjectSelector {
 
@@ -32,7 +32,7 @@ public class YINAccountSelector extends LibSObjectSelector {
             Account.Id,
             Account.Name,
             Account.Contact_Person_Email__c,
-            Account.Outstanding_Amount__c,
+            // Account.Outstanding_Amount__c,
             Account.Security_Deposit__c,
             Account.Requested_Date__c,
            // Account.Sub_Classification__c,
@@ -64,7 +64,16 @@ public class YINAccountSelector extends LibSObjectSelector {
         Account.Phone, 
         Account.Website,
         Account.Customer_Group__c,
-        Account.Location__c
+        Account.Location__c,
+        Account.PAN_Status__c,
+        Account.Is_Capping_Enable__c,
+        Account.Is_Locking_Enable__c,
+        Account.X1H_TCS__c,
+        Account.ParentId,
+        Account.Contact_Name__c,
+        Account.Contact_Person_Email__c,
+        Account.Contact_Person_Phone__c,
+        Account.Primary_Contact_Number__c
         // End Adding by Sandeep Vishwakarma
         };
     }
@@ -210,7 +219,7 @@ public class YINAccountSelector extends LibSObjectSelector {
     public List<Account> getDelerAccounts(String dealerAcc) {
         return Database.query(
             newQueryFactory()
-                    //.selectField('.Name2')
+                    .selectField('Owner.Email')
                     .setCondition('Id=:dealerAcc')
                     .toSOQL()
         );
@@ -253,12 +262,19 @@ public class YINAccountSelector extends LibSObjectSelector {
      * @param List :List<String> accIds
      * @return  - List<Account>.
      */
-         public List<Account> getAccounts(List<String> accIds) {
-            return Database.query(
-                newQueryFactory()
-                    .setCondition('Id IN:accIds')
-                    //.setLimit(1)
-                    .toSOQL()
-            );
-        }
+     public List<Account> getAccounts(List<String> accIds) {
+        return Database.query(
+            newQueryFactory()
+            .setCondition('Id IN:accIds')
+            .toSOQL()
+        );
+     }
+
+     public  List<Account> selectShippingAccounts(String accounId){
+        String query = newQueryFactory()
+        .setCondition('ParentId=:accounId')
+        .toSOQL();
+        return Database.query(query);
+     }
+
     }

@@ -36,7 +36,7 @@ public with sharing class YINOrderManagementController {
     @param OrderType : Type of Order, like Discount,Promotional, etc..
     */
     @AuraEnabled
-    public static List<YINProductWrapper> getProducts(String accountId,String OrderType){ 
+    public static List<YINProductWrapper> getProducts(String accountId,String orderType){ 
         YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
         return orderService.getProducts(accountId,OrderType);
     }
@@ -63,6 +63,12 @@ public with sharing class YINOrderManagementController {
     public static string deleteCartItem(String productWrapper,String accountId){
         YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
         return orderService.deleteCartItem(productWrapper,accountId);
+    }
+
+    @AuraEnabled
+    public static List<Account> getShippingAccounts(String accountId){
+        YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
+        return orderService.getShippingAccounts(accountId);
     }
     
 }

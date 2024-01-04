@@ -1,7 +1,8 @@
 public with sharing class YINGetDiscountProductImpl implements YINIGetProducts {
     public List<YINProductWrapper> getProducts(String accountId){
         
-        List<YINProductWrapper> discountProductWrappers = new List<YINProductWrapper>();
+        
+        Map<String,List<YINProductWrapper.DiscountTable>> discountProductWrappersByKey = new Map<String,List<YINProductWrapper.DiscountTable>>();
 
         //1. Bring all Normal Products in a wrapper (let's say productWrappers)
         List<YINProductWrapper> productWrappers = new YINGetAllProductImpl().getProducts(accountId);
@@ -27,33 +28,70 @@ public with sharing class YINGetDiscountProductImpl implements YINIGetProducts {
             }
         }
         //5. Finally creating Discounted Product 
+        List<YINProductWrapper> discountProductWrappersWithDiscounts = getDiscountedItems(newProductWrapper,priceListByProductId,discountProductWrappersByKey);
+
+        return discountProductWrappersWithDiscounts;
+    }
+
+    private static List<YINProductWrapper> getDiscountedItems(List<YINProductWrapper> newProductWrapper,Map<String,List<YIN_Price_List__c>> priceListByProductId,Map<String,List<YINProductWrapper.DiscountTable>> discountProductWrappersByKey){
+        List<YINProductWrapper> discountProductWrappers = new List<YINProductWrapper>();
         for( YINProductWrapper originalWrapper:newProductWrapper){
-        List<YIN_Price_List__c> prices = priceListByProductId.get(originalWrapper.productId);
-            if(prices.size()>0){
-                for(YIN_Price_List__c price:prices){
-                    YINProductWrapper discountWrapper = new YINProductWrapper();
+            List<YIN_Price_List__c> prices = priceListByProductId.get(originalWrapper.productId);
+                if(prices.size()>0){
+                    for(YIN_Price_List__c price:prices){
+                        YINProductWrapper discountWrapper = new YINProductWrapper();
+    
+                        discountWrapper.pricebookEntry = originalWrapper.pricebookEntry;
+                        discountWrapper.productId = originalWrapper.productId;
+                        discountWrapper.productOfTheMonth = originalWrapper.productOfTheMonth;
+                        discountWrapper.trendingSKU = originalWrapper.trendingSKU;
+                        discountWrapper.lockingSKUAccount = originalWrapper.lockingSKUAccount;
+                        discountWrapper.lockingSKULocation = originalWrapper.lockingSKULocation;
+                        discountWrapper.maximumOrderQuantity = originalWrapper.maximumOrderQuantity;
+                        discountWrapper.quantity = originalWrapper.quantity;
+                        discountWrapper.unitPrice = originalWrapper.unitPrice;
+                        
+                
+                        discountWrapper.discountPercentage = price.Discount_Price__c;// TODO: Change Discount Price to Discount Percentage
+                        discountWrapper.discountType = price.Discount_Type__c;
+                        discountWrapper.priceList = price;
+                        discountWrapper.productName = originalWrapper.productName;
+                        discountWrapper.productSize = originalWrapper.productSize;
+                        discountWrapper.productPattern = originalWrapper.productPattern;
+                        discountWrapper.minimumOrderQuantity = price.Minimum_Quantity__c;
+                        discountWrapper.combinationKey = price.Product__r.Product_Code__c + price.Variant__r.Variant_Code__c;
+                        discountWrapper.maximumCappingQuantity = originalWrapper.maximumCappingQuantity;
 
-                    discountWrapper.pricebookEntry = originalWrapper.pricebookEntry;
-                    discountWrapper.productId = originalWrapper.productId;
-                    discountWrapper.productOfTheMonth = originalWrapper.productOfTheMonth;
-                    discountWrapper.trendingSKU = originalWrapper.trendingSKU;
-                    discountWrapper.lockingSKU = originalWrapper.lockingSKU;
-                    discountWrapper.cappingSKU = originalWrapper.cappingSKU;
-                    discountWrapper.maximum_Order_Quantity = originalWrapper.maximum_Order_Quantity;
-                    discountWrapper.quantity = originalWrapper.quantity;
-                    discountWrapper.lineItemSubTotal = originalWrapper.lineItemSubTotal;
-                    discountWrapper.GSTPercentage = originalWrapper.GSTPercentage;
+                        discountWrapper.GSTPercentage = originalWrapper.GSTPercentage;
+                        discountWrapper.tdsPercentage = originalWrapper.tdsPercentage;
+                        discountWrapper.tcsPercentage = originalWrapper.tcsPercentage;
 
-                    discountWrapper.discountPercentage = price.Discount_Price__c;// TODO: Change Discount Price to Discount Percentage
-                    discountWrapper.discountType = price.Discount_Type__c;
-                    discountWrapper.priceList = price;
-                    discountWrapper.minimum_Order_Quantity = price.Minimum_Quantity__c;
-                    discountWrapper.combinationKey = price.Product__r.Product_Code__c + price.Variant__r.Variant_Code__c + price.Minimum_Quantity__c;
-                    discountProductWrappers.add(discountWrapper);
+                        discountWrapper.applyTCS = originalWrapper.applyTCS;
+
+                        discountProductWrappers.add(discountWrapper);
+    
+                        if(!discountProductWrappersByKey.containsKey(price.Product__r.Product_Code__c + price.Variant__r.Variant_Code__c)){
+                            discountProductWrappersByKey.put(price.Product__r.Product_Code__c + price.Variant__r.Variant_Code__c,new List<YINProductWrapper.DiscountTable>());
+                        }
+                        
+                        YINProductWrapper.DiscountTable table = new YINProductWrapper.DiscountTable();
+                        table.minimumOrderQuantity = price.Minimum_Quantity__c;
+                        table.discountPercentage = price.Discount_Price__c;// TODO: Change Discount Price to Discount Percentage
+                        discountProductWrappersByKey.get(price.Product__r.Product_Code__c + price.Variant__r.Variant_Code__c).add(table);
+    
+                    }
                 }
             }
-        }
-        return discountProductWrappers;
+    
+            List<YINProductWrapper> discountProductWrappersWithDiscounts = new List<YINProductWrapper>();
+            Set<String> checkDuplicates = new Set<String>();
+            for (YINProductWrapper discountWrapper : discountProductWrappers) {
+                if(checkDuplicates.add(discountWrapper.combinationKey)){
+                    discountWrapper.discountTable = discountProductWrappersByKey.get(discountWrapper.combinationKey);
+                    discountProductWrappersWithDiscounts.add(discountWrapper);
+                }
+            }
+            return discountProductWrappersWithDiscounts;
     }
 
     private List<YIN_Price_List__c> getDiscountedPriceList(String accountId){

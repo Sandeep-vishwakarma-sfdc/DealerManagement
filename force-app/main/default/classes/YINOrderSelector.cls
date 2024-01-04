@@ -7,7 +7,7 @@ public with sharing class YINOrderSelector extends LibSObjectSelector {
         return new List<Schema.SObjectField> {
             Order.Id,
             Order.Name,
-            Order.Order_Status__c,
+            // Order.Order_Status__c,
             Order.AccountId,
             Order.Status
         };

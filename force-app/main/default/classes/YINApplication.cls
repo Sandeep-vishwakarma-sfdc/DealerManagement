@@ -10,7 +10,7 @@ public class YINApplication {
     /**
     * @description:This method Objects which will used in DML Operations.
     */   
-    public static final LibApplication.UnitOfWorkFactory unitOfWork =
+    public static final LibApplication.UnitOfWorkFactory UNITOFWORK =
        new LibApplication.UnitOfWorkFactory(
           new List<SObjectType> {
           
@@ -50,7 +50,7 @@ public class YINApplication {
                 YIN_Pincode__c.SObjectType,         //kalpesh
                 YIN_Location__c.SObjectType,         //kalpesh
                 YIN_Change_Request__c.SObjectType,   //Amol Patil
-                
+                YIN_Ledger__c.SObjectType,
                 Order.SObjectType,
                 OrderItem.SObjectType       
           }
@@ -61,7 +61,7 @@ public class YINApplication {
     /**
     * @description:Service Layer is Used to perform Actual Logic.
     */
-    public static final LibApplication.ServiceFactory service =
+    public static final LibApplication.ServiceFactory SERVICE =
        new LibApplication.ServiceFactory(
           new Map<Type, Type> {
           
@@ -76,7 +76,7 @@ public class YINApplication {
              // TrgITargetAssignment.class=>TrgTargetAssignmentImpl.class,       // Nik...
              // TrgITargetDistribution.class=>TrgTargetDistributionImpl.class,   // Nik...
              // TrgITargetSchedules.class=>TrgTargetSchedulesImpl.class,        // Nik...
-             // IContentVersionCreator.Class=>ContentVersionCreatorImp.Class,    //kalpesh
+              YINIContentVersionCreator.Class=>YINContentVersionCreatorImp.Class,    //kalpesh
              // ICustomerOnboardingApplication.class =>ICustomerOnboardingService.class,   //Satish Tiware
              // IDocumentDataTable.class => DocumentDataTableImp.class,     //Satish Tiware
            
@@ -90,10 +90,10 @@ public class YINApplication {
              YINIExternalApiServices.Class =>YINPincodeService.Class,          //Kalpesh
              YINIExternalApiServices.Class =>YINLocationService.Class,         //Kalpesh
              YINIExternalApiServices.Class =>YINDealerService.Class,         //Kalpesh
- /*Prashant  YINIiconUtils.Class =>YINIconUtilsImp.Class,                      //kalpesh
+  			 YINIiconUtils.Class =>YINIconUtilsImp.Class,                      //kalpesh
              YINIPicklistColumnUtils.Class =>YINPicklistColumnUtilsImp.Class,  //kalpesh
              YINIRelatedList.Class =>YINRelatedListImp.Class,                  //kalpesh
-             */  //Prashant
+             
              YINIChangeRequest.Class =>YINChangeRequestImpl.Class,          //Amol Patil 
              
              YINIBalanceConfirmation.class => YINBalanceConfirmationImpl.class, //Saurabh
@@ -104,7 +104,7 @@ public class YINApplication {
     /**
     * @description:Selector Layer is Used to perform SOQL Query.
     */   
-    public static final LibApplication.SelectorFactory selector =
+    public static final LibApplication.SelectorFactory SELECTOR =
        new LibApplication.SelectorFactory(
           new Map<SObjectType, Type> {
  
@@ -135,8 +135,8 @@ public class YINApplication {
                 // PJP__c.SObjectType => PJPSelector.class,                                       //Saurabh 
                 // PJP_Detail__c.SObjectType => PjpDetailsSelector.class,                          //Saurabh
                 // //RecordType.Schema.SObjectType=>RecordTypeSelector.class,    
-                // RecordType.getSObjectType()=>RecordTypeSelector.class,                          //kalpesh 
-                // CollaborationGroup.SObjectType=>CollaborationGroupSelector.Class,               //kalpesh*/
+                RecordType.getSObjectType()=>YINRecordTypeSelector.class,                          //kalpesh 
+                CollaborationGroup.SObjectType=>YINCollaborationGroupSelector.Class,               //kalpesh*/
                 YIN_Change_Request__c.SObjectType=>YINChangeRequestSelector.Class,                      //Amol Patil
                 YIN_Pincode__c.SObjectType=>YINPincodeSelector.Class,                                    //Amol Patil
                 ContentVersion.sObjectType =>YINContentVersionSelector.class,           
@@ -160,7 +160,7 @@ public class YINApplication {
     * @description:Domain Layer is Used to perform Trigger Operation.
     */   
    
-    public static final LibApplication.DomainFactory domain =
+    public static final LibApplication.DomainFactory DOMAIN =
        new LibApplication.DomainFactory(
           YINApplication.Selector,
           new Map<SObjectType, Type> {

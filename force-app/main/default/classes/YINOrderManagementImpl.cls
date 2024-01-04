@@ -1,8 +1,8 @@
 public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
-    public static List<YINProductWrapper> getProducts(String accountId,String OrderType){ 
+    public static List<YINProductWrapper> getProducts(String accountId,String orderType){ 
         try {
             // Get class for which Instance should create by OrderType
-            YIN_PriceBookImplByType__mdt metaDataConfig = YIN_PriceBookImplByType__mdt.getInstance(OrderType);
+            YIN_PriceBookImplByType__mdt metaDataConfig = YIN_PriceBookImplByType__mdt.getInstance(orderType);
 
             // Create Instance of Class Dynamically
             Type apiClassName  = Type.forName(metaDataConfig.Class_Name__c);
@@ -102,50 +102,69 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
                 YINOrderItemSelector orderItemSelector = (YINOrderItemSelector)YINApplication.selector.newInstance(OrderItem.SObjectType);
                 List<OrderItem> orderProducts = orderItemSelector.selectByOrder(cartOrders[0].Id);
 
-                if(orderProducts.size()>0){
+                return getCartItems(orderProducts,accountProductMappingByProduct);
 
-                    List<PricebookEntry> pricebookentries = YINGetAllProductImpl.getPriceBookEntries(new List<Id>{orderProducts[0].PricebookEntry.Pricebook2Id});
-
-                    Map<Id,PricebookEntry> priceBookEntriesByProductId = new Map<Id,PricebookEntry>();
-                    for(PricebookEntry entry:pricebookentries){
-                        priceBookEntriesByProductId.put(entry.Product2Id,entry);
-                    }
-
-                    if(pricebookentries.size()>0){
-                        List<YINProductWrapper>  wrapperProducts = new List<YINProductWrapper>();
-                        for(OrderItem item:orderProducts){
-                            YINProductWrapper wrapperProduct = new YINProductWrapper();
-                            wrapperProduct.pricebookEntry = priceBookEntriesByProductId.get(item.Product2Id);
-                            wrapperProduct.productId = item.Product2Id;
-                            wrapperProduct.productOfTheMonth = false;
-                            wrapperProduct.trendingSKU = false;
-                            // wrapperProduct.lockingSKU = accountProductMappingByProduct.get(item.Product2Id)?.Locking_status__c;
-                            wrapperProduct.cappingSKU = false;
-                            wrapperProduct.maximum_Order_Quantity = accountProductMappingByProduct.get(item.Product2Id)?.Maximum_Order_Quantity__c;
-                            wrapperProduct.minimum_Order_Quantity = accountProductMappingByProduct.get(item.Product2Id)?.Minimum_Order_Quantity__c;
-                            wrapperProduct.quantity = item.Quantity;
-                            wrapperProduct.discountPercentage = item.Discount_Percent__c;
-                            wrapperProduct.lineItemSubTotal = item.TotalPrice;
-                            wrapperProduct.GSTPercentage = item.GST__c;
-                            wrapperProduct.combinationKey = item.Product2.ProductCode;
-
-                            wrapperProducts.add(wrapperProduct);
-                        }
-                        return wrapperProducts;  
-                    }else{
-                       // TODO: Add to Monitor log
-                       System.debug('No PriceBook found in the cart');
-                       return new List<YINProductWrapper>();
-                    }
-                }else{
-                    // TODO: Add to Monitor log
-                    System.debug('No Product found in the cart');
-                    return new List<YINProductWrapper>();
-                }
             }
             return new List<YINProductWrapper>();
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    private static List<YINProductWrapper> getCartItems(List<OrderItem> orderProducts,Map<Id,YIN_Account_product_Mapping__c> accountProductMappingByProduct){
+        if(orderProducts.size()>0){
+
+            List<PricebookEntry> pricebookentries = YINGetAllProductImpl.getPriceBookEntries(new List<Id>{orderProducts[0].PricebookEntry.Pricebook2Id});
+
+            Map<Id,PricebookEntry> priceBookEntriesByProductId = new Map<Id,PricebookEntry>();
+            for(PricebookEntry entry:pricebookentries){
+                priceBookEntriesByProductId.put(entry.Product2Id,entry);
+            }
+
+            List<YIN_Product_Capping__mdt> productsCapping = YIN_Product_Capping__mdt.getAll().values();
+            Map<String,YIN_Product_Capping__mdt> productCappingBySize = new Map<String,YIN_Product_Capping__mdt>();
+            for(YIN_Product_Capping__mdt capping:productsCapping){
+                productCappingBySize.put(capping.Tyre_Size__c,capping);
+            }
+
+            if(pricebookentries.size()>0){
+                List<YINProductWrapper>  wrapperProducts = new List<YINProductWrapper>();
+                for(OrderItem item:orderProducts){
+                    YINProductWrapper wrapperProduct = new YINProductWrapper();
+                    wrapperProduct.orderItemId = item.Id;
+                    wrapperProduct.pricebookEntry = priceBookEntriesByProductId.get(item.Product2Id);
+                    wrapperProduct.productId = item.Product2Id;
+                    wrapperProduct.productOfTheMonth = false;
+                    wrapperProduct.trendingSKU = false;
+                    // wrapperProduct.lockingSKU = accountProductMappingByProduct.get(item.Product2Id)?.Locking_status__c;
+
+                    wrapperProduct.maximumCappingQuantity = Integer.valueOf(productCappingBySize.get(item.Product2.Size__c).Maximum_Order_Capping__c);
+                    wrapperProduct.maximumOrderQuantity = accountProductMappingByProduct.get(item.Product2Id)?.Maximum_Order_Quantity__c;
+                    wrapperProduct.minimumOrderQuantity = accountProductMappingByProduct.get(item.Product2Id)?.Minimum_Order_Quantity__c;
+                    wrapperProduct.quantity = item.Quantity;
+                    wrapperProduct.discountPercentage = item.Discount_Percent__c;
+                    wrapperProduct.UnitPrice = item.UnitPrice;
+                    wrapperProduct.netPrice = item.TotalPrice;
+                    wrapperProduct.gstAmount = item.GST_Amount__c;
+                    wrapperProduct.gstPercentage = item.GST__c;
+                    wrapperProduct.totalAmount = item.Total_Amount__c;
+                    wrapperProduct.tcsPercentage = item.TCS__c;
+                    wrapperProduct.variantId = item.Variant__c;
+                    wrapperProduct.variantCode = item.Variant__r.Variant_Code__c;
+                    wrapperProduct.combinationKey = item.Product2.ProductCode;
+
+                    wrapperProducts.add(wrapperProduct);
+                }
+                return wrapperProducts;  
+            }else{
+               // TODO: Add to Monitor log
+               System.debug('No PriceBook found in the cart');
+               return new List<YINProductWrapper>();
+            }
+        }else{
+            // TODO: Add to Monitor log
+            System.debug('No Product found in the cart');
+            return new List<YINProductWrapper>();
         }
     }
 
@@ -212,9 +231,11 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
                     accountId = contacts[0].AccountId;
                 }else{
                     // Monitor Log Exception : No contact found
+                    System.debug('No contact found');
                 }
             }else{
                     // Monitor Log Exception : No User found
+                    System.debug('No User found');
             }
             return accountId;
         } catch (Exception e) {
@@ -237,26 +258,86 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
         }
     }
 
+    public static List<Account> getShippingAccounts(String accountId){
+        YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
+        List<Account> accounts = accountSelector.selectShippingAccounts(accountId);
+        return accounts;
+    }
+
     // Private Methods
     private static boolean addToCartLineItem(Order cartOrder,YINProductWrapper wrapperProduct,LibISobjectUnitOfWork unitofwork){
-        try {
+        //try {
+            Decimal netPrice = wrapperProduct.pricebookEntry.UnitPrice * wrapperProduct.quantity;
+            Decimal netOrderValue = 0;
+            Decimal totalOrderValue = 0;
+
+            Boolean isDiscounted = wrapperProduct?.priceList!=null?true:false;
             OrderItem lineItem = new OrderItem();
+            
             lineItem.Product2Id = wrapperProduct.productId;
-            // Add Some extra fields..
             lineItem.OrderId = cartOrder.Id;
             lineItem.Quantity = wrapperProduct.quantity;
             lineItem.UnitPrice = wrapperProduct.pricebookEntry.UnitPrice;
             lineItem.ListPrice = wrapperProduct.pricebookEntry.UnitPrice;
             lineItem.Description = wrapperProduct.pricebookEntry.Product2.Description;
+            lineItem.Variant__c = wrapperProduct.priceList.Variant__c;// For Discounted Products only
             lineItem.PricebookEntryId =  wrapperProduct.pricebookEntry.Id;
+
+            // Check for available discountes
+            Decimal discountPercentage = 0;
+            if(isDiscounted==true){
+                Decimal selectedMinimumQuantity = 0;
+                List<YINProductWrapper.discountTable> discountTable = wrapperProduct?.discountTable;
+                for(YINProductWrapper.discountTable table :discountTable){
+
+                    // select discount Percentage for Quanity enter by user
+                    if(wrapperProduct.quantity >= table.minimumOrderQuantity && (wrapperProduct.quantity >=selectedMinimumQuantity || selectedMinimumQuantity==0)){
+                        discountPercentage = table.discountPercentage;
+                        selectedMinimumQuantity = table.minimumOrderQuantity;
+                    }
+                    
+                }
+
+            }
+
+            // Calculate Discount
+            lineItem.Discount_Percent__c =  discountPercentage;
+            lineItem.Discounted_Amount__c =  (netPrice * (discountPercentage / 100));
+
+            // Net Price
+            lineItem.Net_Price__c = netPrice;
+
+            // Calculate Order Value
+            netOrderValue = (netPrice - lineItem.Discounted_Amount__c);
+
+            // Calculate GST
+            lineItem.GST__c =  wrapperProduct.gstPercentage;
+            lineItem.GST_Amount__c =  (netOrderValue * (lineItem.GST__c/100));
+
+            // Calculate TDS : Add TDS Field on Order Line item
+                // lineItem.TDS__c = wrapperProduct.tdsPercentage;
+                // lineItem.TDS_Amount__c = (netOrderValue * (lineItem.TDS__c/100));
+
+            // Calculate Total Order value
+            lineItem.Total_Amount__c = netOrderValue + lineItem.GST_Amount__c;
+
+            // Calculate TCS
             
-            unitofwork.registerNew(lineItem, OrderItem.OrderId, cartOrder);
+            lineItem.TCS__c =  wrapperProduct.tcsPercentage; // Need to Confirm 1% or 0.1% Condition
+            lineItem.TCS_Amount__c =  (netOrderValue * (lineItem.TCS__c/100)); 
+            
+            if(wrapperProduct?.orderItemId!=null){
+                lineItem.Id = wrapperProduct.orderItemId;
+                unitofwork.registerDirty(lineItem);
+            }else{
+                unitofwork.registerNew(lineItem, OrderItem.OrderId, cartOrder);
+            }
             unitofwork.commitWork();
             return true;
-        } catch (Exception e) {
-            System.debug('Message '+e.getMessage() +' LineNumber '+e.getLineNumber());
-            throw new AuraHandledException('Message '+e.getMessage() +' LineNumber '+e.getLineNumber());
-        }
+       // } catch (Exception e) {
+        //    System.debug('Message '+e.getMessage() +' LineNumber '+e.getLineNumber());
+       //     throw new AuraHandledException('Message '+e.getMessage() +' LineNumber '+e.getLineNumber());
+       // }
     } 
 
     

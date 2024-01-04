@@ -120,7 +120,7 @@ public without Sharing class YINPriceListSelector extends LIBSObjectSelector{
         String query =  newQueryFactory()
         .selectField('Variant__r.Variant_Code__c')
         .selectField('Product__r.Product_Code__c')
-        .setCondition('Dealer__c=:accountId and Start_Date__c <= TODAY and End_Date__c>=TODAY')
+        .setCondition('Customer__c=:accountId and Start_Date__c <= TODAY and End_Date__c>=TODAY')
         .toSOQL();  
         return Database.query(query);
     }
@@ -138,7 +138,7 @@ public without Sharing class YINPriceListSelector extends LIBSObjectSelector{
         String query =  newQueryFactory()
         .selectField('Variant__r.Variant_Code__c')
         .selectField('Product__r.Product_Code__c')
-        .setCondition('Customer_Group__c=null and Dealer__c=null and Start_Date__c <= TODAY and End_Date__c>= TODAY')
+        .setCondition('Customer_Group__c=null and Customer__c=null and Start_Date__c <= TODAY and End_Date__c>= TODAY')
         .toSOQL();  
         return Database.query(query);
     }

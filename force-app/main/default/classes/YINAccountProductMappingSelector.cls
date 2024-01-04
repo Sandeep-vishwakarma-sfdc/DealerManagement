@@ -9,7 +9,7 @@ public with sharing class YINAccountProductMappingSelector extends LIBSObjectSel
             YIN_Account_product_Mapping__c.Name,
             YIN_Account_product_Mapping__c.Account__c,
             YIN_Account_product_Mapping__c.Product__c,
-            YIN_Account_product_Mapping__c.Location__c,
+            YIN_Account_product_Mapping__c.Locations__c,
             YIN_Account_product_Mapping__c.Type__c,
             YIN_Account_product_Mapping__c.Status__c,
             YIN_Account_product_Mapping__c.Start_Date__c,

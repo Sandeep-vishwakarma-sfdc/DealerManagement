@@ -7,6 +7,7 @@ import getAccount from '@salesforce/apex/YINOrderManagementController.getAccount
 import addToCart from '@salesforce/apex/YINOrderManagementController.addToCart';
 import getCartDetails from '@salesforce/apex/YINOrderManagementController.getCartDetails';
 import deleteCartItem from '@salesforce/apex/YINOrderManagementController.deleteCartItem';
+import getShippingAccounts from '@salesforce/apex/YINOrderManagementController.getShippingAccounts';
 import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
 import customcss from '@salesforce/resourceUrl/resourceOrderMangmt';
 
@@ -37,6 +38,7 @@ export default class YinOrderManagementCmp extends LightningElement {
     productCSSClass ='green'; // use to switch views e.g green = Grid View and blue = List view
     @track productswrapper = [];
     productswrapperVirtual = []; // Copy of productswrapper to minimize apex request
+    discountedProductsVirtual = []; // Copy of Discounted Product : use to get Cart Product Discount
     menuFilterLabel = 'Product Name';
     selectedMenu = 'name'; 
     isLoading = false;
@@ -46,8 +48,15 @@ export default class YinOrderManagementCmp extends LightningElement {
     accountDetails = {}
     shippingAddress = '';
     billingAddress = '';
-    TotalGST = 0;
+    totalGSTAmount = 0;
+    finalPrice = 0;
+    counter = 0; // Scroller Counter: use to load more products when scroll counter increments
 
+    shippingAccounts = [];
+    shippingAccountValue = '';
+    selectedShippingAccount = {name:'',accountCode:'',phone:'',email:'',address:''};
+    shippingAddressOption = [];
+        
     selectedOrderType ={
         all:true,
         discount:false
@@ -101,20 +110,43 @@ export default class YinOrderManagementCmp extends LightningElement {
         // Loading existing cart order details
         this.cartDetails = await getCartDetails({accountId:this.accountId});
         this.CartDetailLength = this.cartDetails.length;
+        this.cartCalculation();
 
         this.billingAddress = `${this.accountDetails.BillingStreet}  ,${this.accountDetails.BillingCity}  ,${this.accountDetails.BillingState}  ${this.accountDetails.BillingPostalCode}  ${this.accountDetails.BillingCountry}`;
+        
+        // Copy Discount Product
+        this.discountedProductsVirtual = await getProducts({accountId:this.accountId,orderType:'Discount'});
 
-        this.shippingAddress = `${this.accountDetails.ShippingStreet}  ,${this.accountDetails.ShippingCity}  ,${this.accountDetails.ShippingState} ${this.accountDetails.ShippingPostalCode}  ${this.accountDetails.ShippingCountry}`;                              
+        // Fetch Shipping Accounts
+        this.shippingAccounts = await getShippingAccounts({accountId:this.accountId})
+        let addresses = this.shippingAccounts.map(ele=>{
+            return ({label:ele.Name,value:ele.SFDC_Customer_Code__c})
+        });
+        let none = {label:'none',value:''};
+        addresses.unshift(none);
+        this.shippingAddressOption = addresses;
+        
         this.isLoading = false;
     }
 
-    cartCalculation(){
-        let GSTAmount = 0;
-        /*this.cartDetails.forEach(item=>{
-            let discountDecimal = isNaN((item.discountPercentage / 100))?0:(item.discountPercentage / 100);
-            let price = item.pricebookEntry.UnitPrice * (item.pricebookEntry.UnitPrice * discountDecimal);
+    handleChangeShippingAddress(event){
+        let value = event.detail.value;
+        let index = this.shippingAccounts.findIndex(ele=>ele.SFDC_Customer_Code__c==value);
+        if(index !=-1){
+            this.selectedShippingAccount = this.shippingAccounts[index];
+            console.log(this.selectedShippingAccount);
+            this.shippingAddress = `${this.selectedShippingAccount.ShippingStreet}  ,${this.selectedShippingAccount.ShippingCity} ,${this.selectedShippingAccount.ShippingState} ${this.selectedShippingAccount.ShippingPostalCode}  ${this.selectedShippingAccount.ShippingCountry}`; 
+        }
+        
+    }
 
-        })*/
+    cartCalculation(){
+        let totalGSTAmount = 0;
+        let finalPrice = 0;
+        this.cartDetails.forEach(item=>{
+            totalGSTAmount = totalGSTAmount+item.gstAmount;
+        });
+        this.totalGSTAmount = isNaN(totalGSTAmount)?0:Number(totalGSTAmount).toFixed(2);
     }
 
     async handleOrderTypeChange(event){
@@ -161,10 +193,19 @@ export default class YinOrderManagementCmp extends LightningElement {
     }
 
     async loadProducts(OrderType){// This will load Products based on orderType (i.e All, Discount)
-        const products = await getProducts({accountId:this.accountId,OrderType:OrderType});
-        this.productswrapper = products;
+        this.counter = 0;
+        const products = await getProducts({accountId:this.accountId,orderType:OrderType});
+        // let tempArray = [];
+        // for (let i = 0; i < 10000; i++) {
+        //     for (let item in products){ 
+        //         tempArray.push(products[item]); 
+        //     }
+        // }
+        // this.productswrapperVirtual = tempArray;
         this.productswrapperVirtual = products;
+        this.productswrapper = await this.getNextItems();
         console.log('Product ',products);
+
         
         // Creating Options of varients
         this.createVariantOption();
@@ -191,7 +232,7 @@ export default class YinOrderManagementCmp extends LightningElement {
                 }
             }
         });
-        uniqueArray.push({ label: 'None', value: '' });
+        uniqueArray.unshift({ label: 'None', value: '' });
         this.varientOptions = uniqueArray;
     }
 
@@ -213,13 +254,46 @@ export default class YinOrderManagementCmp extends LightningElement {
     async handleCartAdd(event){
         let index = event.currentTarget.dataset.index;
         // console.log('Add to Cart index',index);
-        if(this.cartDetails.findIndex(ele=>ele.productId==this.productswrapper[index].productId)==-1){
+        let productWrap = this.productswrapper[index];
+        let cartIndex = undefined;
+        if(this.selectedOrderType.all){ // Form Normal Product , No Need to check Variants
+            cartIndex = this.cartDetails.findIndex(ele=>ele.productId==productWrap.productId);
+        }else{ // Form Discount Product , Need to check Variants
+            cartIndex = this.cartDetails.findIndex(ele=>ele.productId==productWrap.productId && ele.variantId==productWrap.priceList.Variant__c);
+        }
+        if(cartIndex==-1){
             // Adding sub-total for cart line-item
+            console.log('Account ',this.accountDetails);
             let productWrap = this.productswrapper[index];
-            productWrap.lineItemSubTotal = productWrap.pricebookEntry.UnitPrice * productWrap.quantity;
+            if(this.accountDetails.Is_Locking_Enable__c){
+                if(productWrap.lockingSKUAccount){
+                    this.showToast('Warning ',`Product ${productWrap.productName} is locked for the customer.`,'warning','dismissable'); 
+                    return;
+                }
+                if(productWrap.lockingSKULocation){
+                    this.showToast('Warning ',`Product ${productWrap.productName} is locked for cutsomer location.`,'warning','dismissable'); 
+                    return;
+                }
+            }else{
+                this.showToast('Warning ','Locking is disabled for customer','warning','dismissable');   
+                return; 
+            }
+            if(this.accountDetails.Is_Capping_Enable__c){
+                if(productWrap.maximumCappingQuantity < productWrap.quantity){
+                    this.showToast('Warning ',`You can add only ${productWrap.maximumCappingQuantity} quantity for Product ${productWrap.productName}.`,'warning','dismissable'); 
+                    return;
+                }
+            }else{
+                this.showToast('Warning ','Capping is disabled for customer','warning','dismissable');  
+                return;
+            }
+            productWrap.netPrice = productWrap.pricebookEntry.UnitPrice * productWrap.quantity;
             this.cartDetails.push(productWrap);
             let isAddedToCart = await addToCart({productWrapper:JSON.stringify(productWrap),accountId:this.accountId});
+            //  Refresh Carts
+            this.cartDetails = await getCartDetails({accountId:this.accountId});
             this.CartDetailLength = this.cartDetails.length;
+            this.cartCalculation();
             this.showToast('Success ','Added to Cart','success','dismissable');
         }else{
             this.showToast('Warning ','Already added to cart','warning','dismissable');    
@@ -241,6 +315,9 @@ export default class YinOrderManagementCmp extends LightningElement {
                 this.cartDetails.splice(cartIndex,1);
                 console.log('this.cartDetails ',this.cartDetails.length);
                 this.cartDetails = this.cartDetails;
+                this.CartDetailLength = this.cartDetails.length;
+                this.cartCalculation();
+                this.showToast('Success ','Removed from Cart','success','dismissable');
             }
         }else{
             this.showToast('Error ','Unable to find selected Item','warning','dismissable'); 
@@ -261,7 +338,16 @@ export default class YinOrderManagementCmp extends LightningElement {
     handleShowCart(){
         this.isHomePage = false;
     }
-    handleHideCart(){
+    async handleHideCart(){
+        try {
+            this.selectedOrderType = {all:true,discount:false};
+            await this.loadProducts('All');
+        } catch (error) {
+            console.log('error ',error.message);
+            console.log('error ',error);
+        }
+        
+        
         this.isHomePage = true;
     }
 
@@ -284,6 +370,55 @@ export default class YinOrderManagementCmp extends LightningElement {
         }
     }
 
+    async handleScroll(event){
+        try {
+            let containerscroll = event.target;
+            console.log('scrollHeight ',containerscroll.scrollHeight,' scrollTop ',containerscroll.scrollTop,' clientHeight ',containerscroll.clientHeight);
+            console.log('Scroll ',containerscroll.scrollHeight - containerscroll.scrollTop === containerscroll.clientHeight + 1);
+            if (containerscroll.scrollHeight - containerscroll.scrollTop <= containerscroll.clientHeight + 1) {
+                console.log('End .....');
+                let nextItems = await this.getNextItems();
+                console.log('next Items ',nextItems.length);
+                let newProducts = this.productswrapper;
+                for (let item in nextItems){ 
+                    newProducts.push(nextItems[item]); 
+                }
+                if(newProducts.length>0){
+                    this.productswrapper = newProducts;
+                }
+                console.log('4');
+            }   
+        } catch (error) {
+            console.log('error ',error.message);
+        }
+    }
+
+    async getNextItems() {
+        try {
+            // Initialize or retrieve the counter from a persistent storage (e.g., closure or state management)
+        console.log('1');
+    
+        // Assuming you have an array of items
+        const allItems = this.productswrapperVirtual; // Replace with your array of items
+    
+        // Calculate the start and end indices for the slice
+        const start = this.counter * 5;
+        const end = start + 5;
+    
+        // Increment the counter for the next call
+        this.counter++;
+    
+        // Save the updated counter to persistent storage
+        console.log('3');
+        // Return the requested items
+        let nextItems = allItems.slice(start, end);
+        return nextItems;
+        } catch (error) {
+            console.log('error Next Items ',error.message);
+        }
+        
+    }
+
     // search bar button action
     handleSearch(event){
         console.log('search ',this.refs.searchinput.value);
@@ -304,18 +439,58 @@ export default class YinOrderManagementCmp extends LightningElement {
 
     }
 
+    async changeCartQuantity(event){
+        let index = event.currentTarget.dataset.index;
+        let quantity = event.target.value;
+        let item = this.cartDetails[index];
+
+        // Get Price List from Discount Products
+        let discountIndex = this.discountedProductsVirtual.findIndex(ele=>(ele.productId==item.productId && ele.priceList?.Variant__c == item.variantId));
+        if(discountIndex!=-1){
+            item.priceList = this.discountedProductsVirtual[discountIndex].priceList;
+            item.discountTable = this.discountedProductsVirtual[discountIndex].discountTable;
+        }
+
+        item.quantity = quantity;
+        console.log('cart ',item);
+        if(quantity==0){
+            this.showToast('Error ','Quantity must be greater then "0" ','warning','dismissable'); 
+            return;
+        }
+
+        if(this.accountDetails.Is_Capping_Enable__c){
+            if(item.maximumCappingQuantity < item.quantity){
+                this.showToast('Warning ',`You can add only ${item.maximumCappingQuantity} quantity for Product ${item.pricebookEntry.Product2.Name}.`,'warning','dismissable'); 
+                return;
+            }
+        }else{
+            this.showToast('Warning ','Capping is disabled for customer','warning','dismissable');  
+            return;
+        }
+
+        let isAddedToCart = await addToCart({productWrapper:JSON.stringify(item),accountId:this.accountId});
+        this.cartDetails = await getCartDetails({accountId:this.accountId});
+        this.CartDetailLength = this.cartDetails.length;
+        this.cartCalculation();
+
+    }
+
     changeQuantity(event){
         let type = event.currentTarget.dataset.type;
         let index = event.currentTarget.dataset.index;
+        let value = event.target.value;
         if(type=='minus' && this.productswrapper[index].quantity > 1){
             this.productswrapper[index].quantity = this.productswrapper[index].quantity - 1;
         }
         if(type=='plus'){
             this.productswrapper[index].quantity = this.productswrapper[index].quantity + 1
         }
+        if(type=='change'){
+            this.productswrapper[index].quantity = isNaN(value)?0:Number(value);
+        }
         console.log(' this.productswrapper[index].quantity '+this.productswrapper[index].quantity);
 
-        this.productswrapperVirtual = this.productswrapper;
+        //this.productswrapperVirtual = this.productswrapper;
     }
  
     showToast(title,message,variant,mode) {
