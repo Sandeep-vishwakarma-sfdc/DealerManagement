@@ -18,7 +18,10 @@ public with sharing class YINOrderItemSelector extends LibSObjectSelector{
             OrderItem.Total_Amount__c,
             OrderItem.GST_Amount__c,
             OrderItem.TCS__c,
-            OrderItem.Variant__c
+            OrderItem.Variant__c,
+            OrderItem.Discounted_Amount__c,
+            OrderItem.TDS__c,
+            OrderItem.TDS_Amount__c
         };
     }
 
@@ -33,6 +36,7 @@ public with sharing class YINOrderItemSelector extends LibSObjectSelector{
                             .selectField('Product2.ProductCode')
                             .selectField('Product2.Size__c')
                             .selectField('Variant__r.Variant_Code__c')
+                            .selectField('Order.AccountId')
                             .setCondition('OrderId = :orderId')
                             .toSOQL();
         return (List<OrderItem>) Database.query(query);

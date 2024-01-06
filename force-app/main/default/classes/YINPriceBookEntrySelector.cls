@@ -59,7 +59,7 @@ public without Sharing class YINPriceBookEntrySelector extends LIBSObjectSelecto
             LIBQueryFactory query = newQueryFactory();
             LIBSObjectSelector productSelector =  new YINProductSelector();
             productSelector.configureQueryFactoryFields(query, 'Product2');
-            query.setCondition('IsActive=true and Pricebook2Id IN:priceBookIds');
+            query.setCondition('IsActive=true and Product2.IsActive=true and Pricebook2Id IN:priceBookIds and Start_Date__c <=TODAY and End_Date__c <=TODAY');
             query.addOrdering(Order.LastModifiedDate, LIBQueryFactory.SortOrder.DESCENDING);
             return Database.query(query.toSOQL());
         }

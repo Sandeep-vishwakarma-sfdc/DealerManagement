@@ -94,7 +94,7 @@ public with sharing class YINGetDiscountProductImpl implements YINIGetProducts {
             return discountProductWrappersWithDiscounts;
     }
 
-    private List<YIN_Price_List__c> getDiscountedPriceList(String accountId){
+    public static List<YIN_Price_List__c> getDiscountedPriceList(String accountId){
         List<YIN_Price_List__c> priceList = new List<YIN_Price_List__c>();
         
         //1. check for customer price List

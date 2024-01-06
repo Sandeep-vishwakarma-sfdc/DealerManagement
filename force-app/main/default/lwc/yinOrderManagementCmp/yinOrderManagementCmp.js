@@ -56,6 +56,13 @@ export default class YinOrderManagementCmp extends LightningElement {
     shippingAccountValue = '';
     selectedShippingAccount = {name:'',accountCode:'',phone:'',email:'',address:''};
     shippingAddressOption = [];
+    totalTDS = 0;
+    totalTCS = 0;
+    totalOrderQuantity = 0;
+    gstPercentage = 0;
+    tdsPercentage = 0;
+    tcsPercentage = 0;
+    grandTotal = 0;
         
     selectedOrderType ={
         all:true,
@@ -109,6 +116,7 @@ export default class YinOrderManagementCmp extends LightningElement {
 
         // Loading existing cart order details
         this.cartDetails = await getCartDetails({accountId:this.accountId});
+        console.log('Cart Detail ',this.cartDetails);
         this.CartDetailLength = this.cartDetails.length;
         this.cartCalculation();
 
@@ -122,7 +130,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         let addresses = this.shippingAccounts.map(ele=>{
             return ({label:ele.Name,value:ele.SFDC_Customer_Code__c})
         });
-        let none = {label:'none',value:''};
+        let none = {label:'Select Shipping Address',value:''};
         addresses.unshift(none);
         this.shippingAddressOption = addresses;
         
@@ -136,17 +144,39 @@ export default class YinOrderManagementCmp extends LightningElement {
             this.selectedShippingAccount = this.shippingAccounts[index];
             console.log(this.selectedShippingAccount);
             this.shippingAddress = `${this.selectedShippingAccount.ShippingStreet}  ,${this.selectedShippingAccount.ShippingCity} ,${this.selectedShippingAccount.ShippingState} ${this.selectedShippingAccount.ShippingPostalCode}  ${this.selectedShippingAccount.ShippingCountry}`; 
+        }else{
+            this.selectedShippingAccount = {Contact_Person_Email__c:'',Contact_Person_Phone__c:''};
+            this.shippingAddress = ``;
         }
         
     }
 
     cartCalculation(){
         let totalGSTAmount = 0;
-        let finalPrice = 0;
+        let subTotal = 0;
+        let totalDiscount = 0;
+        let totalTDS = 0;
+        let totalTCS = 0;
+        
+        
         this.cartDetails.forEach(item=>{
             totalGSTAmount = totalGSTAmount+item.gstAmount;
+            subTotal = subTotal + item.totalAmount;
+            totalDiscount = totalDiscount + (item.netPrice * item.discountPercentage/100);
+            totalTDS = totalTDS + (item.netPrice * item.tdsPercentage/100);
+            totalTCS = totalTCS + (item.netPrice * item.tcsPercentage/100);
+            this.totalOrderQuantity = this.totalOrderQuantity + item.quantity;
         });
+        if(this.cartDetails.length > 0){
         this.totalGSTAmount = isNaN(totalGSTAmount)?0:Number(totalGSTAmount).toFixed(2);
+        this.totalTDS = isNaN(totalTDS)?0:Number(totalTDS).toFixed(2);
+        this.totalTCS = isNaN(totalTCS)?0:Number(totalTCS).toFixed(2);
+        this.gstPercentage = this.cartDetails[0].gstPercentage;
+        this.tdsPercentage = this.cartDetails[0].tdsPercentage;
+        this.tcsPercentage = this.cartDetails[0].tcsPercentage;
+        this.grandTotal = Number(this.totalGSTAmount) + Number(this.totalTDS) - Number(this.totalTCS);
+        this.grandTotal = isNaN(this.grandTotal)?0:Number(this.grandTotal).toFixed(2);
+        }
     }
 
     async handleOrderTypeChange(event){

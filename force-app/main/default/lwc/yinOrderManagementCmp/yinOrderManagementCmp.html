@@ -220,9 +220,9 @@
             <div class="col-md-3 col-xs-6 credit"><i class="fa fa-credit-card"></i> Available Credit Limit <br /><span
                 class="amt">₹ 132172.4</span></div>
             <div class="col-md-3 col-xs-6 credit"><i class="fas fa-boxes"></i> Total Order Quantity <br /><span
-                class="amt">2</span></div>
+                class="amt">{totalOrderQuantity}</span></div>
             <div class="col-md-3 col-xs-6 credit"><i class="fa fa-credit-card"></i> Grand Total Price <br /><span
-                class="amt">₹ 20097.18</span></div>
+                class="amt">₹ {grandTotal}</span></div>
           </div>
         </div>
   
@@ -317,8 +317,18 @@
           <div class="totals-value" id="cart-subtotal">71.97</div>
         </div>-->
             <div class="totals-item">
-              <label style="color:#333; background:#fff;">GST %</label>
+              <label style="color:#333; background:#fff;">GST ({gstPercentage} %)</label>
               <div class="totals-value" id="cart-tax"> {totalGSTAmount} </div>
+            </div>
+
+            <div class="totals-item">
+              <label style="color:#333; background:#fff;">TDS ({tdsPercentage} %)</label>
+              <div class="totals-value" id="cart-tds"> {totalTDS} </div>
+            </div>
+
+            <div class="totals-item">
+              <label style="color:#333; background:#fff;">TCS ({tcsPercentage} %)</label>
+              <div class="totals-value" id="cart-tcs"> {totalTCS} </div>
             </div>
             <!--    <div class="totals-item">
           <label>Shipping Total Price</label>
@@ -326,7 +336,7 @@
         </div>-->
             <div class="totals-item totals-item-total">
               <label style="color:#333; background:#fff;">Final Price</label>
-              <div class="totals-value" id="cart-total"> {finalPrice}</div>
+              <div class="totals-value" id="cart-total"> {grandTotal}</div>
             </div>
           </div>
   

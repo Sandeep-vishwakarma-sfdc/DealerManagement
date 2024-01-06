@@ -32,7 +32,7 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
 
             // 1. Get Draft Cart of Current Account
             YINOrderSelector orderSelector = (YINOrderSelector)YINApplication.selector.newInstance(Order.SObjectType);
-            List<Order> cartOrders = orderSelector.selectRecentOrderOfAccountByStatus(accountId,'Draft');
+            List<Order> cartOrders = orderSelector.selectRecentOrderOfAccountByStatus(accountId,'Cart');
 
             // 2. convert JSON to Apex class
             YINProductWrapper wrapperProduct = (YINProductWrapper)JSON.deserialize(productWrapper,YINProductWrapper.class);
@@ -49,7 +49,7 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
                 Order cartOrder = new Order();
                 cartOrder.AccountId = accountId;
                 cartOrder.recordTypeId = Schema.SObjectType.Order.getRecordTypeInfosByName().get('Cart').getRecordTypeId();
-                cartOrder.Status = 'Draft';
+                cartOrder.Status = 'Cart';
                 cartOrder.EffectiveDate = System.today();// Default Start Date
                 // Setting Billing Address
                 cartOrder.BillingStreet = accountDetails.BillingStreet; 
@@ -81,20 +81,12 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
     }
 
     public static List<YINProductWrapper> getCartDetails(String accountId){
-        try {
+        // try {
             // 1. Get Draft Cart of Current Account
             YINOrderSelector orderSelector = (YINOrderSelector)YINApplication.selector.newInstance(Order.SObjectType);
-            List<Order> cartOrders = orderSelector.selectRecentOrderOfAccountByStatus(accountId,'Draft');
+            List<Order> cartOrders = orderSelector.selectRecentOrderOfAccountByStatus(accountId,'Cart');
 
-            // Map => {Key = Product__c,value = Account_product_Mapping__c}
-            Map<Id,YIN_Account_product_Mapping__c> accountProductMappingByProduct = new Map<Id,YIN_Account_product_Mapping__c>();
             
-            YINAccountProductMappingSelector accountProductSelector = (YINAccountProductMappingSelector)YINApplication.selector.newInstance(YIN_Account_product_Mapping__c.SObjectType);
-            List<YIN_Account_product_Mapping__c> accountProducts = accountProductSelector.selectByAccount(accountId);
-
-            for (YIN_Account_product_Mapping__c accountProduct : accountProducts) {
-                accountProductMappingByProduct.put(accountProduct.Product__c,accountProduct);
-            }
 
             // 2. Get CartLineItem__c By cart Order
             if(cartOrders.size()>0){
@@ -102,59 +94,40 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
                 YINOrderItemSelector orderItemSelector = (YINOrderItemSelector)YINApplication.selector.newInstance(OrderItem.SObjectType);
                 List<OrderItem> orderProducts = orderItemSelector.selectByOrder(cartOrders[0].Id);
 
-                return getCartItems(orderProducts,accountProductMappingByProduct);
+                return getCartItems(orderProducts,accountId);
 
             }
             return new List<YINProductWrapper>();
-        } catch (Exception e) {
-            throw new AuraHandledException(e.getMessage());
-        }
+        // } catch (Exception e) {
+        //     throw new AuraHandledException('message '+e.getMessage()+' ' +' LineNumber '+e.getLineNumber());
+        // }
     }
 
-    private static List<YINProductWrapper> getCartItems(List<OrderItem> orderProducts,Map<Id,YIN_Account_product_Mapping__c> accountProductMappingByProduct){
+    private static List<YINProductWrapper> getCartItems(List<OrderItem> orderProducts,String accountId){
         if(orderProducts.size()>0){
 
             List<PricebookEntry> pricebookentries = YINGetAllProductImpl.getPriceBookEntries(new List<Id>{orderProducts[0].PricebookEntry.Pricebook2Id});
+
+            List<YIN_Price_List__c> priceLists =  YINGetDiscountProductImpl.getDiscountedPriceList(accountId);
 
             Map<Id,PricebookEntry> priceBookEntriesByProductId = new Map<Id,PricebookEntry>();
             for(PricebookEntry entry:pricebookentries){
                 priceBookEntriesByProductId.put(entry.Product2Id,entry);
             }
-
-            List<YIN_Product_Capping__mdt> productsCapping = YIN_Product_Capping__mdt.getAll().values();
-            Map<String,YIN_Product_Capping__mdt> productCappingBySize = new Map<String,YIN_Product_Capping__mdt>();
-            for(YIN_Product_Capping__mdt capping:productsCapping){
-                productCappingBySize.put(capping.Tyre_Size__c,capping);
-            }
-
-            if(pricebookentries.size()>0){
-                List<YINProductWrapper>  wrapperProducts = new List<YINProductWrapper>();
-                for(OrderItem item:orderProducts){
-                    YINProductWrapper wrapperProduct = new YINProductWrapper();
-                    wrapperProduct.orderItemId = item.Id;
-                    wrapperProduct.pricebookEntry = priceBookEntriesByProductId.get(item.Product2Id);
-                    wrapperProduct.productId = item.Product2Id;
-                    wrapperProduct.productOfTheMonth = false;
-                    wrapperProduct.trendingSKU = false;
-                    // wrapperProduct.lockingSKU = accountProductMappingByProduct.get(item.Product2Id)?.Locking_status__c;
-
-                    wrapperProduct.maximumCappingQuantity = Integer.valueOf(productCappingBySize.get(item.Product2.Size__c).Maximum_Order_Capping__c);
-                    wrapperProduct.maximumOrderQuantity = accountProductMappingByProduct.get(item.Product2Id)?.Maximum_Order_Quantity__c;
-                    wrapperProduct.minimumOrderQuantity = accountProductMappingByProduct.get(item.Product2Id)?.Minimum_Order_Quantity__c;
-                    wrapperProduct.quantity = item.Quantity;
-                    wrapperProduct.discountPercentage = item.Discount_Percent__c;
-                    wrapperProduct.UnitPrice = item.UnitPrice;
-                    wrapperProduct.netPrice = item.TotalPrice;
-                    wrapperProduct.gstAmount = item.GST_Amount__c;
-                    wrapperProduct.gstPercentage = item.GST__c;
-                    wrapperProduct.totalAmount = item.Total_Amount__c;
-                    wrapperProduct.tcsPercentage = item.TCS__c;
-                    wrapperProduct.variantId = item.Variant__c;
-                    wrapperProduct.variantCode = item.Variant__r.Variant_Code__c;
-                    wrapperProduct.combinationKey = item.Product2.ProductCode;
-
-                    wrapperProducts.add(wrapperProduct);
+            // key = ProductId + VariantId
+            Map<String,List<YIN_Price_List__c>> priceListByKey = new Map<String,List<YIN_Price_List__c>>();
+            for(YIN_Price_List__c price:priceLists){
+                if(!priceListByKey.containsKey(price.Product__c+''+price.Variant__c)){
+                    priceListByKey.put(price.Product__c+''+price.Variant__c,new List<YIN_Price_List__c>());
                 }
+                priceListByKey.get(price.Product__c+''+price.Variant__c).add(price);
+                System.debug('price List key '+(price.Product__c+''+price.Variant__c));
+                System.debug('price List value '+price);
+            }
+            System.debug('priceListByKey size '+priceListByKey.size());
+            
+            if(pricebookentries.size()>0){
+                List<YINProductWrapper> wrapperProducts = setOrderItem(orderProducts,priceListByKey,priceBookEntriesByProductId);
                 return wrapperProducts;  
             }else{
                // TODO: Add to Monitor log
@@ -166,6 +139,87 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
             System.debug('No Product found in the cart');
             return new List<YINProductWrapper>();
         }
+    }
+
+    private static List<YINProductWrapper> setOrderItem(List<OrderItem> orderProducts,Map<String,List<YIN_Price_List__c>> priceListByKey,Map<Id,PricebookEntry> priceBookEntriesByProductId){
+        // Declaring Variables
+        List<YINProductWrapper>  wrapperProducts = new List<YINProductWrapper>();
+        
+        LibISobjectUnitOfWork unitofwork = YINApplication.unitofwork.newInstance();
+
+        List<YIN_Product_Capping__mdt> productsCapping = YIN_Product_Capping__mdt.getAll().values();
+        Map<String,YIN_Product_Capping__mdt> productCappingBySize = new Map<String,YIN_Product_Capping__mdt>();
+        for(YIN_Product_Capping__mdt capping:productsCapping){
+            productCappingBySize.put(capping.Tyre_Size__c,capping);
+        }
+
+        // Map => {Key = Product__c,value = Account_product_Mapping__c}
+        Map<Id,YIN_Account_product_Mapping__c> accountProductMappingByProduct = new Map<Id,YIN_Account_product_Mapping__c>();
+            
+        YINAccountProductMappingSelector accountProductSelector = (YINAccountProductMappingSelector)YINApplication.selector.newInstance(YIN_Account_product_Mapping__c.SObjectType);
+        System.debug('AccountId '+orderProducts[0].Order.AccountId);
+        List<YIN_Account_product_Mapping__c> accountProducts = accountProductSelector.selectByAccount(orderProducts[0].Order.AccountId);
+
+        for (YIN_Account_product_Mapping__c accountProduct : accountProducts) {
+            accountProductMappingByProduct.put(accountProduct.Product__c,accountProduct);
+        }
+
+        Decimal totalPrice = 0;
+        for(OrderItem item:orderProducts){
+            YINProductWrapper wrapperProduct = new YINProductWrapper();
+            List<YIN_Price_List__c> priceLists1 = priceListByKey.get(item.Product2Id+''+item.Variant__c);
+            YIN_Price_List__c priceList = getActivePriceList(item,priceLists1);
+
+            item.UnitPrice = priceBookEntriesByProductId.get(item.Product2Id)?.UnitPrice;
+            if(item.TotalPrice!=(item.UnitPrice * item.Quantity)){
+                
+                
+                totalPrice = item.UnitPrice * item.Quantity;
+                Decimal netOrderValue = (totalPrice - item.Discounted_Amount__c);
+                item.GST_Amount__c =  (netOrderValue * (item.GST__c/100));
+                item.Total_Amount__c = netOrderValue + item.GST_Amount__c;
+                item.TDS_Amount__c = (netOrderValue * (item.TDS__c/100));
+                item.TCS_Amount__c =  (netOrderValue * (item.TCS__c/100)); 
+                unitofwork.registerDirty(item);
+            }
+
+            wrapperProduct.discountPercentage = priceList?.Discount_Price__c!=null?priceList.Discount_Price__c:0;// TODO : Change Discount Price to Discount Percentage
+            // wrapperProduct.discountPercentage = 0;
+            wrapperProduct.orderItemId = item.Id;
+            wrapperProduct.pricebookEntry = priceBookEntriesByProductId.get(item.Product2Id);
+            wrapperProduct.productId = item.Product2Id;
+            wrapperProduct.productOfTheMonth = false;
+            wrapperProduct.trendingSKU = false;
+            wrapperProduct.priceList = priceList;
+            // wrapperProduct.lockingSKU = accountProductMappingByProduct.get(item.Product2Id)?.Locking_status__c;
+
+            wrapperProduct.maximumCappingQuantity = Integer.valueOf(productCappingBySize.get(item.Product2.Size__c).Maximum_Order_Capping__c);
+            wrapperProduct.maximumOrderQuantity = accountProductMappingByProduct.get(item.Product2Id)?.Maximum_Order_Quantity__c;
+            wrapperProduct.minimumOrderQuantity = accountProductMappingByProduct.get(item.Product2Id)?.Minimum_Order_Quantity__c;
+            wrapperProduct.quantity = item.Quantity;
+            wrapperProduct.UnitPrice = item.UnitPrice;
+            wrapperProduct.netPrice = item.TotalPrice;
+            wrapperProduct.gstAmount = item.GST_Amount__c;
+            wrapperProduct.gstPercentage = item.GST__c;
+            wrapperProduct.totalAmount = item.Total_Amount__c;
+            wrapperProduct.tcsPercentage = item.TCS__c;
+            wrapperProduct.tdsPercentage = item.TDS__c;
+            wrapperProduct.variantId = item.Variant__c;
+            wrapperProduct.variantCode = item.Variant__r.Variant_Code__c;
+            wrapperProduct.combinationKey = item.Product2.ProductCode;
+            wrapperProducts.add(wrapperProduct);
+        }
+        return wrapperProducts;
+    }
+
+    private static YIN_Price_List__c getActivePriceList(OrderItem item,List<YIN_Price_List__c> priceLists1){
+        YIN_Price_List__c priceList = new YIN_Price_List__c();
+        if(priceLists1!=null){
+            for(YIN_Price_List__c price:priceLists1){
+                priceList = (item.quantity >= price.Minimum_Quantity__c)?price:priceList;
+            }
+        }
+        return priceList;
     }
 
     
@@ -186,7 +240,7 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
             YINOrderSelector orderSelector = (YINOrderSelector)YINApplication.selector.newInstance(Order.SObjectType);
             YINOrderItemSelector orderItemSelector = (YINOrderItemSelector)YINApplication.selector.newInstance(OrderItem.SObjectType);
             LibISobjectUnitOfWork unitofwork = YINApplication.unitofwork.newInstance();
-            List<Order> cartOrders = orderSelector.selectRecentOrderOfAccountByStatus(accountId,'Draft');
+            List<Order> cartOrders = orderSelector.selectRecentOrderOfAccountByStatus(accountId,'Cart');
             if(cartOrders.size()>0){
                 List<OrderItem> orderItems = orderItemSelector.selectByOrderAndProduct(cartOrders[0].Id,wrapperProduct.productId);
                 unitofwork.registerDeleted(orderItems);
@@ -315,8 +369,8 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
             lineItem.GST_Amount__c =  (netOrderValue * (lineItem.GST__c/100));
 
             // Calculate TDS : Add TDS Field on Order Line item
-                // lineItem.TDS__c = wrapperProduct.tdsPercentage;
-                // lineItem.TDS_Amount__c = (netOrderValue * (lineItem.TDS__c/100));
+            lineItem.TDS__c = wrapperProduct.tdsPercentage;
+            lineItem.TDS_Amount__c = (netOrderValue * (lineItem.TDS__c/100));
 
             // Calculate Total Order value
             lineItem.Total_Amount__c = netOrderValue + lineItem.GST_Amount__c;

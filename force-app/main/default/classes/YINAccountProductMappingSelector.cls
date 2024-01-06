@@ -1,3 +1,10 @@
+/**
+ * @description       : 
+ * @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+ * @group             : 
+ * @last modified on  : 01-04-2024
+ * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+**/
 public with sharing class YINAccountProductMappingSelector extends LIBSObjectSelector{
     public Schema.SObjectType getSObjectType() {
         return YIN_Account_product_Mapping__c.SObjectType;
@@ -36,4 +43,14 @@ public with sharing class YINAccountProductMappingSelector extends LIBSObjectSel
         .toSOQL();
         return Database.query(query);
     }
+
+    public List<YIN_Account_product_Mapping__c> selectLookUpFields(){
+        String query = newQueryFactory()
+        .selectfield('Account__r.SFDC_Customer_Code__c')
+        .selectfield('Product__r.Product_Code__c')
+        .selectfield('Locations__r.Location_Code__c')
+        .toSOQL();
+        return Database.query(query);
+    }
+
 }
