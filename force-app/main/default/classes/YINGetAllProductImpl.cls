@@ -59,8 +59,13 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
         List<Account> accounts = accountSelector.getAccounts(new List<String>{accountId});
 
         Tax_Constants__mdt taxConstant = Tax_Constants__mdt.getInstance('Tax_Constant');
-        Decimal vTDSPercentage = accounts[0].PAN_Status__c=='Valid'?taxConstant.TDS__c:taxConstant.Invalid_PAN_TCS__c;
-        Decimal vTCSPercentage = accounts[0].PAN_Status__c=='Valid'?taxConstant.TCS__c:taxConstant.Invalid_PAN_TDS__c;
+        Decimal vTCSPercentage = 0;
+        Decimal vTDSPercentage = 0;
+        if(accounts[0].X1H_TCS__c==true){
+            vTCSPercentage = accounts[0].PAN_Status__c=='Valid'?taxConstant.TCS__c:taxConstant.Invalid_PAN_TCS__c;
+        }else{
+            vTDSPercentage = accounts[0].PAN_Status__c=='Valid'?taxConstant.TDS__c:taxConstant.Invalid_PAN_TDS__c;
+        }
 
         
 
@@ -89,7 +94,7 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
             productWrapper.tdsPercentage = vTDSPercentage;
             productWrapper.tcsPercentage = vTCSPercentage;
             productWrapper.applyTCS = accounts[0].X1H_TCS__c;
-
+            productWrapper.locationCode = accounts[0].Location__r?.Location_Code__c;
             // Adding productWrapper to List
             productsWrapper.add(productWrapper);
         }

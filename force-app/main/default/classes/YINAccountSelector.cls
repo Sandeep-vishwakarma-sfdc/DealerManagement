@@ -5,7 +5,7 @@
  * @last modified on  : 03-01-2024
  * @last modified by  : Amol Patil/amol.patil@skinternational.com
  **/
-public class YINAccountSelector extends LibSObjectSelector {
+public with sharing class YINAccountSelector extends LibSObjectSelector {
 
     /**
      * @Description - Constructor for the AccountSelector class.
@@ -73,7 +73,10 @@ public class YINAccountSelector extends LibSObjectSelector {
         Account.Contact_Name__c,
         Account.Contact_Person_Email__c,
         Account.Contact_Person_Phone__c,
-        Account.Primary_Contact_Number__c
+        Account.Primary_Contact_Number__c,
+        Account.Total_Credit_Limit__c,
+        Account.Available_Credit_Limit__c,
+        Account.Credit_Days_Group_Dealer__c
         // End Adding by Sandeep Vishwakarma
         };
     }
@@ -265,6 +268,7 @@ public class YINAccountSelector extends LibSObjectSelector {
      public List<Account> getAccounts(List<String> accIds) {
         return Database.query(
             newQueryFactory()
+            .selectField('Location__r.Location_Code__c')
             .setCondition('Id IN:accIds')
             .toSOQL()
         );
@@ -275,6 +279,14 @@ public class YINAccountSelector extends LibSObjectSelector {
         .setCondition('ParentId=:accounId')
         .toSOQL();
         return Database.query(query);
+     }
+    public List<Account> getAccountsByErpCode(List<String> fieldNames) {
+        return Database.query(
+            newQueryFactory()
+            .selectFields(fieldNames)
+            .setCondition('ERP_Customer_Code__c!=null')
+            .toSOQL()
+        );
      }
 
     }

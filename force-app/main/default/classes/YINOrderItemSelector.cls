@@ -37,6 +37,10 @@ public with sharing class YINOrderItemSelector extends LibSObjectSelector{
                             .selectField('Product2.Size__c')
                             .selectField('Variant__r.Variant_Code__c')
                             .selectField('Order.AccountId')
+                            .selectField('Order.Status')
+                            .selectField('Order.Account.PAN_Status__c')
+                            .selectField('Order.Account.Location__r.Location_Code__c')
+                            .selectField('Order.Account.X1H_TCS__c')
                             .setCondition('OrderId = :orderId')
                             .toSOQL();
         return (List<OrderItem>) Database.query(query);

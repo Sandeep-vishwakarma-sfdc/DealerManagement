@@ -70,5 +70,11 @@ public with sharing class YINOrderManagementController {
         YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
         return orderService.getShippingAccounts(accountId);
     }
+
+    @AuraEnabled
+    public static String createOrder(String productWrapper,String accountId,Decimal grandTotal){
+        YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
+        return orderService.createOrder(productWrapper,accountId,grandTotal);
+    }
     
 }

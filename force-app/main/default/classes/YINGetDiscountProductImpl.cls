@@ -65,6 +65,7 @@ public with sharing class YINGetDiscountProductImpl implements YINIGetProducts {
                         discountWrapper.GSTPercentage = originalWrapper.GSTPercentage;
                         discountWrapper.tdsPercentage = originalWrapper.tdsPercentage;
                         discountWrapper.tcsPercentage = originalWrapper.tcsPercentage;
+                        discountWrapper.locationCode = originalWrapper.locationCode;
 
                         discountWrapper.applyTCS = originalWrapper.applyTCS;
 

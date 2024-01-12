@@ -33,6 +33,8 @@ public with sharing class YINProductWrapper {
     @AuraEnabled public Id  variantId; // use to map Discount Product and Cart Item
     @AuraEnabled public String  variantCode;
     @AuraEnabled public Boolean  applyTCS;
+
+    @AuraEnabled public String  locationCode;// Customer Location Code
     
     @AuraEnabled public List<DiscountTable> discountTable;
     /*

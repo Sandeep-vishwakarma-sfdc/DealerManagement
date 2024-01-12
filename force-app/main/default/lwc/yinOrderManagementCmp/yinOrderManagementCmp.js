@@ -8,6 +8,7 @@ import addToCart from '@salesforce/apex/YINOrderManagementController.addToCart';
 import getCartDetails from '@salesforce/apex/YINOrderManagementController.getCartDetails';
 import deleteCartItem from '@salesforce/apex/YINOrderManagementController.deleteCartItem';
 import getShippingAccounts from '@salesforce/apex/YINOrderManagementController.getShippingAccounts';
+import createOrder from '@salesforce/apex/YINOrderManagementController.createOrder';
 import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
 import customcss from '@salesforce/resourceUrl/resourceOrderMangmt';
 
@@ -117,6 +118,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         // Loading existing cart order details
         this.cartDetails = await getCartDetails({accountId:this.accountId});
         console.log('Cart Detail ',this.cartDetails);
+        console.log('Cart Detail str',JSON.stringify(this.cartDetails));
         this.CartDetailLength = this.cartDetails.length;
         this.cartCalculation();
 
@@ -157,7 +159,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         let totalDiscount = 0;
         let totalTDS = 0;
         let totalTCS = 0;
-        
+        this.totalOrderQuantity = 0;
         
         this.cartDetails.forEach(item=>{
             totalGSTAmount = totalGSTAmount+item.gstAmount;
@@ -174,8 +176,13 @@ export default class YinOrderManagementCmp extends LightningElement {
         this.gstPercentage = this.cartDetails[0].gstPercentage;
         this.tdsPercentage = this.cartDetails[0].tdsPercentage;
         this.tcsPercentage = this.cartDetails[0].tcsPercentage;
-        this.grandTotal = Number(this.totalGSTAmount) + Number(this.totalTDS) - Number(this.totalTCS);
+        this.grandTotal = subTotal + Number(this.totalGSTAmount) + Number(this.totalTDS) - Number(this.totalTCS);
         this.grandTotal = isNaN(this.grandTotal)?0:Number(this.grandTotal).toFixed(2);
+        }else{
+            this.totalGSTAmount = 0;
+            this.totalTDS = 0;
+            this.totalTCS = 0;
+            this.grandTotal = 0;
         }
     }
 
@@ -465,8 +472,18 @@ export default class YinOrderManagementCmp extends LightningElement {
         this.productCSSClass = 'blue';
     }
 
-    handleCheckout(event){
-
+    async handleCheckout(event){
+        // Check for valid Shipping Address
+        if(this.shippingAddress){
+            try {
+                await createOrder({productWrapper:JSON.stringify(this.cartDetails),accountId:this.accountId,grandTotal:Number(this.grandTotal)});
+            } catch (error) {
+                console.log('error ',error);
+            }
+            
+        }else{
+            this.showToast('Error','Please Select Shipping Address','error');
+        }
     }
 
     async changeCartQuantity(event){

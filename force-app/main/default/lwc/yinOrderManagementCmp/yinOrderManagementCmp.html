@@ -216,9 +216,9 @@
         <div class="container-fuild">
           <div class="row" style="margin:1px">
             <div class="col-md-3 col-xs-6 credit"><i class="fa fa-credit-card"></i> Credit Limit <br /><span class="amt">₹
-                2188438.44</span></div>
+                {accountDetails.Total_Credit_Limit__c}</span></div>
             <div class="col-md-3 col-xs-6 credit"><i class="fa fa-credit-card"></i> Available Credit Limit <br /><span
-                class="amt">₹ 132172.4</span></div>
+                class="amt">₹ {accountDetails.Available_Credit_Limit__c}</span></div>
             <div class="col-md-3 col-xs-6 credit"><i class="fas fa-boxes"></i> Total Order Quantity <br /><span
                 class="amt">{totalOrderQuantity}</span></div>
             <div class="col-md-3 col-xs-6 credit"><i class="fa fa-credit-card"></i> Grand Total Price <br /><span
@@ -328,7 +328,7 @@
 
             <div class="totals-item">
               <label style="color:#333; background:#fff;">TCS ({tcsPercentage} %)</label>
-              <div class="totals-value" id="cart-tcs"> {totalTCS} </div>
+                <div class="totals-value" id="cart-tcs"> - {totalTCS} </div>
             </div>
             <!--    <div class="totals-item">
           <label>Shipping Total Price</label>

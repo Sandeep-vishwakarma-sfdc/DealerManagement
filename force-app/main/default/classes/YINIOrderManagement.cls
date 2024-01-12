@@ -5,7 +5,7 @@ public interface YINIOrderManagement {
     string deleteCartItem(String productWrapper,String accountId);
     List<YINProductWrapper> getCartDetails(String accountId);
     string getCreditLimits(String accountId);
-    string createOrder(String productWrapper,String accountId);
+    string createOrder(String productWrapper,String accountId,Decimal grandTotal);
 
     // some user information methods
     List<String> getExperienceUserProfiles();
