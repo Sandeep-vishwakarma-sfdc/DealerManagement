@@ -25,7 +25,6 @@ public class YINApplication {
                // Distributor_Document__c.sObjectType,   //Satish Tiware
                ContentVersion.sObjectType,   //change by kalpesh
                ContentDocumentLink.sObjectType,    //change by kalpesh
-               ContentDocumentLink.sObjectType,
                ContentDocument.sObjectType,   //Saurabh
                Document.sObjectType,    //Saurabh
                //  KYC_Doc_Configuration__mdt.SObjectType,

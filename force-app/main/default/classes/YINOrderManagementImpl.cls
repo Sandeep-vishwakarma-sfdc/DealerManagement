@@ -268,7 +268,7 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
         List<YIN_Ledger__c> accountLedgers = ledgerSelector.selectByAccount(new Set<Id>{accountId});
         // 2. Check Credit Days
         Boolean checkCreditDays = checkCreditDays(accountLedgers);
-        if(!checkCreditDays){
+        if(checkCreditDays){// TODO : Add Not Operator Once Credit Days Formula field is in working state
             throw new YINOrderManagementException('Credit days expired');
         }
 
@@ -288,7 +288,7 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
     }
 
     public static void processOrder(List<YINProductWrapper> productWrappers){
-        LibISobjectUnitOfWork unitofwork = YINApplication.unitofwork.newInstance();  
+        LibISobjectUnitOfWork unitofwork = YINApplication.unitofwork.newInstance(); 
 
         Map<String,YINStockinventoryWrap.YINData> normalProduct = YINStockInventory.withoutVariant(productWrappers);
         Map<String,YINStockInventoryVarientWrap.YINData> discountProduct = YINStockInventory.withVariant(productWrappers);
@@ -320,8 +320,13 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
         openOrder.Status = 'Open';
         closedOrder.Status = 'Submitted';
 
+        
+
         unitofwork.registerNew(openOrder);
         unitofwork.registerDirty(closedOrder);
+
+        System.debug('openOrder '+openOrder);
+        System.debug('closedOrder '+closedOrder);
 
         List<OrderItem> itemToDelete = new  List<OrderItem>();
         List<OrderItem> itemToadd = new  List<OrderItem>();
@@ -353,6 +358,7 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
                             newItem.Quantity = quantityNeed;
                             newItem.OrderId = closedOrder.Id;
                             itemToadd.add(newItem);
+                            System.debug('OrderId 1'+newItem.OrderId+'  item Id '+newItem.Product2Id);
                         }else{
                             System.debug('Normal OrderLineItem where Order Status = Closed ');
                             closedLineItemNormal++;
@@ -363,6 +369,7 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
                             newItem.Quantity = availableQty;
                             newItem.OrderId = closedOrder.Id;
                             itemToadd.add(newItem);
+                            System.debug('OrderId 2'+newItem.OrderId+'  item Id '+newItem.Product2Id);
                             quantityNeed = quantityNeed - availableQty;
                         }
                     }
@@ -374,9 +381,11 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
                     openLineItemNormal++;
                     OrderItem itemToReplace = item;
                     OrderItem newItem = itemToReplace.clone();
-                    newItem.OrderId = openOrder.Id;
-                    itemToadd.add(newItem);
+                    //newItem.OrderId = openOrder.Id;
+                    unitofwork.registerNew(newItem, OrderItem.OrderId, openOrder);
+                    // itemToadd.add(newItem);
                     itemToDelete.add(itemToReplace);
+                    System.debug('OrderId 3'+newItem.OrderId+'  item Id '+newItem.Product2Id);
                 }
             }else{
                 System.debug('product '+wrapper.pricebookEntry.ProductCode+' is not available');
@@ -391,6 +400,7 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
                     newItem.Quantity = wrapper.quantity;
                     newItem.OrderId = closedOrder.Id;
                     itemToadd.add(newItem);
+                    System.debug('OrderId 4'+newItem.OrderId+'  item Id '+newItem.Product2Id);
                 }else{ // Create Discounted Order "Status = Open"
 
                     // Creating OrderItem and Attaching to Open Order, deleting item from Cart/Closed Order
@@ -399,9 +409,11 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
                     OrderItem itemToReplace = item;
                     OrderItem newItem = itemToReplace.clone();
                     newItem.Variant__c = variantByVariantCode.get(wrapper.variantCode).Id;
-                    newItem.OrderId = openOrder.Id;
-                    itemToadd.add(newItem);
+                    // newItem.OrderId = openOrder.Id;
+                    // itemToadd.add(newItem);
+                    unitofwork.registerNew(newItem, OrderItem.OrderId, openOrder);
                     itemToDelete.add(itemToReplace);
+                    System.debug('OrderId 5'+newItem.OrderId+'  item Id '+newItem.Product2Id);
                 }
             }
         }
@@ -421,6 +433,7 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
 
     private static List<OrderItem> reCalculate(List<OrderItem> items){
         for(OrderItem item:items){
+            System.debug('OrderId '+item.OrderId+'  item Id '+item.Product2Id);
             Decimal netPrice = item.UnitPrice * item.Quantity;
             Decimal netOrderValue = 0;
 
