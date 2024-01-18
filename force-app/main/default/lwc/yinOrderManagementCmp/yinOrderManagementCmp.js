@@ -261,7 +261,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         const uniqueArray = [];
         const uniqueValuesSet = new Set();
         this.productswrapperVirtual.forEach(item => {
-            if(item?.priceList){
+            if(item?.priceList?.Variant__r){
                 const { Variant_Code__c, Id } = item?.priceList?.Variant__r;
                 if (!uniqueValuesSet.has(Id)) {
                     uniqueValuesSet.add(Id);

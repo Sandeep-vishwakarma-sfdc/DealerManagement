@@ -16,6 +16,7 @@ public with sharing class YINStockInventory {
 
         //2. Requesting for stockinventory without variant
         String response = executeCallout('GET','/stockinventory',payload);
+        System.debug('response '+response);
 
         //3. Preparing Map where key = ProductCode and Value = Response Data
         YINStockinventoryWrap dataWrap = (YINStockinventoryWrap)JSON.deserialize(response,YINStockinventoryWrap.class);
@@ -43,6 +44,7 @@ public with sharing class YINStockInventory {
 
         //2. Requesting for stock inventory with variant
         String response = executeCallout('GET','/stockinventoryvariant',payload);
+        System.debug('response '+response);
 
         //3. Preparing Map where key = ProductCode_VariantCode and Value = Response Data
         YINStockInventoryVarientWrap dataWrap = (YINStockInventoryVarientWrap)JSON.deserialize(response,YINStockInventoryVarientWrap.class);
@@ -52,6 +54,15 @@ public with sharing class YINStockInventory {
         }
         return dataByProductCode;
     }
+
+    public static String sendOrder(List<Order> orders){
+        // Prepare JSON from Orders
+        YINSalesOrderWrap wrap = new YINSalesOrderWrap();
+        String response = executeCallout('POST','/salesorder',JSON.serialize(wrap));
+        return response;
+    }
+
+
 
     private static String executeCallout (String method, String resourceName, String requestBody) {
 
@@ -93,7 +104,15 @@ public with sharing class YINStockInventory {
             body.quantity = '5';
             body.transitQuantity = '75';
 
+            YINStockInventoryVarientWrap.YINData body1 = new YINStockInventoryVarientWrap.YINData();
+            body1.responseCode = '200';
+            body1.itemCode = 'PC-001';
+            body1.locationCode = 'IN-DL-DEL';
+            body1.quantity = '10';
+            body1.transitQuantity = '75';
+
             bodies.add(body);
+            bodies.add(body1);
             wrap.data = bodies;
             return JSON.serialize(wrap);
         }
@@ -105,7 +124,7 @@ public with sharing class YINStockInventory {
             body.responseCode = '200';
             body.itemCode = 'PC-004';
             body.locationCode = 'IN-DL-DEL';
-            body.totalInventory = '2';
+            body.totalInventory = '21';
 
             YINStockinventoryWrap.YINVariantwise variantwise1 = new YINStockinventoryWrap.YINVariantwise();
             variantwise1.variant = 'suzukiXL62021';
@@ -128,12 +147,46 @@ public with sharing class YINStockInventory {
             body1.locationCode = 'IN-DL-DEL';
             body1.totalInventory = '2';
 
-            body1.variantwise = new List<YINStockinventoryWrap.YINVariantwise>{variantwise1,variantwise2,variantwise3};
+            YINStockinventoryWrap.YINVariantwise variantwise4 = variantwise1.clone();
+            YINStockinventoryWrap.YINVariantwise variantwise5 = variantwise1.clone();
+            YINStockinventoryWrap.YINVariantwise variantwise6 = variantwise1.clone();
+            variantwise4.inventory = 1;
+            variantwise5.inventory = 1;
+            variantwise6.inventory = 0;
+            body1.variantwise = new List<YINStockinventoryWrap.YINVariantwise>{variantwise4,variantwise5,variantwise6};
+
+            YINStockinventoryWrap.YINData body2 = new YINStockinventoryWrap.YINData();
+            body2.responseCode = '200';
+            body2.itemCode = 'PC-001';
+            body2.locationCode = 'IN-DL-DEL';
+            body2.totalInventory = '2';
+
+            YINStockinventoryWrap.YINVariantwise variantwise7 = variantwise1.clone();
+            YINStockinventoryWrap.YINVariantwise variantwise8 = variantwise1.clone();
+            YINStockinventoryWrap.YINVariantwise variantwise9 = variantwise1.clone();
+
+            variantwise7.inventory = 5;
+            variantwise8.inventory = 5;
+            variantwise9.inventory = 0;
+            body2.variantwise = new List<YINStockinventoryWrap.YINVariantwise>{variantwise7,variantwise8,variantwise9};
 
             bodies.add(body);
             bodies.add(body1);
+            bodies.add(body2);
             wrap.data = bodies;
             return JSON.serialize(wrap);
+        }
+
+        if(resourceName=='/salesorder'){
+            YINSalesOrderWrap wrap = new YINSalesOrderWrap();
+            
+            wrap.responseCode = '200';	
+            wrap.message = 'Order created successfully';	
+            wrap.erpCustomrCode = 'C000000234';	
+            wrap.sfdcOrderNumber = 'SF0000342';	
+            wrap.erpOrderNumber = 'SF00122';
+            wrap.orderStatus = 'Invoice';
+            wrap.status = 'Success';
         }
         return null;
     }
