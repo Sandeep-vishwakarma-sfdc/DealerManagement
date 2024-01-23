@@ -72,9 +72,9 @@ public with sharing class YINOrderManagementController {
     }
 
     @AuraEnabled
-    public static String createOrder(String productWrapper,String accountId,Decimal grandTotal){
+    public static String createOrder(String productWrapper,String wrapCommit){
         YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
-        return orderService.createOrder(productWrapper,accountId,grandTotal);
+        return orderService.createOrder(productWrapper,wrapCommit);
     }
     
 }

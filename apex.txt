@@ -41,4 +41,5 @@ String productWrapper = '[{"combinationKey":"PC-004","discountPercentage":0,"gst
 List<YINProductWrapper> productWrappers = (List<YINProductWrapper>)JSON.deserialize(productWrapper,List<YINProductWrapper>.class);
 YINOrderManagementImpl.processOrder(productWrappers);
 
-YINStockInventory.withoutVariant(null);
+YINStockInventory.withoutVariant(new List<YINProductWrapper>());
+YINStockInventory.withVariant(new List<YINProductWrapper>());

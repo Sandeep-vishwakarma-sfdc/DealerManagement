@@ -84,6 +84,9 @@ export default class YinOrderManagementCmp extends LightningElement {
 
     // When LoggedIn User is Sales representative , record Id will store Account Id
     @api recordId; 
+
+    isModalOpen = false;
+    orderPreview = [];
     
     get options() {
         return [
@@ -137,6 +140,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         this.shippingAddressOption = addresses;
         
         this.isLoading = false;
+
     }
 
     handleChangeShippingAddress(event){
@@ -210,7 +214,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         }, 200);
     }
 
-    handleChangeToggle(event){
+    async handleChangeToggle(event){
         let trendingSKU = this.refs.trendingSKU.checked;
         let productOfTheMonth = this.refs.productOfTheMonth.checked;
 
@@ -221,8 +225,11 @@ export default class YinOrderManagementCmp extends LightningElement {
         }else if(trendingSKU && productOfTheMonth){
             this.productswrapper = this.productswrapperVirtual.filter(ele=>ele['productOfTheMonth']==true && ele['trendingSKU']==true);
         }else if(!trendingSKU && !productOfTheMonth){// reset products
-            this.productswrapper = this.productswrapperVirtual;
+            // this.productswrapper = this.productswrapperVirtual;
+            this.counter = 0;
+            this.productswrapper = await this.getNextItems();
         }
+        this.refs.searchinput.value = '';
         this.isLoading = true;
         setTimeout(() => {// TODO: Remove setTimout once working on real time Data
             this.isLoading = false;
@@ -317,6 +324,7 @@ export default class YinOrderManagementCmp extends LightningElement {
             }
             if(this.accountDetails.Is_Capping_Enable__c){
                 if(productWrap.maximumCappingQuantity < productWrap.quantity){
+                    productWrap.quantity = 1;
                     this.showToast('Warning ',`You can add only ${productWrap.maximumCappingQuantity} quantity for Product ${productWrap.productName}.`,'warning','dismissable'); 
                     return;
                 }
@@ -333,7 +341,8 @@ export default class YinOrderManagementCmp extends LightningElement {
             this.cartCalculation();
             this.showToast('Success ','Added to Cart','success','dismissable');
         }else{
-            this.showToast('Warning ','Already added to cart','warning','dismissable');    
+            this.showToast('Warning ','Already added to cart','warning','dismissable'); 
+            productWrap.quantity = this.oldQty;
         }
     }
 
@@ -362,12 +371,14 @@ export default class YinOrderManagementCmp extends LightningElement {
         this.isLoading = false;
     }
 
-    handleChangeVarient(event){
+    async handleChangeVarient(event){
         let selectedVarient = event.detail.value;
         if(selectedVarient){
             this.productswrapper = this.productswrapperVirtual.filter(ele=>ele?.priceList?.Variant__c==selectedVarient)
         }else{
-            this.productswrapper = this.productswrapperVirtual;
+            // this.productswrapper = this.productswrapperVirtual;
+            this.counter = 0;
+            this.productswrapper = await this.getNextItems();
         }
     }
 
@@ -410,20 +421,21 @@ export default class YinOrderManagementCmp extends LightningElement {
     async handleScroll(event){
         try {
             let containerscroll = event.target;
-            console.log('scrollHeight ',containerscroll.scrollHeight,' scrollTop ',containerscroll.scrollTop,' clientHeight ',containerscroll.clientHeight);
-            console.log('Scroll ',containerscroll.scrollHeight - containerscroll.scrollTop === containerscroll.clientHeight + 1);
+            
             if (containerscroll.scrollHeight - containerscroll.scrollTop <= containerscroll.clientHeight + 1) {
                 console.log('End .....');
                 let nextItems = await this.getNextItems();
                 console.log('next Items ',nextItems.length);
                 let newProducts = this.productswrapper;
-                for (let item in nextItems){ 
-                    newProducts.push(nextItems[item]); 
+                if(newProducts.length <= this.productswrapperVirtual.length){
+                    for (let item in nextItems){ 
+                        newProducts.push(nextItems[item]); 
+                    }
+                    if(newProducts.length>0){
+                        this.productswrapper = newProducts;
+                    }
+                    console.log('4');
                 }
-                if(newProducts.length>0){
-                    this.productswrapper = newProducts;
-                }
-                console.log('4');
             }   
         } catch (error) {
             console.log('error ',error.message);
@@ -449,6 +461,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         console.log('3');
         // Return the requested items
         let nextItems = allItems.slice(start, end);
+        console.log('Next Items  ',JSON.parse(JSON.stringify(nextItems)));
         return nextItems;
         } catch (error) {
             console.log('error Next Items ',error.message);
@@ -457,8 +470,31 @@ export default class YinOrderManagementCmp extends LightningElement {
     }
 
     // search bar button action
-    handleSearch(event){
+    async handleSearch(event){
         console.log('search ',this.refs.searchinput.value);
+        let searchValue = this.refs.searchinput.value;
+        let fieldName ='';
+        switch (this.selectedMenu) {
+            case 'size':
+                fieldName = 'productSize';
+                break; 
+            case 'pattern':
+                fieldName = 'productPattern';
+                break;       
+            default:
+                fieldName = 'productName';
+                break;
+        }
+        console.log('field Name ',fieldName);
+        if(searchValue){
+            this.productswrapper = this.productswrapperVirtual.filter(ele=>ele[fieldName].toLowerCase().includes(searchValue.toLowerCase()));
+            this.refs.trendingSKU.checked = false;
+            this.refs.productOfTheMonth.checked = false;
+        }else{
+            // this.productswrapper = this.productswrapperVirtual;
+            this.counter = 0;
+            this.productswrapper = await this.getNextItems();
+        }
     }
 
     // Switch to Grid View
@@ -473,17 +509,56 @@ export default class YinOrderManagementCmp extends LightningElement {
     }
 
     async handleCheckout(event){
+        let commitCheckOut = event.target.dataset.confirm;
+        commitCheckOut = commitCheckOut=='true';
+        console.log('commit ',commitCheckOut);
         // Check for valid Shipping Address
         if(this.shippingAddress){
             try {
-                await createOrder({productWrapper:JSON.stringify(this.cartDetails),accountId:this.accountId,grandTotal:Number(this.grandTotal)});
+                let param = {doCommit:commitCheckOut,grandTotal:Number(this.grandTotal),accountId:this.accountId};
+                let response = await createOrder({productWrapper:JSON.stringify(this.cartDetails),wrapCommit:JSON.stringify(param)});
+                response = JSON.parse(response);
+                console.log('response ',response);
+                let tempId = 0;
+                let submitted = response.Submitted.map(item=>{
+                    tempId++;
+                    return {tempId:tempId,status:'Submitted',...item}
+                });
+                tempId = 0;
+                let open = response.Open.map(item=>{
+                    tempId++;
+                    return {tempId:tempId,status:'Open',...item}
+                });
+                
+                this.orderPreview = {Submitted:submitted,Open:open};
+                console.log('response ',JSON.parse(JSON.stringify(this.orderPreview)));
+                console.log('Boolean(commitCheckOut)==false ',commitCheckOut);
+                if(commitCheckOut==false){
+                    this.isModalOpen = true;
+                }else{
+                    this.showToast('SUCCESS','Order Created Succesfully','success');
+                    this.isModalOpen = false;
+                    this.handleHideCart();
+                    this.cartDetails = await getCartDetails({accountId:this.accountId});
+                    this.CartDetailLength = this.cartDetails.length;
+                    this.cartCalculation();
+                    this.selectedShippingAccount = {name:'',accountCode:'',phone:'',email:'',address:''};
+                }
             } catch (error) {
                 console.log('error ',error);
+                this.showToast('Error',error.body.message,'error');
+                console.log('error ',error.message);
             }
             
         }else{
             this.showToast('Error','Please Select Shipping Address','error');
         }
+    }
+
+    oldQty = 1;
+    copyOldQuanity(event){
+        console.log('on Focus');
+        this.oldQty = event.target.value;
     }
 
     async changeCartQuantity(event){
@@ -507,6 +582,7 @@ export default class YinOrderManagementCmp extends LightningElement {
 
         if(this.accountDetails.Is_Capping_Enable__c){
             if(item.maximumCappingQuantity < item.quantity){
+                item.quantity = this.oldQty;
                 this.showToast('Warning ',`You can add only ${item.maximumCappingQuantity} quantity for Product ${item.pricebookEntry.Product2.Name}.`,'warning','dismissable'); 
                 return;
             }
@@ -549,5 +625,15 @@ export default class YinOrderManagementCmp extends LightningElement {
         });
         this.dispatchEvent(event);
     }
-    
+
+    closeModalCheckout(){
+        this.isModalOpen = false;
+    }
+    async handleReset(){
+        this.refs.trendingSKU.checked = false;
+        this.refs.productOfTheMonth.checked = false;
+        this.refs.searchinput.value = '';
+        this.counter = 0;
+        this.productswrapper = await this.getNextItems();
+    }
 }

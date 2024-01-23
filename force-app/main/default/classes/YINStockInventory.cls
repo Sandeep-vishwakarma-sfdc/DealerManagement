@@ -16,14 +16,18 @@ public with sharing class YINStockInventory {
 
         //2. Requesting for stockinventory without variant
         String response = executeCallout('GET','/stockinventory',payload);
-        System.debug('response '+response);
+        
 
         //3. Preparing Map where key = ProductCode and Value = Response Data
         YINStockinventoryWrap dataWrap = (YINStockinventoryWrap)JSON.deserialize(response,YINStockinventoryWrap.class);
         Map<String,YINStockinventoryWrap.YINData> dataByProductCode = new Map<String,YINStockinventoryWrap.YINData>();
         for(YINStockinventoryWrap.YINData data:dataWrap.data){
             dataByProductCode.put(data.itemCode,data);
+            data.variantwise.sort();
         }
+        // Test
+        String test = JSON.serialize(dataWrap);
+        System.debug('response '+test);
         return dataByProductCode;
     }
 
@@ -128,15 +132,15 @@ public with sharing class YINStockInventory {
 
             YINStockinventoryWrap.YINVariantwise variantwise1 = new YINStockinventoryWrap.YINVariantwise();
             variantwise1.variant = 'suzukiXL62021';
-            variantwise1.inventory = 1;
+            variantwise1.inventory = 18;
 
             YINStockinventoryWrap.YINVariantwise variantwise2 = new YINStockinventoryWrap.YINVariantwise();
             variantwise2.variant = 'suzukiXL62022';
-            variantwise2.inventory = 2; 
+            variantwise2.inventory = 1; 
 
             YINStockinventoryWrap.YINVariantwise variantwise3 = new YINStockinventoryWrap.YINVariantwise();
             variantwise3.variant = 'suzukiXL62020';
-            variantwise3.inventory = 18; 
+            variantwise3.inventory = 2; 
 
             body.variantwise = new List<YINStockinventoryWrap.YINVariantwise>{variantwise1,variantwise2,variantwise3};
 
@@ -148,8 +152,8 @@ public with sharing class YINStockInventory {
             body1.totalInventory = '2';
 
             YINStockinventoryWrap.YINVariantwise variantwise4 = variantwise1.clone();
-            YINStockinventoryWrap.YINVariantwise variantwise5 = variantwise1.clone();
-            YINStockinventoryWrap.YINVariantwise variantwise6 = variantwise1.clone();
+            YINStockinventoryWrap.YINVariantwise variantwise5 = variantwise2.clone();
+            YINStockinventoryWrap.YINVariantwise variantwise6 = variantwise3.clone();
             variantwise4.inventory = 1;
             variantwise5.inventory = 1;
             variantwise6.inventory = 0;
@@ -162,8 +166,8 @@ public with sharing class YINStockInventory {
             body2.totalInventory = '2';
 
             YINStockinventoryWrap.YINVariantwise variantwise7 = variantwise1.clone();
-            YINStockinventoryWrap.YINVariantwise variantwise8 = variantwise1.clone();
-            YINStockinventoryWrap.YINVariantwise variantwise9 = variantwise1.clone();
+            YINStockinventoryWrap.YINVariantwise variantwise8 = variantwise2.clone();
+            YINStockinventoryWrap.YINVariantwise variantwise9 = variantwise3.clone();
 
             variantwise7.inventory = 5;
             variantwise8.inventory = 5;
@@ -190,4 +194,6 @@ public with sharing class YINStockInventory {
         }
         return null;
     }
+
+   
 }

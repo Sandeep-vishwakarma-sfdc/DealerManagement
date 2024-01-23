@@ -262,11 +262,14 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
         }
     }
 
-    public static string createOrder(String productWrapper,String accountId,Decimal grandTotal){
+    
+
+    public static string createOrder(String productWrapper,String wrapCommit){
+        WrapCommit docommit = (WrapCommit)JSON.deserialize(wrapCommit,WrapCommit.class);
         String response = null;
         // 1. Getting the oldest ledger , Question What if No Ledger Present
         YINLedgerSelector ledgerSelector = (YINLedgerSelector)YINApplication.selector.newInstance(YIN_Ledger__c.SObjectType);
-        List<YIN_Ledger__c> accountLedgers = ledgerSelector.selectByAccount(new Set<Id>{accountId});
+        List<YIN_Ledger__c> accountLedgers = ledgerSelector.selectByAccount(new Set<Id>{docommit.accountId});
         // 2. Check Credit Days
         Boolean checkCreditDays = checkCreditDays(accountLedgers);
         if(checkCreditDays){// TODO : Add Not Operator Once Credit Days Formula field is in working state
@@ -274,19 +277,23 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
         }
 
         // 3. Check Credit Limit
-        Boolean checkCreditLimit = checkCreditLimit(accountLedgers,grandTotal);
+        Boolean checkCreditLimit = checkCreditLimit(accountLedgers,docommit.grandTotal);
         if(!checkCreditLimit){
             throw new YINOrderManagementException('Credit Limit exceed');
         }
 
         List<YINProductWrapper> productWrappers = (List<YINProductWrapper>)JSON.deserialize(productWrapper,List<YINProductWrapper>.class);
         if(productWrappers.size()>0){
-            response = processOrder(productWrappers);
+            response = processOrder(productWrappers,docommit);
         }
 
 
         return response;
     }
+    static Map<String,List<OrderItem>> ordersByStatus = new Map<String,List<OrderItem>>();// Use to Virtually store Order Item to display prompt on LWC
+    
+    static  List<OrderItem> itemOpen = new List<OrderItem>();
+    static  List<OrderItem> itemSubmitted = new List<OrderItem>();
 
     static List<OrderItem> itemToDelete = new  List<OrderItem>();
     static List<OrderItem> itemToadd = new  List<OrderItem>();
@@ -297,62 +304,52 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
     static Order openOrder = null;
     static LibISobjectUnitOfWork unitofworkProcessOrder = null;
     
-    public static String processOrder(List<YINProductWrapper> productWrappers){
-        LibISobjectUnitOfWork unitofwork = YINApplication.unitofwork.newInstance(); 
+    public static String processOrder(List<YINProductWrapper> productWrappers,WrapCommit docommit){
+        // 1. Instance of UnitOfWork
+        unitofworkProcessOrder = YINApplication.unitofwork.newInstance(); 
 
+        // 2. Get Inventory ,Variants and Order information
         Map<String,YINStockinventoryWrap.YINData> normalProduct = YINStockInventory.withoutVariant(productWrappers);
         Map<String,YINStockInventoryVarientWrap.YINData> discountProduct = YINStockInventory.withVariant(productWrappers);
-
+        // 2a. Getting Inventory from ERP
         YINOrderItemSelector orderItemSelector = (YINOrderItemSelector)YINApplication.selector.newInstance(OrderItem.SObjectType);
         List<OrderItem> orderProducts = orderItemSelector.selectById(new Set<Id>{productWrappers[0].orderItemId});
         List<OrderItem> orderItems = orderItemSelector.selectByOrder(orderProducts[0].OrderId);
-
+        // 2b. Getting Variant
         YINVariantSelector variantSelector = (YINVariantSelector)YINApplication.selector.newInstance(YIN_Variant__c.SObjectType);
-
+        List<YIN_Variant__c> variants = variantSelector.selectAll();     
+        for(YIN_Variant__c variant:variants){
+            variantByVariantCode.put(variant.Variant_Code__c,variant);
+        }
+        // 2c. Getting Cart Order
         YINOrderSelector orderSelector = (YINOrderSelector)YINApplication.selector.newInstance(Order.SObjectType);
         List<Order> closedOrders = orderSelector.selectById(new Set<Id>{orderProducts[0].OrderId});
-        closedOrder = closedOrders[0];
+
+        // 3. Setting up orderItem Map
         Map<String,OrderItem> orderItemById = new Map<String,OrderItem>();
         for(OrderItem item:orderItems){
             orderItemById.put(item.Id,item);
         }
-        
+
+        // 4. Creating Empty Open and Close Order
+        closedOrder = closedOrders[0];
         closedOrder.recordTypeId = Schema.SObjectType.Order.getRecordTypeInfosByName().get('Normal').getRecordTypeId();
-
-        List<YIN_Variant__c> variants = variantSelector.selectAll();
-
-        
-        for(YIN_Variant__c variant:variants){
-            variantByVariantCode.put(variant.Variant_Code__c,variant);
-        }
-        
         openOrder = closedOrder.clone();
         openOrder.Status = 'Open';
         closedOrder.Status = 'Submitted';
-
-        
-
-        unitofwork.registerNew(openOrder);
-        unitofwork.registerDirty(closedOrder);
+        unitofworkProcessOrder.registerNew(openOrder);
+        unitofworkProcessOrder.registerDirty(closedOrder);
 
         System.debug('openOrder '+openOrder);
         System.debug('closedOrder '+closedOrder);
 
-        
-
-        // Only for Unit Test
-        // Integer openLineItemNormal = 0;
-        // Integer closedLineItemNormal = 0;
-        // Integer openLineItemDiscount = 0;
-        // Integer closedLineItemDiscount = 0;
-        
-
+        // 5.loop thorough each item in cart , check if discount available call "processProductWithVariant" method , if discount is not available call "processProductWithoutVariant" method
         for(YINProductWrapper wrapper:productWrappers){
             YINStockinventoryWrap.YINData normalProductData = normalProduct.get(wrapper.pricebookEntry.ProductCode);
             YINStockInventoryVarientWrap.YINData discountedProductData = discountProduct.get(wrapper.pricebookEntry.ProductCode+'_'+wrapper.variantCode);
             OrderItem item = orderItemById.get(wrapper.orderItemId);
 
-            if(wrapper.discountPercentage > 0 && discountedProductData!=null){ // For Product With Discounts
+            if(wrapper.discountPercentage > 0 && discountedProductData!=null && wrapper.variantCode!=null){ // For Product With Discounts
                 processProductWithVariant(wrapper,discountedProductData,item);
             }else if(normalProductData!=null){
                 processProductWithoutVariant(wrapper,normalProductData,item);
@@ -360,110 +357,129 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
                 System.debug('product '+wrapper.pricebookEntry.ProductCode+' is not available');
             }
         }
-        if(deleteOpenOrder){
-            unitofworkProcessOrder.registerDeleted(openOrder);
-        }
         unitofworkProcessOrder.registerDeleted(itemToDelete);
         itemToadd = reCalculate(itemToadd);
         itemToUpdate = reCalculate(itemToUpdate);
+        
         unitofworkProcessOrder.registerNew(itemToadd);
-        if(itemToUpdate.size()>0){
-            unitofworkProcessOrder.registerDirty(itemToUpdate);
+        if(docommit.doCommit==true){
+            unitofworkProcessOrder.commitWork();
         }
-
-        unitofworkProcessOrder.commitWork();
+        if(deleteOpenOrder && docommit.doCommit==true){
+            LibISobjectUnitOfWork unitofworkOpenOrder = YINApplication.unitofwork.newInstance(); 
+            unitofworkOpenOrder.registerDeleted(openOrder);
+            unitofworkOpenOrder.commitWork();
+        }
+        ordersByStatus.put('Open',itemOpen);
+        ordersByStatus.put('Submitted',itemSubmitted);
+        
         /* Unit Test  */
         String itemsString = JSON.serialize(itemToadd);
-        // System.debug('op '+itemsString);
-        // System.debug('Open Line Item Normal '+openLineItemNormal);
-        // System.debug('Closed Line Item Normal '+closedLineItemNormal);
-        // System.debug('Open Line Item Discounted '+openLineItemDiscount);
-        // System.debug('Closed Line Item Discounted '+closedLineItemDiscount);
-
         YINStockInventory.sendOrder(new List<Order> {closedOrder});
 
         List<Order> orders = new List<Order>();
         orders.add(closedOrder);
         orders.add(openOrder);
-        return JSON.serialize(orders);
+
+        return JSON.serialize(ordersByStatus);
     }
 
     private static void processProductWithVariant(YINProductWrapper wrapper,YINStockInventoryVarientWrap.YINData discountedProductData,OrderItem item){
-        if(wrapper.quantity <= Decimal.valueOf(discountedProductData.quantity)){
+        Decimal inventoryQty = Decimal.valueOf(discountedProductData.quantity);
+        
             System.debug('Discounted OrderLineItem where Order Status = Closed ');
+            Decimal quantityNeed = wrapper.quantity;
             // closedLineItemDiscount++;
-            OrderItem newItem = item.clone();
-            newItem.Variant__c = variantByVariantCode.get(wrapper.variantCode).Id;
-            newItem.Quantity = wrapper.quantity;
-            newItem.OrderId = closedOrder.Id;
-            itemToadd.add(newItem);
-            System.debug('OrderId 4'+newItem.OrderId+'  item Id '+newItem.Product2Id);
-        }else{ // Create Discounted Order "Status = Open"
+            if(inventoryQty>0 && inventoryQty>=quantityNeed){
+                OrderItem newItem = item.clone();
+                newItem.Variant__c = variantByVariantCode.get(wrapper.variantCode).Id;
+                newItem.Quantity = quantityNeed;
+                newItem.OrderId = closedOrder.Id;
+                itemToadd.add(newItem);
+                itemSubmitted.add(newItem);
+                System.debug('OrderId 4'+newItem.OrderId+'  item Id '+newItem.Product2Id);
+                quantityNeed = 0;
+            }else if(quantityNeed!=0 && inventoryQty>0){
+                OrderItem newItem = item.clone();
+                newItem.Variant__c = variantByVariantCode.get(wrapper.variantCode).Id;
+                newItem.Quantity = inventoryQty;
+                newItem.OrderId = closedOrder.Id;
+                itemToadd.add(newItem);
+                itemSubmitted.add(newItem);
+                System.debug('OrderId 4'+newItem.OrderId+'  item Id '+newItem.Product2Id);
+                quantityNeed = quantityNeed - inventoryQty;
+            }
 
-            // Creating OrderItem and Attaching to Open Order, deleting item from Cart/Closed Order
-            System.debug('Discounted OrderLineItem where Order Status = Open ');
-            // openLineItemDiscount++;
-            OrderItem newItem = item.clone();
-            newItem.Variant__c = variantByVariantCode.get(wrapper.variantCode).Id;
-            
-            unitofworkProcessOrder.registerNew(newItem, OrderItem.OrderId, openOrder);
-            itemToUpdate.add(newItem);
-            deleteOpenOrder = false;
-            System.debug('OrderId 5'+newItem.OrderId+'  item Id '+newItem.Product2Id);
-        }
+            if(quantityNeed>0){
+                // Create Discounted Order "Status = Open"
+                // Creating OrderItem and Attaching to Open Order, deleting item from Cart/Closed Order
+                System.debug('Discounted OrderLineItem where Order Status = Open ');
+                // openLineItemDiscount++;
+                OrderItem newItem = item.clone();
+                newItem.orderId = null;
+                newItem.Variant__c = variantByVariantCode.get(wrapper.variantCode).Id;
+                newItem.Quantity = quantityNeed;
+                unitofworkProcessOrder.registerNew(newItem, OrderItem.OrderId, openOrder);
+                itemToUpdate.add(newItem);
+                itemOpen.add(newItem);
+                deleteOpenOrder = false;
+                System.debug('OrderId 5'+newItem.OrderId+'  item Id '+newItem.Product2Id);
+            }
+        
         itemToDelete.add(item);
     }
 
-    private static void processProductWithoutVariant(YINProductWrapper wrapper,YINStockinventoryWrap.YINData normalProductData,OrderItem item){
-        if(wrapper.quantity <= Decimal.valueOf(normalProductData.totalInventory)){// Create Normal Order "Status = Closed"
-                    Decimal quantityNeed = wrapper.quantity;
-                   
-                    for(YINStockinventoryWrap.YINVariantwise variantWise : normalProductData.variantwise){//2,4
-                        Integer availableQty = variantWise.inventory;
-                        String variantCode = variantWise.variant;
-                        if (availableQty >= quantityNeed && quantityNeed!=0) {
-                            System.debug('Normal OrderLineItem where Order Status = Closed ');
-                            //closedLineItemNormal++;
-                            OrderItem newItem = item.clone();
-                            newItem.Variant__c = variantByVariantCode.get(variantWise.variant).Id;
-                            newItem.Quantity = quantityNeed;
-                            newItem.OrderId = closedOrder.Id;
-                            itemToadd.add(newItem);
-                            System.debug('OrderId 1'+newItem.OrderId+'  item Id '+newItem.Product2Id);
-                            quantityNeed = 0;
-                        }else if(quantityNeed!=0){
-                            System.debug('Normal OrderLineItem where Order Status = Closed ');
-                            //closedLineItemNormal++;
-                            System.debug('item '+item);
-                            OrderItem newItem = item.clone();
-                            System.debug('map '+'key '+variantWise.variant+' value '+variantByVariantCode.get(variantWise.variant));
-                            newItem.Variant__c = variantByVariantCode.get(variantWise.variant).Id;
-                            newItem.Quantity = availableQty;
-                            newItem.OrderId = closedOrder.Id;
-                            itemToadd.add(newItem);
-                            System.debug('OrderId 2'+newItem.OrderId+'  item Id '+newItem.Product2Id);
-                            quantityNeed = quantityNeed - availableQty;
-                        }
-                        itemToDelete.add(item);
-                    }
+    private static void processProductWithoutVariant(YINProductWrapper wrapper,YINStockinventoryWrap.YINData normalProductData,OrderItem item){       
+        Decimal quantityNeed = wrapper.quantity;
+        for(YINStockinventoryWrap.YINVariantwise variantWise : normalProductData.variantwise){//2,4
+            Integer availableQty = variantWise.inventory;
+            String variantCode = variantWise.variant;
+            if (availableQty >= quantityNeed && quantityNeed!=0) { // 1. 5>=12:false ,2. 6>=7:false,3. 0>=2  
+                System.debug('Normal OrderLineItem where Order Status = Closed ');
+                //closedLineItemNormal++;
+                OrderItem newItem = item.clone();
+                newItem.Variant__c = variantByVariantCode.get(variantWise.variant).Id;
+                newItem.Quantity = quantityNeed;
+                newItem.OrderId = closedOrder.Id;
+                itemToadd.add(newItem);
+                itemSubmitted.add(newItem);
+                System.debug('OrderId 1'+newItem.OrderId+'  item Id '+newItem.Product2Id);
+                quantityNeed = 0;
+            }else if(quantityNeed!=0 && availableQty>0){ // 1. 5>=6:true ,2. 
+                System.debug('Normal OrderLineItem where Order Status = Closed ');
+                //closedLineItemNormal++;
+                System.debug('item '+item);
+                OrderItem newItem = item.clone();
+                System.debug('map '+'key '+variantWise.variant+' value '+variantByVariantCode.get(variantWise.variant));
+                newItem.Variant__c = variantByVariantCode.get(variantWise.variant).Id;
+                newItem.Quantity = availableQty;
+                newItem.OrderId = closedOrder.Id;
+                itemToadd.add(newItem);
+                itemSubmitted.add(newItem);
+                System.debug('OrderId 2'+newItem.OrderId+'  item Id '+newItem.Product2Id);
+                quantityNeed = quantityNeed - availableQty;
+            }
+            itemToDelete.add(item);
+        }
 
-                }else{ // Create Normal Order "Status = Open" Need To Review
-
-                    // Creating OrderItem and Attaching to Open Order, deleting item from Cart/Closed Order
-                    System.debug('Normal OrderLineItem where Order Status = Open ');
-                    //openLineItemNormal++;
-                    OrderItem itemToReplace = item;
-                    OrderItem newItem = itemToReplace.clone();
-                    //newItem.OrderId = openOrder.Id;
-                    unitofworkProcessOrder.registerNew(newItem, OrderItem.OrderId, openOrder);
-                    itemToUpdate.add(newItem);
-                    // itemToadd.add(newItem);
-                    itemToDelete.add(itemToReplace);
-
-                    deleteOpenOrder = false;
-                    System.debug('OrderId 3'+newItem.OrderId+'  item Id '+newItem.Product2Id);
-                }
+        // Create Normal Order "Status = Open" Need To Review
+        if(quantityNeed > 0){
+            // Creating OrderItem and Attaching to Open Order, deleting item from Cart/Closed Order
+            System.debug('Normal OrderLineItem where Order Status = Open ');
+            //openLineItemNormal++;
+            OrderItem itemToReplace = item;
+            OrderItem newItem = itemToReplace.clone();
+            newItem.orderId = null;
+            newItem.Quantity = quantityNeed;
+            unitofworkProcessOrder.registerNew(newItem, OrderItem.OrderId, openOrder);
+            itemToUpdate.add(newItem);
+            itemToDelete.add(itemToReplace);
+            itemOpen.add(newItem);
+            deleteOpenOrder = false;
+            System.debug('OrderId 3'+newItem.OrderId+'  item Id '+newItem.Product2Id);
+        }
     }
+    
 
     private static List<OrderItem> reCalculate(List<OrderItem> items){
         for(OrderItem item:items){
@@ -653,6 +669,10 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
     } 
 
     
-
+    public class WrapCommit{
+        @AuraEnabled public Boolean doCommit;
+        @AuraEnabled public Decimal grandTotal;
+        @AuraEnabled public String accountId;
+    }
     
 }
