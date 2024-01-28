@@ -6,8 +6,8 @@ global with sharing class YINOrderCreditLimitRestService {
         String accountId = RestContext.request.params.get('accountId');
 
         // 2. Call Service Method
-        String jsonCreditLimits  = YINOrderManagementController.getCartDetails(accountId);
+        //String jsonCreditLimits  = YINOrderManagementController.getCartDetails(accountId);
 
-        return jsonCreditLimits;
+        return '';
     }
 }

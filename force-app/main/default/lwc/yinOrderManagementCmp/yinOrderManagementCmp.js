@@ -64,6 +64,8 @@ export default class YinOrderManagementCmp extends LightningElement {
     tdsPercentage = 0;
     tcsPercentage = 0;
     grandTotal = 0;
+
+    isGridView = true;
         
     selectedOrderType ={
         all:true,
@@ -87,6 +89,9 @@ export default class YinOrderManagementCmp extends LightningElement {
 
     isModalOpen = false;
     orderPreview = [];
+    isModalOrder = false;
+
+    
     
     get options() {
         return [
@@ -94,10 +99,12 @@ export default class YinOrderManagementCmp extends LightningElement {
             { label: 'Discounted Products', value: 'Discount' },
         ];
     }
+    displayToggle = false;
 
     
 
     async connectedCallback(){
+        try {
         this.isLoading = true;
         // check whether current user is Sales Representative OR Digital Experience User
         this.experienceUserProfiles = await getExperienceUserProfiles();
@@ -108,7 +115,8 @@ export default class YinOrderManagementCmp extends LightningElement {
         if(!this.isSalesRepUser){
             this.accountId = await getExperienceUserAccount();
         }else{
-            this.accountId = this.recordId;
+            // this.accountId = this.recordId;
+            this.accountId = '0010T00000fYTVBQA4';
         }
         console.log('Account Id ',this.accountId);
         
@@ -140,6 +148,10 @@ export default class YinOrderManagementCmp extends LightningElement {
         this.shippingAddressOption = addresses;
         
         this.isLoading = false;
+        } catch (error) {
+           this.showToast('Error',error.body.message,'error');
+           this.isLoading = false;
+        }
 
     }
 
@@ -207,8 +219,10 @@ export default class YinOrderManagementCmp extends LightningElement {
         await this.loadProducts(orderType);
         this.isLoading = true;
         // reset filters
-        this.refs.trendingSKU.checked = false;
-        this.refs.productOfTheMonth.checked = false;
+        if(this.displayToggle){
+            this.refs.trendingSKU.checked = false;
+            this.refs.productOfTheMonth.checked = false;
+        }
         setTimeout(() => {// TODO: Remove setTimout once working on real time Data
             this.isLoading = false;
         }, 200);
@@ -276,7 +290,7 @@ export default class YinOrderManagementCmp extends LightningElement {
                 }
             }
         });
-        uniqueArray.unshift({ label: 'None', value: '' });
+        uniqueArray.unshift({ label: 'Select Variant', value: '' });
         this.varientOptions = uniqueArray;
     }
 
@@ -488,8 +502,10 @@ export default class YinOrderManagementCmp extends LightningElement {
         console.log('field Name ',fieldName);
         if(searchValue){
             this.productswrapper = this.productswrapperVirtual.filter(ele=>ele[fieldName].toLowerCase().includes(searchValue.toLowerCase()));
-            this.refs.trendingSKU.checked = false;
-            this.refs.productOfTheMonth.checked = false;
+            if(this.displayToggle){
+                this.refs.trendingSKU.checked = false;
+                this.refs.productOfTheMonth.checked = false;
+            }
         }else{
             // this.productswrapper = this.productswrapperVirtual;
             this.counter = 0;
@@ -500,12 +516,14 @@ export default class YinOrderManagementCmp extends LightningElement {
     // Switch to Grid View
     handleGridView(event){
         this.productCSSClass = 'green';
+        this.isGridView = true;
         
     }
  
     // Switch to List View
     handleListView(event){
         this.productCSSClass = 'blue';
+        this.isGridView = false;
     }
 
     async handleCheckout(event){
@@ -517,32 +535,33 @@ export default class YinOrderManagementCmp extends LightningElement {
             try {
                 let param = {doCommit:commitCheckOut,grandTotal:Number(this.grandTotal),accountId:this.accountId};
                 let response = await createOrder({productWrapper:JSON.stringify(this.cartDetails),wrapCommit:JSON.stringify(param)});
+                console.log('response str',response);
                 response = JSON.parse(response);
-                console.log('response ',response);
+                let resSubmitted = JSON.parse(response.Submitted);
+                let resOpen = JSON.parse(response.Open);
+                let resOrder = JSON.parse(response.Orders);
                 let tempId = 0;
-                let submitted = response.Submitted.map(item=>{
+                let submitted = resSubmitted.map(item=>{
                     tempId++;
-                    return {tempId:tempId,status:'Submitted',...item}
+                    return {tempId:tempId,VariantCode: item?.Variant__r?.Variant_Code__c,status:'Submitted',...item}
                 });
                 tempId = 0;
-                let open = response.Open.map(item=>{
+                let open = resOpen.map(item=>{
                     tempId++;
-                    return {tempId:tempId,status:'Open',...item}
+                    return {tempId:tempId,VariantCode: item?.Variant__r?.Variant_Code__c,status:'Open',...item}
                 });
                 
-                this.orderPreview = {Submitted:submitted,Open:open};
-                console.log('response ',JSON.parse(JSON.stringify(this.orderPreview)));
+                this.orderPreview = {Submitted:submitted,Open:open,Orders:resOrder};
+                
                 console.log('Boolean(commitCheckOut)==false ',commitCheckOut);
+                console.log('resOrder ',JSON.stringify(resOrder));
                 if(commitCheckOut==false){
                     this.isModalOpen = true;
+                    this.isModalOrder = false;
                 }else{
-                    this.showToast('SUCCESS','Order Created Succesfully','success');
                     this.isModalOpen = false;
-                    this.handleHideCart();
-                    this.cartDetails = await getCartDetails({accountId:this.accountId});
-                    this.CartDetailLength = this.cartDetails.length;
-                    this.cartCalculation();
-                    this.selectedShippingAccount = {name:'',accountCode:'',phone:'',email:'',address:''};
+                    this.isModalOrder = true;
+                    this.showToast('SUCCESS','Order Created Succesfully','success');
                 }
             } catch (error) {
                 console.log('error ',error);
@@ -628,10 +647,23 @@ export default class YinOrderManagementCmp extends LightningElement {
 
     closeModalCheckout(){
         this.isModalOpen = false;
+        this.isModalOrder = false;
+    }
+    async handleCheckoutRedirect(){
+        
+        this.isModalOpen = false;
+        this.isModalOrder = false;
+        this.handleHideCart();
+        this.cartDetails = await getCartDetails({accountId:this.accountId});
+        this.CartDetailLength = this.cartDetails.length;
+        this.cartCalculation();
+        this.selectedShippingAccount = {name:'',accountCode:'',phone:'',email:'',address:''};
     }
     async handleReset(){
-        this.refs.trendingSKU.checked = false;
-        this.refs.productOfTheMonth.checked = false;
+        if(this.displayToggle){
+            this.refs.trendingSKU.checked = false;
+            this.refs.productOfTheMonth.checked = false;
+        }
         this.refs.searchinput.value = '';
         this.counter = 0;
         this.productswrapper = await this.getNextItems();

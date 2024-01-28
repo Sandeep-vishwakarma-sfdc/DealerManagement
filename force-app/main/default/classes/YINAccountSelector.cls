@@ -2,7 +2,7 @@
  * @description       : This class provides methods to query and filter Account records.
  * @author            : Saurabh Pandey
  * @group             : 
- * @last modified on  : 03-01-2024
+ * @last modified on  : 18-01-2024
  * @last modified by  : Amol Patil/amol.patil@skinternational.com
  **/
 public with sharing class YINAccountSelector extends LibSObjectSelector {
@@ -32,7 +32,7 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
             Account.Id,
             Account.Name,
             Account.Contact_Person_Email__c,
-            // Account.Outstanding_Amount__c,
+            Account.Outstanding_Amount__c,
             Account.Security_Deposit__c,
             Account.Requested_Date__c,
            // Account.Sub_Classification__c,
@@ -41,6 +41,7 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
             Account.City__r.id,
             Account.Area__r.id,
             Account.SFDC_Customer_Code__c,     //Amol Patil
+            Account.ERP_Customer_Code__c,     //Amol Patil
 
             // Start Added by Sandeep Vishwakarma
         Account.BillingCity, 
@@ -76,8 +77,20 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
         Account.Primary_Contact_Number__c,
         Account.Total_Credit_Limit__c,
         Account.Available_Credit_Limit__c,
-        Account.Credit_Days_Group_Dealer__c
+        Account.Credit_Days_Group_Dealer__c,
         // End Adding by Sandeep Vishwakarma
+        
+        // Start Added by Amol Patil
+        Account.Address__c,
+        Account.Address2__c,
+        Account.Pincode__c,
+        Account.Country__c,
+        Account.State__c,
+        Account.City__c,
+        Account.District__c,
+        Account.Sub_District__c,
+        Account.OwnerId
+    // End Adding by Amol Patil
         };
     }
     
@@ -223,11 +236,32 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
         return Database.query(
             newQueryFactory()
                     .selectField('Owner.Email')
+                    .selectField('Pincode__r.Pincode__c')
+                    .selectField('Pincode__r.Name')
+                    .selectField('City__r.Name')
+                    .selectField('State__r.Name')
+                    .selectField('Country__r.Name')
+                    .selectField('District__r.Name')
+                    .selectField('Sub_District__r.Name')
                     .setCondition('Id=:dealerAcc')
                     .toSOQL()
         );
     }
         
+    /**
+     * Added by:Amol Patil
+     * @Description - Get a list of Account IDs based on ERP Customer Code used for Change Request Module.  .
+     * @param List : None.
+     * @return  - List<Account>.
+     */
+    public List<Account> getAccountsByERP(List<String> erpCodes) {
+        return Database.query(
+            newQueryFactory()
+                    .setCondition('ERP_Customer_Code__c In:erpCodes')
+                    .toSOQL()
+        );
+    }
+
       /**
      * Added by:Saurabh Pandey
      * @Description - Get a list of Account fields based on Dealer Code.
@@ -275,11 +309,14 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
      }
 
      public  List<Account> selectShippingAccounts(String accounId){
+        String type = 'Ship To Party';
         String query = newQueryFactory()
         .setCondition('ParentId=:accounId')
+        .setCondition('Account_Type__c=:type')
         .toSOQL();
         return Database.query(query);
      }
+
     public List<Account> getAccountsByErpCode(List<String> fieldNames) {
         return Database.query(
             newQueryFactory()
@@ -289,4 +326,33 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
         );
      }
 
-    }
+     /**
+     * Added by:Amol Patil
+     * @Description - Get a list of shipto party Account for respective account ids.
+     * @param List :List<String> accIds
+     * @return  - List<Account>.
+     */
+    public List<Account> shiptoPartyByAccount(List<String> accIds) {
+        return Database.query(
+            newQueryFactory()
+            .selectField('Account_Type__c')
+            .setCondition('Account_Type__c = \'Ship To Party\' AND ParentId IN:accIds')
+            .toSOQL()
+        );
+     }
+     /**
+     * Added by:Kalpesh chande
+     * @Description - Get a list of Account for send email.
+     * @param List :
+     * @return  - List<Account>.
+     */
+    public List<Account> getAccountForEmail() {
+        return Database.query(
+            newQueryFactory()
+            .selectField('Id')
+            .setCondition('Contact_Person_Email__c !=null')
+            .toSOQL()
+        );
+     }
+
+}

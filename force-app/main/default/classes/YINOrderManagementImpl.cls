@@ -1,4 +1,4 @@
-public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
+public without sharing class YINOrderManagementImpl implements YINIOrderManagement{
     public static List<YINProductWrapper> getProducts(String accountId,String orderType){ 
         try {
             // Get class for which Instance should create by OrderType
@@ -232,17 +232,6 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
         return priceList;
     }
 
-    
-    public static string getCreditLimits(String accountId){
-        try {
-            // 1. Get Credit Limits from Api
-            // return them in JSON String format
-            String jsonCreditLimits = '';
-            return jsonCreditLimits;
-        } catch (Exception e) {
-            throw new AuraHandledException(e.getMessage());
-        }  
-    }
 
     public static string deleteCartItem(String productWrapper,String accountId){
         try {
@@ -268,16 +257,15 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
         WrapCommit docommit = (WrapCommit)JSON.deserialize(wrapCommit,WrapCommit.class);
         String response = null;
         // 1. Getting the oldest ledger , Question What if No Ledger Present
-        YINLedgerSelector ledgerSelector = (YINLedgerSelector)YINApplication.selector.newInstance(YIN_Ledger__c.SObjectType);
-        List<YIN_Ledger__c> accountLedgers = ledgerSelector.selectByAccount(new Set<Id>{docommit.accountId});
+       
         // 2. Check Credit Days
-        Boolean checkCreditDays = checkCreditDays(accountLedgers);
+        Boolean checkCreditDays = checkCreditDays(docommit.accountId);
         if(checkCreditDays){// TODO : Add Not Operator Once Credit Days Formula field is in working state
             throw new YINOrderManagementException('Credit days expired');
         }
 
         // 3. Check Credit Limit
-        Boolean checkCreditLimit = checkCreditLimit(accountLedgers,docommit.grandTotal);
+        Boolean checkCreditLimit = checkCreditLimit(docommit.accountId,docommit.grandTotal);
         if(!checkCreditLimit){
             throw new YINOrderManagementException('Credit Limit exceed');
         }
@@ -290,7 +278,7 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
 
         return response;
     }
-    static Map<String,List<OrderItem>> ordersByStatus = new Map<String,List<OrderItem>>();// Use to Virtually store Order Item to display prompt on LWC
+    static Map<String,String> ordersByStatus = new Map<String,String>();// Use to Virtually store Order Item to display prompt on LWC
     
     static  List<OrderItem> itemOpen = new List<OrderItem>();
     static  List<OrderItem> itemSubmitted = new List<OrderItem>();
@@ -299,6 +287,7 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
     static List<OrderItem> itemToadd = new  List<OrderItem>();
     static List<OrderItem> itemToUpdate = new  List<OrderItem>();
     static Boolean deleteOpenOrder = true; // If No. of orderLineItem for Open Order is 0, then delete openOrder
+    static Boolean deleteClosedOrder = true;
     static Map<String,YIN_Variant__c> variantByVariantCode = new Map<String,YIN_Variant__c>();
     static Order closedOrder = null;
     static Order openOrder = null;
@@ -355,6 +344,10 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
                 processProductWithoutVariant(wrapper,normalProductData,item);
             }else{
                 System.debug('product '+wrapper.pricebookEntry.ProductCode+' is not available');
+                unitofworkProcessOrder.registerNew(item.clone(), OrderItem.OrderId, openOrder);
+                deleteOpenOrder = false;
+                itemOpen.add(item);
+                itemToDelete.add(item);
             }
         }
         unitofworkProcessOrder.registerDeleted(itemToDelete);
@@ -362,24 +355,40 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
         itemToUpdate = reCalculate(itemToUpdate);
         
         unitofworkProcessOrder.registerNew(itemToadd);
+        String responseSAP = '';
         if(docommit.doCommit==true){
             unitofworkProcessOrder.commitWork();
+            if(!deleteClosedOrder){
+                responseSAP = YINStockInventory.sendOrder(new List<Order> {closedOrder});
+                YINSalesOrderWrap salesOrder = (YINSalesOrderWrap)JSON.deserialize(responseSAP,YINSalesOrderWrap.class);
+                closedOrder.ERP_Order_Number__c = salesOrder.erpOrderNumber;
+            }
         }
-        if(deleteOpenOrder && docommit.doCommit==true){
-            LibISobjectUnitOfWork unitofworkOpenOrder = YINApplication.unitofwork.newInstance(); 
-            unitofworkOpenOrder.registerDeleted(openOrder);
-            unitofworkOpenOrder.commitWork();
-        }
-        ordersByStatus.put('Open',itemOpen);
-        ordersByStatus.put('Submitted',itemSubmitted);
-        
-        /* Unit Test  */
-        String itemsString = JSON.serialize(itemToadd);
-        YINStockInventory.sendOrder(new List<Order> {closedOrder});
-
         List<Order> orders = new List<Order>();
-        orders.add(closedOrder);
-        orders.add(openOrder);
+        if(docommit.doCommit==true){
+            LibISobjectUnitOfWork unitofworkOpenOrder = YINApplication.unitofwork.newInstance(); 
+            if(deleteOpenOrder){
+                unitofworkOpenOrder.registerDeleted(openOrder);
+            }
+            
+            if(deleteClosedOrder){
+                unitofworkOpenOrder.registerDeleted(closedOrder);
+            }
+            unitofworkOpenOrder.commitWork();
+            
+            if(!deleteOpenOrder){
+                orders.add(openOrder);
+            }
+            if(!deleteClosedOrder){
+                orders.add(closedOrder);
+            }
+        }
+        
+        
+
+        ordersByStatus.put('Open',JSON.serialize(itemOpen));
+        ordersByStatus.put('Submitted',JSON.serialize(itemSubmitted));
+        ordersByStatus.put('Orders',JSON.serialize(orders));
 
         return JSON.serialize(ordersByStatus);
     }
@@ -399,6 +408,7 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
                 itemSubmitted.add(newItem);
                 System.debug('OrderId 4'+newItem.OrderId+'  item Id '+newItem.Product2Id);
                 quantityNeed = 0;
+                deleteClosedOrder = false;
             }else if(quantityNeed!=0 && inventoryQty>0){
                 OrderItem newItem = item.clone();
                 newItem.Variant__c = variantByVariantCode.get(wrapper.variantCode).Id;
@@ -408,6 +418,7 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
                 itemSubmitted.add(newItem);
                 System.debug('OrderId 4'+newItem.OrderId+'  item Id '+newItem.Product2Id);
                 quantityNeed = quantityNeed - inventoryQty;
+                deleteClosedOrder = false;
             }
 
             if(quantityNeed>0){
@@ -445,6 +456,7 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
                 itemSubmitted.add(newItem);
                 System.debug('OrderId 1'+newItem.OrderId+'  item Id '+newItem.Product2Id);
                 quantityNeed = 0;
+                deleteClosedOrder = false;
             }else if(quantityNeed!=0 && availableQty>0){ // 1. 5>=6:true ,2. 
                 System.debug('Normal OrderLineItem where Order Status = Closed ');
                 //closedLineItemNormal++;
@@ -458,6 +470,7 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
                 itemSubmitted.add(newItem);
                 System.debug('OrderId 2'+newItem.OrderId+'  item Id '+newItem.Product2Id);
                 quantityNeed = quantityNeed - availableQty;
+                deleteClosedOrder = false;
             }
             itemToDelete.add(item);
         }
@@ -511,8 +524,9 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
         return items;
     }
 
-    private static boolean checkCreditDays(List<YIN_Ledger__c> accountLedgers){
-        
+    private static boolean checkCreditDays(String accountId){
+        YINLedgerSelector ledgerSelector = (YINLedgerSelector)YINApplication.selector.newInstance(YIN_Ledger__c.SObjectType);
+        List<YIN_Ledger__c> accountLedgers = ledgerSelector.selectByAccount(new Set<Id>{accountId});
         Integer numberDaysDue = 0;
 
         if(accountLedgers.size()>0){
@@ -526,8 +540,23 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
         }
     }
 
-    private static boolean checkCreditLimit(List<YIN_Ledger__c> accountLedgers,Decimal grandTotal){
-        return (accountLedgers[0].Dealer_Code__r?.Available_Credit_Limit__c >= grandTotal);
+    private static boolean checkCreditLimit(String accountId,Decimal grandTotal){
+        YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
+        List<Account> accounts = accountSelector.getAccounts(new List<String>{accountId});
+        if(String.isEmpty(accounts[0].ParentId)){
+            return grandTotal <= accounts[0].Available_Credit_Limit__c;
+        }else{
+            Boolean result = true;
+            List<Account> shippingAccounts = accountSelector.selectShippingAccounts(accountId);
+            for(Account acc:shippingAccounts){
+                if(!(grandTotal <= acc.Available_Credit_Limit__c)){
+                    return false;
+                }
+            }
+            return result;
+        }
+
+        // return (accountLedgers[0].Dealer_Code__r?.Available_Credit_Limit__c >= grandTotal);
     }
 
     public static List<String> getExperienceUserProfiles(){
@@ -667,6 +696,8 @@ public with sharing class YINOrderManagementImpl implements YINIOrderManagement{
        //     throw new AuraHandledException('Message '+e.getMessage() +' LineNumber '+e.getLineNumber());
        // }
     } 
+
+  
 
     
     public class WrapCommit{

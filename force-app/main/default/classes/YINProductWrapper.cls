@@ -1,4 +1,4 @@
-public with sharing class YINProductWrapper {
+public with sharing class YINProductWrapper implements Comparable{
 
     @AuraEnabled public Id  orderItemId;
 
@@ -47,5 +47,16 @@ public with sharing class YINProductWrapper {
     public class DiscountTable{
         @AuraEnabled public Decimal minimumOrderQuantity;
         @AuraEnabled public Decimal discountPercentage;
+    }
+
+    public Integer compareTo(Object compareTo){
+        YINProductWrapper warpper = (YINProductWrapper) compareTo;
+        Integer returnValue = 0;
+        if(productOfTheMonth == false || productOfTheMonth==null){
+            return 1;
+        }else if(productOfTheMonth == true){
+            return -1;
+        }  
+        return returnValue;     
     }
 }

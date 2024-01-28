@@ -19,7 +19,7 @@
                 </lightning-radio-group>
               </div>
   
-              <div class="col-md-7" style="margin-bottom:5px;">
+              <div class="col-md-6" style="margin-bottom:5px;">
                 <div class="input-group">
                   <div class="input-group-btn search-panel" data-search="students">
   
@@ -44,6 +44,14 @@
                 </div>
               </div>
   
+              <div class="col-md-1 col-xs-3"  align="right" style="margin-top: -5px!important;">
+                <div class="cart" onclick={handleShowCart} style="cursor: pointer;">
+                  <!-- <a href="cartdetails.html" target="_blank"> -->
+                  <span class="count">{CartDetailLength}</span><i class="fa fa-shopping-cart material-icons"></i>
+                  </a>
+                </div>
+              </div>
+
               <!-- Search Ends -->
   
               <div class="col-md-2 col-xs-12 gridlist">
@@ -58,35 +66,36 @@
   
           <section class="products grid group">
             <div style="clear:both;"></div>
-            <div class="col-md-1 col-xs-3">
-              <div class="btn-holder">
-                <p>Trending</p>
-                <div class="toggle-switch">
-                  <label for="cb-switch">
-                    <input type="checkbox" lwc:ref="trendingSKU" data-name="trendingSKU" id="cb-switch" value=""
-                      onchange={handleChangeToggle}>
-                    <span>
-                      <small></small>
-                    </span>
-                  </label>
+            <div lwc:if={displayToggle}>
+              <div class="col-md-1 col-xs-3">
+                <div class="btn-holder">
+                  <p>Trending</p>
+                  <div class="toggle-switch">
+                    <label for="cb-switch">
+                      <input type="checkbox" lwc:ref="trendingSKU" data-name="trendingSKU" id="cb-switch" value=""
+                        onchange={handleChangeToggle}>
+                      <span>
+                        <small></small>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-1 col-xs-3">
+                <div class="btn-holder">
+                  <p>Weekly</p>
+                  <div class="toggle-switch1">
+                    <label for="cb-switch1">
+                      <input type="checkbox" lwc:ref="productOfTheMonth" data-name="productOfTheMonth" id="cb-switch1" value=""
+                        onchange={handleChangeToggle}>
+                      <span>
+                        <small></small>
+                      </span>
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="col-md-1 col-xs-3">
-              <div class="btn-holder">
-                <p>Weekly</p>
-                <div class="toggle-switch1">
-                  <label for="cb-switch1">
-                    <input type="checkbox" lwc:ref="productOfTheMonth" data-name="productOfTheMonth" id="cb-switch1" value=""
-                      onchange={handleChangeToggle}>
-                    <span>
-                      <small></small>
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </div>
-  
             <div lwc:if={selectedOrderType.all}>
               <div class="col-md-8" align="right"></div>
             </div>
@@ -104,13 +113,7 @@
               <div class="col-md-6" align="right"></div>
             </div>
   
-            <div class="col-md-2 col-xs-6" align="right">
-              <div class="cart" onclick={handleShowCart} style="cursor: pointer;">
-                <!-- <a href="cartdetails.html" target="_blank"> -->
-                <span class="count">{CartDetailLength}</span><i class="fa fa-shopping-cart material-icons"></i>
-                </a>
-              </div>
-            </div>
+            
   
   
             <div style="clear:both;"></div>
@@ -121,8 +124,8 @@
                 <article key={productWrap.Id} class={productCSSClass}>
                   <div class="product__inner">
                     <section class="product__image">
-                      <div lwc:if={productWrap.trendingSKU} class="label-top shadow-sm">Trending</div>
-                      <div lwc:if={productWrap.productOfTheMonth} class="label-right shadow-sm">Weekly</div>
+                      <div lwc:if={productWrap.trendingSKU} class="label-top shadow-sm">Trending</div> <div lwc:else class="label-top shadow-sm" style="background-color: white;box-shadow: none!important;">CSSFix</div>
+                      <div lwc:if={productWrap.productOfTheMonth} class="label-right shadow-sm">Weekly</div> <div lwc:else style="background-color: white;box-shadow: none!important;" class="label-top shadow-sm">CSSFix</div>
                       <img src={geolander} />
                     </section>
   
@@ -171,7 +174,7 @@
                             {productWrap.pricebookEntry.UnitPrice}.00</span>
                           </div>
                         </template>
-                        <div class="wcf-right"><a data-index={index} onfocus={copyOldQuanity} onclick={handleCartAdd} class="buy-btn"><i
+                        <div class="wcf-right" title="Add to Cart"><a data-index={index} onfocus={copyOldQuanity} onclick={handleCartAdd} class="buy-btn"><i
                               class="fa fa-shopping-cart zmdi zmdi-shopping-basket"></i></a></div>
                       </div>
                     </div>
@@ -218,7 +221,7 @@
   
         <div class="container-fuild">
           <div class="row" style="margin:1px">
-            <div class="col-md-3 col-xs-6 credit"><i class="fa fa-credit-card"></i> Credit Limit <br /><span class="amt">₹
+            <div class="col-md-3 col-xs-6 credit"><i class="fa fa-credit-card"></i> Total Credit Limit <br /><span class="amt">₹
                 {accountDetails.Total_Credit_Limit__c}</span></div>
             <div class="col-md-3 col-xs-6 credit"><i class="fa fa-credit-card"></i> Available Credit Limit <br /><span
                 class="amt">₹ {accountDetails.Available_Credit_Limit__c}</span></div>
@@ -377,20 +380,23 @@
                     <tr style="background:#262626; color:#fff; font-weight:600; border-top-left-radius:4px; border-bottom-left-radius:4px; border-top-right-radius:4px; border-bottom-right-radius:4px; font-size:18px; padding:5px;">
                       <th style="border: 1px solid black;text-align: center;">Item Code</th>
                       <th style="border: 1px solid black;text-align: center;">Quantity</th>
+                      <th style="border: 1px solid black;text-align: center;">Variant</th>
                       <th style="border: 1px solid black;text-align: center;">Status</th>
                     </tr>
                     <template for:each={orderPreview.Submitted} for:item="submitted">
                       <tr key={submitted.tempId}>
                         <td style="border: 1px solid black;text-align: center;">{submitted.Product2.ProductCode}</td>
                         <td style="border: 1px solid black;text-align: center;">{submitted.Quantity}</td>
-                        <td style="border: 1px solid black;text-align: center;"><lightning-icon size="x-small" icon-name="standard:task2" alternative-text="Submitted"  title="Submitted"></lightning-icon></td>
+                        <td style="border: 1px solid black;text-align: center;">{submitted.VariantCode}</td>
+                        <td style="border: 1px solid black;text-align: center;">Submitted <lightning-icon size="x-small" icon-name="standard:task2" alternative-text="Submitted"  title="Submitted"></lightning-icon></td>
                       </tr>
                     </template>
                     <template for:each={orderPreview.Open} for:item="open">
                       <tr key={open.tempId}>
                         <td style="border: 1px solid black;text-align: center;">{open.Product2.ProductCode}</td>
                         <td style="border: 1px solid black;text-align: center;">{open.Quantity}</td>
-                        <td style="border: 1px solid black;text-align: center;"><lightning-icon size="x-small" icon-name="standard:today" alternative-text="Open"  title="Open"></lightning-icon></td>
+                        <td style="border: 1px solid black;text-align: center;">{open.VariantCode}</td>
+                        <td style="border: 1px solid black;text-align: center;">Open <lightning-icon size="x-small" icon-name="standard:today" alternative-text="Open"  title="Open"></lightning-icon></td>
                       </tr>
                     </template>
                   </table>  
@@ -405,6 +411,57 @@
         </section>
         <div class="slds-backdrop slds-backdrop_open"></div>
     </template>
+
+
+    <template if:true={isModalOrder}>
+      <!-- Modal/Popup Box LWC starts here -->
+      <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+          <div class="slds-modal__container">
+              <!-- Modal/Popup Box LWC header here -->
+              <header class="slds-modal__header">
+                  <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={closeModalCheckout}>
+                      <lightning-icon icon-name="utility:close"
+                          alternative-text="close"
+                          variant="inverse"
+                          size="small" ></lightning-icon>
+                      <span class="slds-assistive-text">Close</span>
+                  </button>
+                  <h2 id="modal-heading-02" class="slds-text-heading_medium slds-hyphenate">Created Order</h2>
+              </header>
+              <!-- Modal/Popup Box LWC body starts here -->
+              <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-2">
+                <!-- <h2>Submitted Order</h2> -->
+                <div class="col-md-12 col-xs-6">
+                  <!-- <div class="slds-section__title-action"
+                    style="background:#262626; color:#fff; font-weight:600; border-top-left-radius:4px; border-bottom-left-radius:4px; border-top-right-radius:4px; border-bottom-right-radius:4px; font-size:18px; padding:5px;">
+                    <lightning-icon label="" icon-name="standard:work_order_item" style="color:#fff!important;"></lightning-icon>
+                    <span style="margin-left:10px; font-size: 16px; font-weight: 500;">Submitted Order</span>
+                  </div>
+                 -->
+                <table>
+                  <tr style="background:#262626; color:#fff; font-weight:600; border-top-left-radius:4px; border-bottom-left-radius:4px; border-top-right-radius:4px; border-bottom-right-radius:4px; font-size:18px; padding:5px;">
+                    <th style="border: 1px solid black;text-align: center;">Order Number</th>
+                    <th style="border: 1px solid black;text-align: center;">Order Status</th>
+                    <th style="border: 1px solid black;text-align: center;">ERP Number</th>
+                  </tr>
+                  <template for:each={orderPreview.Orders} for:item="order">
+                    <tr key={order.OrderNumber}>
+                      <td style="border: 1px solid black;text-align: center;">{order.OrderNumber}</td>
+                      <td style="border: 1px solid black;text-align: center;">{order.Status}</td>
+                      <td style="border: 1px solid black;text-align: center;">{order.ERP_Order_Number__c}</td>
+                    </tr>
+                  </template>
+                </table>  
+              </div>
+              </div>
+              <!-- Modal/Popup Box LWC footer starts here -->
+              <footer class="slds-modal__footer">
+                  <button class="slds-button slds-button_brand" data-confirm="true" onclick={handleCheckoutRedirect} title="Close" style="color: white;">Close</button>
+              </footer>
+          </div>
+      </section>
+      <div class="slds-backdrop slds-backdrop_open"></div>
+  </template>
 
 
 

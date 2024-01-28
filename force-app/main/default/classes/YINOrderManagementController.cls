@@ -53,11 +53,7 @@ public with sharing class YINOrderManagementController {
         return orderService.getCartDetails(accountId);
     }
     
-    @AuraEnabled
-    public static string getCreditLimits(String accountId){
-        YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
-        return orderService.getCreditLimits(accountId);
-    }
+   
 
     @AuraEnabled
     public static string deleteCartItem(String productWrapper,String accountId){
@@ -76,5 +72,6 @@ public with sharing class YINOrderManagementController {
         YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
         return orderService.createOrder(productWrapper,wrapCommit);
     }
+
     
 }

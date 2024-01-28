@@ -98,8 +98,12 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
             // Adding productWrapper to List
             productsWrapper.add(productWrapper);
         }
+        productsWrapper.sort();
+        
         return productsWrapper;
     }
+
+    
 
     // Utility Methods
     public static List<PriceBook2> getPriceBook(String accountId){

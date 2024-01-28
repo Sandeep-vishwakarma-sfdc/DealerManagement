@@ -191,6 +191,7 @@ public with sharing class YINStockInventory {
             wrap.erpOrderNumber = 'SF00122';
             wrap.orderStatus = 'Invoice';
             wrap.status = 'Success';
+            return JSON.serialize(wrap);
         }
         return null;
     }
