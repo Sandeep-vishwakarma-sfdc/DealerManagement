@@ -1,8 +1,8 @@
 /**
  * @description       : This class provides methods to query and filter Account records.
  * @author            : Saurabh Pandey
- * @group             : 
- * @last modified on  : 18-01-2024
+ * @group             : SKI
+ * @last modified on  : 31-01-2024
  * @last modified by  : Amol Patil/amol.patil@skinternational.com
  **/
 public with sharing class YINAccountSelector extends LibSObjectSelector {
@@ -268,7 +268,7 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
      * @param List : List<String> dealerCodelist.
      * @return  - List<Account>.
      */
-         public List<Account> getDealeridlist(List<String> dealerCodelist)  {
+    public List<Account> getDealeridlist(List<String> dealerCodelist)  {
         // Implement logic for filtering by area and subclass
         return Database.query(
             newQueryFactory()
@@ -284,7 +284,7 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
      * @param List :List<String> codeList
      * @return  - List<Account>.
      */  
-         public List<Account> getDealerIdfromCode(List<String> codeList)  {
+    public List<Account> getDealerIdfromCode(List<String> codeList)  {
         // Implement logic for filtering by area and subclass
         return Database.query(
             newQueryFactory()
@@ -299,7 +299,7 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
      * @param List :List<String> accIds
      * @return  - List<Account>.
      */
-     public List<Account> getAccounts(List<String> accIds) {
+    public List<Account> getAccounts(List<String> accIds) {
         return Database.query(
             newQueryFactory()
             .selectField('Location__r.Location_Code__c')
@@ -309,14 +309,18 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
      }
 
      public  List<Account> selectShippingAccounts(String accounId){
-        String type = 'Ship To Party';
         String query = newQueryFactory()
         .setCondition('ParentId=:accounId')
-        .setCondition('Account_Type__c=:type')
+        .setCondition('SFDC_Customer_Code__c!=null')
         .toSOQL();
         return Database.query(query);
      }
-
+         /**
+         * Added by:Kalpesh chande
+         * @Description - Get a list of Account for send email.
+         * @param List : List<String> fieldNames
+         * @return  - List<Account>.
+         */
     public List<Account> getAccountsByErpCode(List<String> fieldNames) {
         return Database.query(
             newQueryFactory()

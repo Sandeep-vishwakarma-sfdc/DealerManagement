@@ -7,10 +7,13 @@ import getAccount from '@salesforce/apex/YINOrderManagementController.getAccount
 import addToCart from '@salesforce/apex/YINOrderManagementController.addToCart';
 import getCartDetails from '@salesforce/apex/YINOrderManagementController.getCartDetails';
 import deleteCartItem from '@salesforce/apex/YINOrderManagementController.deleteCartItem';
+import getObjectApiName from '@salesforce/apex/YINOrderManagementController.getObjectApiName';
+import getOrderDetails from '@salesforce/apex/YINOrderManagementController.getOrderDetails';
 import getShippingAccounts from '@salesforce/apex/YINOrderManagementController.getShippingAccounts';
 import createOrder from '@salesforce/apex/YINOrderManagementController.createOrder';
 import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
 import customcss from '@salesforce/resourceUrl/resourceOrderMangmt';
+import LightningAlert from 'lightning/alert';
 
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
@@ -33,6 +36,7 @@ export default class YinOrderManagementCmp extends LightningElement {
     user = {};
     error = {};
     accountId = {};
+    openOrderId = '';
     experienceUserProfiles = [];
     hasRendered = false;
     value = 'All'; // what filter applied e.g All Product || Discounted Product
@@ -90,6 +94,7 @@ export default class YinOrderManagementCmp extends LightningElement {
     isModalOpen = false;
     orderPreview = [];
     isModalOrder = false;
+    orderModuleType = 'Normal';
 
     
     
@@ -106,17 +111,33 @@ export default class YinOrderManagementCmp extends LightningElement {
     async connectedCallback(){
         try {
         this.isLoading = true;
+
         // check whether current user is Sales Representative OR Digital Experience User
         this.experienceUserProfiles = await getExperienceUserProfiles();
         this.user = await getCurrentUser();
+        console.log(' USer ',JSON.stringify(this.user));
         this.isSalesRepUser = !this.experienceUserProfiles?.includes(this.user?.Profile?.Name);
 
-        // If Logged In User is Expericence User then Bring Account Id
-        if(!this.isSalesRepUser){
+        
+        if(!this.isSalesRepUser){// For Experience User
+            let urlString = location.href;
+            let url = new URL(urlString);
+            if(url.searchParams.get('orderId')){
+                this.openOrderId = url.searchParams.get('orderId');
+            }
             this.accountId = await getExperienceUserAccount();
-        }else{
-            // this.accountId = this.recordId;
-            this.accountId = '0010T00000fYTVBQA4';
+            
+        }else{// For Salesforce User
+            let objectApiName = await getObjectApiName({recordId:this.recordId});
+            if(objectApiName=='Account'){
+                this.accountId = this.recordId;
+            }else{
+                let orderDetails = await getOrderDetails({recordId:this.recordId});
+                console.log('JSON Order ',JSON.stringify(orderDetails[0]));
+                this.openOrderId = orderDetails[0].Id;
+                this.accountId = orderDetails[0].AccountId;
+            }
+            // this.accountId = '0010T00000fYTVBQA4';
         }
         console.log('Account Id ',this.accountId);
         
@@ -127,7 +148,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         this.accountDetails = await getAccount({accountId:this.accountId});
 
         // Loading existing cart order details
-        this.cartDetails = await getCartDetails({accountId:this.accountId});
+        this.cartDetails = await getCartDetails({accountId:this.accountId,openOrderId:this.openOrderId});
         console.log('Cart Detail ',this.cartDetails);
         console.log('Cart Detail str',JSON.stringify(this.cartDetails));
         this.CartDetailLength = this.cartDetails.length;
@@ -136,7 +157,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         this.billingAddress = `${this.accountDetails.BillingStreet}  ,${this.accountDetails.BillingCity}  ,${this.accountDetails.BillingState}  ${this.accountDetails.BillingPostalCode}  ${this.accountDetails.BillingCountry}`;
         
         // Copy Discount Product
-        this.discountedProductsVirtual = await getProducts({accountId:this.accountId,orderType:'Discount'});
+        this.discountedProductsVirtual = await getProducts({accountId:this.accountId,orderType:'Discount',orderModuleType:this.orderModuleType});
 
         // Fetch Shipping Accounts
         this.shippingAccounts = await getShippingAccounts({accountId:this.accountId})
@@ -149,7 +170,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         
         this.isLoading = false;
         } catch (error) {
-           this.showToast('Error',error.body.message,'error');
+           this.showAlert(error.body.message,'error','Error');
            this.isLoading = false;
         }
 
@@ -157,14 +178,17 @@ export default class YinOrderManagementCmp extends LightningElement {
 
     handleChangeShippingAddress(event){
         let value = event.detail.value;
+        this.shippingAccountValue = value;
+        console.log('shipping value ',value);
         let index = this.shippingAccounts.findIndex(ele=>ele.SFDC_Customer_Code__c==value);
         if(index !=-1){
             this.selectedShippingAccount = this.shippingAccounts[index];
             console.log(this.selectedShippingAccount);
-            this.shippingAddress = `${this.selectedShippingAccount.ShippingStreet}  ,${this.selectedShippingAccount.ShippingCity} ,${this.selectedShippingAccount.ShippingState} ${this.selectedShippingAccount.ShippingPostalCode}  ${this.selectedShippingAccount.ShippingCountry}`; 
+            this.shippingAddress = `${this.selectedShippingAccount.ShippingStreet?this.selectedShippingAccount.ShippingStreet:''}  ,${this.selectedShippingAccount.ShippingCity?this.selectedShippingAccount.ShippingCity:''} ,${this.selectedShippingAccount.ShippingState?this.selectedShippingAccount.ShippingState:''} ${this.selectedShippingAccount.ShippingPostalCode?this.selectedShippingAccount.ShippingPostalCode:''}  ${this.selectedShippingAccount.ShippingCountry?this.selectedShippingAccount.ShippingCountry:''}`; 
         }else{
             this.selectedShippingAccount = {Contact_Person_Email__c:'',Contact_Person_Phone__c:''};
             this.shippingAddress = ``;
+            this.shippingAccountValue = '';
         }
         
     }
@@ -218,6 +242,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         }
         await this.loadProducts(orderType);
         this.isLoading = true;
+        this.refs.searchinput.value = '';
         // reset filters
         if(this.displayToggle){
             this.refs.trendingSKU.checked = false;
@@ -252,7 +277,7 @@ export default class YinOrderManagementCmp extends LightningElement {
 
     async loadProducts(OrderType){// This will load Products based on orderType (i.e All, Discount)
         this.counter = 0;
-        const products = await getProducts({accountId:this.accountId,orderType:OrderType});
+        const products = await getProducts({accountId:this.accountId,orderType:OrderType,orderModuleType:this.orderModuleType});
         // let tempArray = [];
         // for (let i = 0; i < 10000; i++) {
         //     for (let item in products){ 
@@ -313,6 +338,11 @@ export default class YinOrderManagementCmp extends LightningElement {
         let index = event.currentTarget.dataset.index;
         // console.log('Add to Cart index',index);
         let productWrap = this.productswrapper[index];
+        if(productWrap.quantity<=0){
+            this.showAlert('Quantity must be greater than 0','warning','Warning'); 
+            productWrap.quantity = this.oldQty;
+            return;
+        }
         let cartIndex = undefined;
         if(this.selectedOrderType.all){ // Form Normal Product , No Need to check Variants
             cartIndex = this.cartDetails.findIndex(ele=>ele.productId==productWrap.productId);
@@ -325,37 +355,38 @@ export default class YinOrderManagementCmp extends LightningElement {
             let productWrap = this.productswrapper[index];
             if(this.accountDetails.Is_Locking_Enable__c){
                 if(productWrap.lockingSKUAccount){
-                    this.showToast('Warning ',`Product ${productWrap.productName} is locked for the customer.`,'warning','dismissable'); 
+                    this.showAlert(`Product ${productWrap.productName} is locked for the customer.`,'warning','Warning'); 
                     return;
                 }
                 if(productWrap.lockingSKULocation){
-                    this.showToast('Warning ',`Product ${productWrap.productName} is locked for cutsomer location.`,'warning','dismissable'); 
+                    this.showAlert(`Product ${productWrap.productName} is locked for cutsomer location.`,'warning','Warning'); 
                     return;
                 }
             }else{
-                this.showToast('Warning ','Locking is disabled for customer','warning','dismissable');   
+                this.showAlert('Locking is disabled for customer','warning','Warning');   
                 return; 
             }
             if(this.accountDetails.Is_Capping_Enable__c){
                 if(productWrap.maximumCappingQuantity < productWrap.quantity){
                     productWrap.quantity = 1;
-                    this.showToast('Warning ',`You can add only ${productWrap.maximumCappingQuantity} quantity for Product ${productWrap.productName}.`,'warning','dismissable'); 
+                    this.showAlert(`You can add only ${productWrap.maximumCappingQuantity} quantity for Product ${productWrap.productName}.`,'warning','Warning'); 
                     return;
                 }
             }else{
-                this.showToast('Warning ','Capping is disabled for customer','warning','dismissable');  
+                this.showAlert('Capping is disabled for customer','warning','Warning');  
                 return;
             }
             productWrap.netPrice = productWrap.pricebookEntry.UnitPrice * productWrap.quantity;
             this.cartDetails.push(productWrap);
-            let isAddedToCart = await addToCart({productWrapper:JSON.stringify(productWrap),accountId:this.accountId});
+            console.log('Cart productWrap ',JSON.stringify(productWrap));
+            let isAddedToCart = await addToCart({productWrapper:JSON.stringify(productWrap),accountId:this.accountId,openOrderId:this.openOrderId});
             //  Refresh Carts
-            this.cartDetails = await getCartDetails({accountId:this.accountId});
+            this.cartDetails = await getCartDetails({accountId:this.accountId,openOrderId:this.openOrderId});
             this.CartDetailLength = this.cartDetails.length;
             this.cartCalculation();
             this.showToast('Success ','Added to Cart','success','dismissable');
         }else{
-            this.showToast('Warning ','Already added to cart','warning','dismissable'); 
+            this.showAlert('Already added to cart','warning','Warning'); 
             productWrap.quantity = this.oldQty;
         }
     }
@@ -368,7 +399,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         if(cartIndex!=-1){
             let productWrap = this.cartDetails[cartIndex];
             console.log(' productWrap ',JSON.stringify(productWrap));
-            let response = await deleteCartItem({productWrapper:JSON.stringify(productWrap),accountId:this.accountId});
+            let response = await deleteCartItem({productWrapper:JSON.stringify(productWrap),accountId:this.accountId,openOrderId:this.openOrderId});
             console.log('resp ',response);
             if(response=='success'){
                 console.log('this.cartDetails ',this.cartDetails.length);
@@ -380,7 +411,7 @@ export default class YinOrderManagementCmp extends LightningElement {
                 this.showToast('Success ','Removed from Cart','success','dismissable');
             }
         }else{
-            this.showToast('Error ','Unable to find selected Item','warning','dismissable'); 
+            this.showAlert('Unable to find selected Item','warning','Warning'); 
         }
         this.isLoading = false;
     }
@@ -531,9 +562,9 @@ export default class YinOrderManagementCmp extends LightningElement {
         commitCheckOut = commitCheckOut=='true';
         console.log('commit ',commitCheckOut);
         // Check for valid Shipping Address
-        if(this.shippingAddress){
+        if(this.shippingAddress && this.shippingAccountValue){
             try {
-                let param = {doCommit:commitCheckOut,grandTotal:Number(this.grandTotal),accountId:this.accountId};
+                let param = {doCommit:commitCheckOut,grandTotal:Number(this.grandTotal),accountId:this.accountId,shippingAccountCode:this.shippingAccountValue};
                 let response = await createOrder({productWrapper:JSON.stringify(this.cartDetails),wrapCommit:JSON.stringify(param)});
                 console.log('response str',response);
                 response = JSON.parse(response);
@@ -543,12 +574,12 @@ export default class YinOrderManagementCmp extends LightningElement {
                 let tempId = 0;
                 let submitted = resSubmitted.map(item=>{
                     tempId++;
-                    return {tempId:tempId,VariantCode: item?.Variant__r?.Variant_Code__c,status:'Submitted',...item}
+                    return {tempId:tempId,VariantCode: item?.Variant_Code__c,status:'Submitted',...item}
                 });
                 tempId = 0;
                 let open = resOpen.map(item=>{
                     tempId++;
-                    return {tempId:tempId,VariantCode: item?.Variant__r?.Variant_Code__c,status:'Open',...item}
+                    return {tempId:tempId,VariantCode: item?.Variant_Code__c,status:'Open',...item}
                 });
                 
                 this.orderPreview = {Submitted:submitted,Open:open,Orders:resOrder};
@@ -565,12 +596,12 @@ export default class YinOrderManagementCmp extends LightningElement {
                 }
             } catch (error) {
                 console.log('error ',error);
-                this.showToast('Error',error.body.message,'error');
+                this.showAlert(error.body.message,'error','Error');
                 console.log('error ',error.message);
             }
             
         }else{
-            this.showToast('Error','Please Select Shipping Address','error');
+            this.showAlert('Please Select Shipping Address','error','Error');
         }
     }
 
@@ -595,23 +626,23 @@ export default class YinOrderManagementCmp extends LightningElement {
         item.quantity = quantity;
         console.log('cart ',item);
         if(quantity==0){
-            this.showToast('Error ','Quantity must be greater then "0" ','warning','dismissable'); 
+            this.showAlert('Quantity must be greater then "0" ','warning','Warning'); 
             return;
         }
 
         if(this.accountDetails.Is_Capping_Enable__c){
             if(item.maximumCappingQuantity < item.quantity){
                 item.quantity = this.oldQty;
-                this.showToast('Warning ',`You can add only ${item.maximumCappingQuantity} quantity for Product ${item.pricebookEntry.Product2.Name}.`,'warning','dismissable'); 
+                this.showAlert(`You can add only ${item.maximumCappingQuantity} quantity for Product ${item.pricebookEntry.Product2.Name}.`,'warning','Warning '); 
                 return;
             }
         }else{
-            this.showToast('Warning ','Capping is disabled for customer','warning','dismissable');  
+            this.showAlert('Capping is disabled for customer','warning','Warning ');  
             return;
         }
 
-        let isAddedToCart = await addToCart({productWrapper:JSON.stringify(item),accountId:this.accountId});
-        this.cartDetails = await getCartDetails({accountId:this.accountId});
+        let isAddedToCart = await addToCart({productWrapper:JSON.stringify(item),accountId:this.accountId,openOrderId:this.openOrderId});
+        this.cartDetails = await getCartDetails({accountId:this.accountId,openOrderId:this.openOrderId});
         this.CartDetailLength = this.cartDetails.length;
         this.cartCalculation();
 
@@ -635,7 +666,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         //this.productswrapperVirtual = this.productswrapper;
     }
  
-    showToast(title,message,variant,mode) {
+    async showToast(title,message,variant,mode) {
         const event = new ShowToastEvent({
             title: title,
             message: message,
@@ -643,6 +674,14 @@ export default class YinOrderManagementCmp extends LightningElement {
             mode: mode
         });
         this.dispatchEvent(event);
+    }
+
+    async showAlert(message,theme,label){
+        await LightningAlert.open({
+            message: message,
+            theme: theme, 
+            label: label, 
+        });
     }
 
     closeModalCheckout(){
@@ -654,7 +693,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         this.isModalOpen = false;
         this.isModalOrder = false;
         this.handleHideCart();
-        this.cartDetails = await getCartDetails({accountId:this.accountId});
+        this.cartDetails = await getCartDetails({accountId:this.accountId,openOrderId:this.openOrderId});
         this.CartDetailLength = this.cartDetails.length;
         this.cartCalculation();
         this.selectedShippingAccount = {name:'',accountCode:'',phone:'',email:'',address:''};

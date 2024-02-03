@@ -46,10 +46,10 @@ public with sharing class YINOrderItemSelector extends LibSObjectSelector{
         return (List<OrderItem>) Database.query(query);
     }
 
-    public List<OrderItem> selectByOrderAndProduct(Id orderId,Id productId){
+    public List<OrderItem> selectByOrderAndProduct(Id orderId,Id itemId){
         List<OrderItem> orders = new List<OrderItem>();
         String query =  newQueryFactory()
-                            .setCondition('OrderId = :orderId and Product2Id = :productId')
+                            .setCondition('OrderId = :orderId and Id = :itemId')
                             .toSOQL();
         return (List<OrderItem>) Database.query(query);
     }

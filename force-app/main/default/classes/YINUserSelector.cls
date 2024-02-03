@@ -33,7 +33,8 @@ public with sharing class YINUserSelector extends LibSObjectSelector {
             User.ProfileId,
             User.Email,
             User.Profile.Name,
-            User.contactId
+            User.contactId,
+            User.AccountId 
         };
     }
 
@@ -69,6 +70,7 @@ public with sharing class YINUserSelector extends LibSObjectSelector {
     {
         return Database.query(
             newQueryFactory()
+                .selectField('Profile.Name')
                 .setCondition('Id = :usr_id')
                 //.setLimit(1)
                 .toSOQL()

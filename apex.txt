@@ -43,3 +43,42 @@ YINOrderManagementImpl.processOrder(productWrappers);
 
 YINStockInventory.withoutVariant(new List<YINProductWrapper>());
 YINStockInventory.withVariant(new List<YINProductWrapper>());
+
+
+addToCart
+-------------------
+{
+"productWrapper":"{\"applyTCS\":true,\"combinationKey\":\"PC-010\",\"discountPercentage\":0,\"gstPercentage\":28,\"locationCode\":\"IN-DL-DEL\",\"lockingSKULocation\":false,\"maximumCappingQuantity\":24,\"netPrice\":10000,\"pricebookEntry\":{\"End_Date__c\":\"2024-03-31\",\"Id\":\"01u0T0000043sOAQAY\",\"IsActive\":true,\"Name\":\"XL6 Alpha 2021\",\"Pricebook2Id\":\"01s0T000000BM0sQAG\",\"Product2Id\":\"01t0T000001inusQAA\",\"ProductCode\":\"PC-002\",\"Start_Date__c\":\"2024-01-01\",\"UnitPrice\":5000,\"UseStandardPrice\":false,\"Product2\":{\"Description\":\"185/65/R15\\r\\nFRONT/REAR\\r\\nXL6\\r\\nAlpha\\r\\nPETROL\\r\\n2021\",\"IsActive\":true,\"Minimum_Quantity__c\":10,\"Name\":\"XL6 Alpha 2021\",\"ProductCode\":\"PC-002\",\"Product_Code__c\":\"PC-002\",\"Size__c\":\"14\",\"Tread_Pattern__c\":\"Pattern-2021\",\"Id\":\"01t0T000001inusQAA\"}},\"productId\":\"01t0T000001inusQAA\",\"productName\":\"XL6 Alpha 2021\",\"productOfTheMonth\":true,\"productPattern\":\"Pattern-2021\",\"productSize\":\"14\",\"quantity\":2,\"tcsPercentage\":0.1,\"tdsPercentage\":0,\"trendingSKU\":true,\"unitPrice\":5000}",
+"accountId":"0010T00000fYTVBQA4",
+"openOrderId":"8010T000000N5krQAC"
+}
+--------------------------------------------------------------------------------------------------------------------
+Parameters information
+1) accountId = String: account Id
+2) orderType = String: Type of Order Products e.g (All,Discount)
+3) orderModuleType = String : Type of Order Module e.g (Normal,Promotional)
+4) openOrderId = String : Id of Order having status Open (Required only when Editing Existing Order with status Open)
+5) productWrapper = String(JSON) : product and its information
+6) productWrappers = String(Array[JSON]) : multiple product and its information
+---------------------------------------------------------------------------------------------------------------------
+1) GET : /services/apexrest/order/products?accountId=0010T00000fYTVBQA4&orderType=All&searchType=Normal
+Apex : YINOrderRestProducts.getProducts();
+body : No body 
+
+----------------------------------------------------------------------------------------------------------------------
+2) GET : /services/apexrest/order/carts?accountId=0010T00000fYTVBQA4&openOrderId=
+Apex : YINOrderRestCarts.getCartDetails();
+body : No body 
+----------------------------------------------------------------------------------------------------------------------
+3) POST : /services/apexrest/order/carts
+Apex : YINOrderRestCarts.addToCart();
+body : { "productWrapper":"{\"applyTCS\":true,\"combinationKey\":\"PC-010\",\"discountPercentage\":0,\"gstPercentage\":28,\"locationCode\":\"IN-DL-DEL\",\"maximumCappingQuantity\":24,\"netPrice\":15000,\"pricebookEntry\":{\"End_Date__c\":\"2024-03-31\",\"Id\":\"01u0T0000045LBhQAM\",\"IsActive\":true,\"Name\":\"XL6 Alpha 2016\",\"Pricebook2Id\":\"01s0T000000BM0sQAG\",\"Product2Id\":\"01t0T000001jI85QAE\",\"ProductCode\":\"PC-010\",\"Start_Date__c\":\"2024-01-01\",\"UnitPrice\":3000,\"UseStandardPrice\":false,\"Product2\":{\"Description\":\"Test\",\"IsActive\":true,\"Minimum_Quantity__c\":10,\"Name\":\"XL6 Alpha 2016\",\"ProductCode\":\"PC-010\",\"Product_Code__c\":\"PC-010\",\"Size__c\":\"14\",\"Tread_Pattern__c\":\"Pattern-old\",\"Id\":\"01t0T000001jI85QAE\"}}\",\"productId\":\"01t0T000001jI85QAE\",\"productName\":\"XL6 Alpha 2016\",\"productPattern\":\"Pattern-old\",\"productSize\":\"14\",\"quantity\":5,\"tcsPercentage\":0.1,\"tdsPercentage\":0,\"unitPrice\":3000}", "accountId":"0010T00000fYTVBQA4", "openOrderId":"" }
+
+-----------------------------------------------------------------------------------------------------------------------
+4) POST : /services/apexrest/order/deletecartitem
+Apex : YINOrderRestDelete.deleteCartItem();
+body : { "productWrapper":"{\"combinationKey\":\"PC-002\",\"discountPercentage\":0,\"gstAmount\":2800,\"gstPercentage\":28,\"locationCode\":\"IN-DL-DEL\",\"maximumCappingQuantity\":24,\"maximumOrderQuantity\":10,\"minimumOrderQuantity\":2,\"netPrice\":10000,\"orderItemId\":\"8020T000001VDhrQAG\",\"pricebookEntry\":{\"End_Date__c\":\"2024-03-31\",\"Id\":\"01u0T0000043sOAQAY\",\"IsActive\":true,\"Name\":\"XL6 Alpha 2021\",\"Pricebook2Id\":\"01s0T000000BM0sQAG\",\"Product2Id\":\"01t0T000001inusQAA\",\"ProductCode\":\"PC-002\",\"Start_Date__c\":\"2024-01-01\",\"UnitPrice\":5000,\"UseStandardPrice\":false,\"Product2\":{\"Description\":\"185/65/R15\\r\\nFRONT/REAR\\r\\nXL6\\r\\nAlpha\\r\\nPETROL\\r\\n2021\",\"IsActive\":true,\"Minimum_Quantity__c\":10,\"Name\":\"XL6 Alpha 2021\",\"ProductCode\":\"PC-002\",\"Product_Code__c\":\"PC-002\",\"Size__c\":\"14\",\"Tread_Pattern__c\":\"Pattern-2021\",\"Id\":\"01t0T000001inusQAA\"}},\"priceList\":{},\"productId\":\"01t0T000001inusQAA\",\"productOfTheMonth\":false,\"quantity\":2,\"tcsPercentage\":0.1,\"tdsPercentage\":0,\"totalAmount\":12800,\"trendingSKU\":false,\"unitPrice\":5000}","accountId":"0010T00000fYTVBQA4", "openOrderId":"" }
+-----------------------------------------------------------------------------------------------------------------------
+5) POST : /services/apexrest/order/createorder
+Apex : YINOrderRestDelete.createOrder();
+body : {"productWrappers":"","wrapCommit":"{\"doCommit\":false,\"grandTotal\":53000,\"accountId\":\"0010T00000fYTVB\"}"}

@@ -7,6 +7,7 @@ public with sharing class YINProductWrapper implements Comparable{
     @AuraEnabled public Id  productId;
     @AuraEnabled public String discountType;
     @AuraEnabled public Boolean  productOfTheMonth;
+    @AuraEnabled public Boolean  frequentlyBoughtProduct;
     @AuraEnabled public Boolean  trendingSKU;
     @AuraEnabled public Boolean  lockingSKUAccount; // If it is true then product will lock.
     @AuraEnabled public Boolean  lockingSKULocation; // If it is true then product will lock.
@@ -52,9 +53,9 @@ public with sharing class YINProductWrapper implements Comparable{
     public Integer compareTo(Object compareTo){
         YINProductWrapper warpper = (YINProductWrapper) compareTo;
         Integer returnValue = 0;
-        if(productOfTheMonth == false || productOfTheMonth==null){
+        if(frequentlyBoughtProduct == false || frequentlyBoughtProduct==null){
             return 1;
-        }else if(productOfTheMonth == true){
+        }else if(frequentlyBoughtProduct == true){
             return -1;
         }  
         return returnValue;     

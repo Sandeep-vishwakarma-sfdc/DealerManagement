@@ -1,0 +1,17 @@
+<apex:page standardController="Order" recordSetVar="orders" showHeader="false" standardStylesheets="false">
+    <apex:includeLightning />
+
+    <div id="order">Test</div>
+    <script>
+        $Lightning.use("c:yinOrderApp", function() {
+            $Lightning.createComponent(
+                "c:yinRedirectToOrderCmp",
+                {},
+                "order",
+                function(cmp) {
+                    console.log("Lightning Aura Component is Loaded...");
+                }
+            );
+        });
+    </script>
+</apex:page>

@@ -39,6 +39,7 @@ public with sharing class YINAccountProductMappingSelector extends LIBSObjectSel
 
     public List<YIN_Account_product_Mapping__c> selectAll(){
         String query = newQueryFactory()
+        .setCondition('Start_Date__c<=TODAY and End_Date__c>=TODAY')
         .setLimit(50000)
         .toSOQL();
         return Database.query(query);

@@ -79,6 +79,7 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
             productWrapper.minimumOrderQuantity = accountProductMappingByProduct.get(priceBookEntry.Product2Id)?.Minimum_Order_Quantity__c;
             productWrapper.quantity = 1; // Default Quantity value when Order page loads
             productWrapper.discountPercentage = 0;
+            productWrapper.frequentlyBoughtProduct = locationFrequentlyByProduct.get(priceBookEntry.Product2Id)?.Status__c;
             productWrapper.lockingSKUAccount = accountProductMappingByProduct.get(priceBookEntry.Product2Id)?.Status__c;
             productWrapper.lockingSKULocation = locationProductMappingByProduct.get(priceBookEntry.Product2Id)?.Status__c;
             productWrapper.trendingSKU = locationProductsTrending.get(priceBookEntry.Product2Id)?.Status__c;
@@ -128,7 +129,7 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
             }
             return null;
         } catch (Exception e) {
-            throw new AuraHandledException(e.getMessage());
+            throw new YINOrderManagementException(e.getMessage());
         }
     }
 
@@ -166,7 +167,7 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
             List<PricebookEntry> pricebookEntries = priceBookEntrySelector1.selectPriceBookEntriesByPricebook(priceBookIds);
             return pricebookEntries;
         } catch (Exception e) {
-            throw new AuraHandledException(e.getMessage());
+            throw new YINOrderManagementException(e.getMessage());
         }
     }
 }
