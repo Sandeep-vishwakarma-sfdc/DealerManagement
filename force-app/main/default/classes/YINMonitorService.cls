@@ -98,6 +98,7 @@ public without Sharing  class YINMonitorService extends YINMonitorImp {
         LIBISObjectUnitOfWork uow=YINApplication.unitOfWork.newInstance();
         YIN_Monitor_Log__c monObj = new YIN_Monitor_Log__c();
         monObj.Apex_Class__c=wrap.apexClass;
+        monObj.Name=wrap.apexClass;
         monObj.RecordId__c=wrap.recordId;
         monObj.Module__c=wrap.module;
         monObj.Loggin_User__c=wrap.userId;

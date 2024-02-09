@@ -1,7 +1,7 @@
 /**
  * @description       : This Class is used to create All layer like service,selector,domain and unit of work.                                          
  * @author            : Saurabh.pandey@skinternational.com
- * @last modified on  : 04-02-2024
+ * @last modified on  : 08-02-2024
  * @last modified by  : Amol Patil/amol.patil@skinternational.com
 **/
 
@@ -56,6 +56,8 @@ public class YINApplication {
               OrderItem.SObjectType,                         //Sandeep Vishwakarma
               User.SObjectType,                              //Amol Patil
               Contract.SObjectType,                          // Nikhil Dhoke ...
+              YIN_Vehicle_Detail__c.SObjectType,             // Nikhil Dhoke ...
+              Asset.SObjectType,                             // Nikhil Dhoke ...
               YIN_Invoice__c.SObjectType,                      //Kalpesh Chande  
               YIN_Invoice_Item__c.SObjectType                  //Kalpesh Chande  
          }
@@ -72,11 +74,11 @@ public class YINApplication {
          
 
              YINIPriceBookService.class =>YINIPriceBookServiceImp.class,                    //Prashant Kumbhar
-            //-  YINIPriceBookCreator.class =>YINCreatePriceBookByCustomerCommon.class,         //Prashant Kumbhar
-            //-  YINIPriceBookCreator.class =>YINCreatePriceBookByCustomer.class,               //Prashant Kumbhar
-            //-  YINIPriceBookCreator.class =>YINCreatePriceBookByCustomerGroup.class,          //Prashant Kumbhar
+              YINIPriceBookCreator.class =>YINCreatePriceBookByCustomerCommon.class,         //Prashant Kumbhar
+              YINIPriceBookCreator.class =>YINCreatePriceBookByCustomer.class,               //Prashant Kumbhar
+              YINIPriceBookCreator.class =>YINCreatePriceBookByCustomerGroup.class,          //Prashant Kumbhar
              YINIMonitor.class => YINMonitorImp.class,                                      //Prashant Kumbhar
-            //- YINISecurityDeposit.class => YINSecurityDepositIncService.class,               //Prashant Kumbhar
+             YINISecurityDeposit.class => YINSecurityDepositIncService.class,               //Prashant Kumbhar
             // TrgITargetAssignment.class=>TrgTargetAssignmentImpl.class,                   // Nikhil Dhoke
             // TrgITargetDistribution.class=>TrgTargetDistributionImpl.class,               // Nikhil Dhoke
             // TrgITargetSchedules.class=>TrgTargetSchedulesImpl.class,                     // Nikhil Dhoke
@@ -103,7 +105,9 @@ public class YINApplication {
             YINIAttendanceModule.class => YINAttandanceModuleServiceImpl.class,             //Saurabh Pandey
             YINIOrderManagement.class => YINOrderManagementImpl.class,                      // Sandeep Vishwakarma
             YINIWarranty.class => YINWarrantyImpl.class,                                    // Nikhil Dhoke ...
-            YINIExternalApiService.class => YINExternalApiServiceImpl.class                 //Kalpesh Chande
+            YINIExternalApiService.class => YINExternalApiServiceImpl.class,                 //Kalpesh Chande
+            YINIDocumentDataTable.class => YINDocumentDataTableImpl.class                    //Satish Tiware
+            
          }
       );
    
@@ -162,8 +166,10 @@ public class YINApplication {
                YIN_Variant__c.sObjectType => YINVariantSelector.class,
                // End Adding by Sandeep Vishwakarma  
                ContentDocumentLink.sObjectType =>YINContentDocumentLinkSelector.class,
-               Contract.sObjectType => YINContractSelector.class,                               // Nikhil Dhoke ...                
-               YIN_Invoice__c.sObjectType =>YINInvoiceSelector.class               //Kalpesh Chande
+               Contract.sObjectType => YINContractSelector.class,                               // Nikhil Dhoke ...   
+               YIN_Vehicle_Detail__c.sObjectType => YINVehicleDetailSelector.class,             // Nikhil Dhoke ...
+               Asset.sObjectType => YINAssetSelector.class,                                     // Nikhil Dhoke ...
+               YIN_Invoice__c.sObjectType =>YINInvoiceSelector.class                            //Kalpesh Chande
          }
       );
    
@@ -178,9 +184,9 @@ public class YINApplication {
 
            
             YIN_Price_List__c.sObjectType => YINPriceListDomain.class,              //Prashant Kumbhar
-            //- YIN_Monitor_Log__c.sObjectType=>YINMonitorDomain.class,                 //Prashant Kumbhar
-			   Case.sObjectType=>YINAutoCasehandler.class                             //Satish Tiware
-            //- YIN_Change_Request__c.sObjectType=>YINChangeRequestERPHandler.class     //Amol Patil
+             YIN_Monitor_Log__c.sObjectType=>YINMonitorDomain.class,                 //Prashant Kumbhar
+			   Case.sObjectType=>YINAutoCasehandler.class,                            //Satish Tiware
+             YIN_Change_Request__c.sObjectType=>YINChangeRequestERPHandler.class     //Amol Patil
 
          }
       );

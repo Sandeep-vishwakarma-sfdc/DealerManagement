@@ -23,7 +23,9 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
             priceBookIds.add(pricebook.Id);
         }
         
+        System.debug('priceBookIds '+priceBookIds);
         List<PricebookEntry> pricebookEntries = getPriceBookEntries(priceBookIds);
+        System.debug('pricebookEntries '+pricebookEntries);
 
         
         // 2. Creating Product configutaion Mapping like Maximum order Quantity,Minimum Order Quantity,Trending Product etc.
@@ -129,7 +131,7 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
             }
             return null;
         } catch (Exception e) {
-            throw new YINOrderManagementException(e.getMessage());
+            throw new YINOrderManagementException(e.getMessage()+' Line Number '+e.getLineNumber());
         }
     }
 
