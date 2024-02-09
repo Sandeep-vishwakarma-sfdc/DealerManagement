@@ -341,9 +341,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         if(account.size()>0){
             shippingAccountMap.put(account[0].SFDC_Customer_Code__c,account[0]);
         }
-        // 2. Get Inventory ,Variants and Order information
-        Map<String,YINStockinventoryWrap.YINData> normalProduct = YINStockInventory.withoutVariant(productWrappers);
-        Map<String,YINStockInventoryVarientWrap.YINData> discountProduct = YINStockInventory.withVariant(productWrappers);
+        
         // 2a. Getting Inventory from ERP
         YINOrderItemSelector orderItemSelector = (YINOrderItemSelector)YINApplication.selector.newInstance(OrderItem.SObjectType);
         List<OrderItem> orderProducts = null;
@@ -385,6 +383,20 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         System.debug('closedOrder '+closedOrder);
 
         // 5.loop thorough each item in cart , check if discount available call "processProductWithVariant" method , if discount is not available call "processProductWithoutVariant" method
+        List<Order> orders = processLogic(productWrappers,docommit,orderItemById);
+        
+        ordersByStatus.put('Open',JSON.serialize(itemOpen));
+        ordersByStatus.put('Submitted',JSON.serialize(itemSubmitted));
+        ordersByStatus.put('Orders',JSON.serialize(orders));
+
+        return JSON.serialize(ordersByStatus);
+    }
+
+    private static List<Order> processLogic(List<YINProductWrapper> productWrappers,WrapCommit docommit,Map<String,OrderItem> orderItemById){
+        // 2. Get Inventory ,Variants and Order information
+        Map<String,YINStockinventoryWrap.YINData> normalProduct = YINStockInventory.withoutVariant(productWrappers);
+        Map<String,YINStockInventoryVarientWrap.YINData> discountProduct = YINStockInventory.withVariant(productWrappers);
+
         for(YINProductWrapper wrapper:productWrappers){
             YINStockinventoryWrap.YINData normalProductData = normalProduct.get(wrapper.pricebookEntry.ProductCode);
             YINStockInventoryVarientWrap.YINData discountedProductData = discountProduct.get(wrapper.pricebookEntry.ProductCode+'_'+wrapper.variantCode);
@@ -407,42 +419,38 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         itemToUpdate = reCalculate(itemToUpdate);
         
         unitofworkProcessOrder.registerNew(itemToadd);
-        String responseSAP = '';
-        if(docommit.doCommit==true){
-            unitofworkProcessOrder.commitWork();
-            if(!deleteClosedOrder){
-                responseSAP = YINStockInventory.sendOrder(new List<Order> {closedOrder});
-                YINSalesOrderWrap salesOrder = (YINSalesOrderWrap)JSON.deserialize(responseSAP,YINSalesOrderWrap.class);
-                closedOrder.ERP_Order_Number__c = salesOrder.erpOrderNumber;
-            }
-        }
+        
         List<Order> orders = new List<Order>();
         if(docommit.doCommit==true){
-            LibISobjectUnitOfWork unitofworkOpenOrder = YINApplication.unitofwork.newInstance(); 
-            if(deleteOpenOrder){
-                unitofworkOpenOrder.registerDeleted(openOrder);
-            }
-            
-            if(deleteClosedOrder){
-                unitofworkOpenOrder.registerDeleted(closedOrder);
-            }
-            unitofworkOpenOrder.commitWork();
-            
-            if(!deleteOpenOrder){
-                orders.add(openOrder);
-            }
-            if(!deleteClosedOrder){
-                orders.add(closedOrder);
-            }
+            orders = commitTheProcess();
         }
-        
-        
+        return orders;
+    }
 
-        ordersByStatus.put('Open',JSON.serialize(itemOpen));
-        ordersByStatus.put('Submitted',JSON.serialize(itemSubmitted));
-        ordersByStatus.put('Orders',JSON.serialize(orders));
-
-        return JSON.serialize(ordersByStatus);
+    private static List<Order> commitTheProcess(){
+        String responseSAP = '';
+        List<Order> orders = new List<Order>();
+        unitofworkProcessOrder.commitWork();
+        if(!deleteClosedOrder){
+            responseSAP = YINStockInventory.sendOrder(new List<Order> {closedOrder});
+            YINSalesOrderWrap salesOrder = (YINSalesOrderWrap)JSON.deserialize(responseSAP,YINSalesOrderWrap.class);
+            closedOrder.ERP_Order_Number__c = salesOrder.erpOrderNumber;
+            orders.add(closedOrder);
+        }
+        LibISobjectUnitOfWork unitofworkOpenOrder = YINApplication.unitofwork.newInstance(); 
+        if(deleteOpenOrder){
+            unitofworkOpenOrder.registerDeleted(openOrder);
+        }
+            
+        if(deleteClosedOrder){
+            unitofworkOpenOrder.registerDeleted(closedOrder);
+        }
+        unitofworkOpenOrder.commitWork();
+            
+        if(!deleteOpenOrder){
+            orders.add(openOrder);
+        }
+        return orders;
     }
 
    

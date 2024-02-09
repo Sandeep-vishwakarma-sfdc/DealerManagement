@@ -133,6 +133,7 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
         }
     }
 
+    @TestVisible
     private static List<PriceBook2> getPriceBookByCustomer(String accountId){
         YINPriceBookSelector priceBookSelector = (YINPriceBookSelector)YINApplication.selector.newInstance(PriceBook2.SObjectType);
         List<PriceBook2>  priceboooks = priceBookSelector.selectPriceBookByCustomer(accountId);

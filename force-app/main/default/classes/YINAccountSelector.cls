@@ -2,8 +2,8 @@
  * @description       : This class provides methods to query and filter Account records.
  * @author            : Saurabh Pandey
  * @group             : SKI
- * @last modified on  : 31-01-2024
- * @last modified by  : Amol Patil/amol.patil@skinternational.com
+ * @last modified on  : 02-03-2024
+ * @last modified by  : saurabh.pandey@skinternational.com
  **/
 public with sharing class YINAccountSelector extends LibSObjectSelector {
 
@@ -102,129 +102,129 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
         return 'Name';
     }
     
-    /**
-     * @Description - Get a list of Account records based on specified filters.
-     * @param List : filter1 (String), filter2 (String), subclass (String).
-     * @return  - List<Account>.
-     */
-    public List<Account> getAccountList(String filter1, String filter2, String subclass) {
-        return Database.query(
-            newQueryFactory()
-                .setCondition('Key_Customer__c != null AND (Status__c = \'Active\' OR Status__c = \'Approved\' OR Status__c = \'Auto Approved\')')  
-                .toSOQL()
-        );
-    }
+    // /**
+    //  * @Description - Get a list of Account records based on specified filters.
+    //  * @param List : filter1 (String), filter2 (String), subclass (String).
+    //  * @return  - List<Account>.
+    //  */
+    // public List<Account> getAccountList(String filter1, String filter2, String subclass) {
+    //     return Database.query(
+    //         newQueryFactory()
+    //             .setCondition('Key_Customer__c != null AND (Status__c = \'Active\' OR Status__c = \'Approved\' OR Status__c = \'Auto Approved\')')  
+    //             .toSOQL()
+    //     );
+    // }
     
-    /**
-     * @Description - Get a list of Account records filtered by City.
-     * @param List : cityId (String).
-     * @return  - List<Account>.
-     */
-    public List<Account> getAccountListByCity(String cityId) {
-        // Implement logic for filtering by city
-        return Database.query(
-            newQueryFactory()
-                .setCondition('City__r.Id=:cityId AND Key_Customer__c != null AND (Status__c = \'Active\' OR Status__c = \'Approved\' OR Status__c = \'Auto Approved\')')  
-                .toSOQL()
-        );
-    }
+    // /**
+    //  * @Description - Get a list of Account records filtered by City.
+    //  * @param List : cityId (String).
+    //  * @return  - List<Account>.
+    //  */
+    // public List<Account> getAccountListByCity(String cityId) {
+    //     // Implement logic for filtering by city
+    //     return Database.query(
+    //         newQueryFactory()
+    //             .setCondition('City__r.Id=:cityId AND Key_Customer__c != null AND (Status__c = \'Active\' OR Status__c = \'Approved\' OR Status__c = \'Auto Approved\')')  
+    //             .toSOQL()
+    //     );
+    // }
     
-    /**
-     * @Description - Get a list of Account records filtered by Area.
-     * @param List : areaId (String).
-     * @return  - List<Account>.
-     */
-    public List<Account> getAccountListByArea(String areaId) {
-        // Implement logic for filtering by area
-        return Database.query(
-            newQueryFactory()
-                .setCondition('Area__r.Id=:areaId AND Key_Customer__c != null AND (Status__c = \'Active\' OR Status__c = \'Approved\' OR Status__c = \'Auto Approved\')')  
-                .toSOQL()
-        ); 
-    }
+    // /**
+    //  * @Description - Get a list of Account records filtered by Area.
+    //  * @param List : areaId (String).
+    //  * @return  - List<Account>.
+    //  */
+    // public List<Account> getAccountListByArea(String areaId) {
+    //     // Implement logic for filtering by area
+    //     return Database.query(
+    //         newQueryFactory()
+    //             .setCondition('Area__r.Id=:areaId AND Key_Customer__c != null AND (Status__c = \'Active\' OR Status__c = \'Approved\' OR Status__c = \'Auto Approved\')')  
+    //             .toSOQL()
+    //     ); 
+    // }
     
-    /**
-     * @Description - Get a list of Account records filtered by City and Area.
-     * @param List : cityId (String), areaId (String).
-     * @return  - List<Account>.
-     */
-    public List<Account> getAccountListByCityAndArea(String cityId, String areaId) {
-        // Implement logic for filtering by both city and area
-        return Database.query(
-            newQueryFactory()
-                .setCondition('City__r.Id=:cityId AND Area__r.Id=:areaId  AND Key_Customer__c != null AND (Status__c = \'Active\' OR Status__c = \'Approved\' OR Status__c = \'Auto Approved\')')  
-                .toSOQL()
-        );
-    }
+    // /**
+    //  * @Description - Get a list of Account records filtered by City and Area.
+    //  * @param List : cityId (String), areaId (String).
+    //  * @return  - List<Account>.
+    //  */
+    // public List<Account> getAccountListByCityAndArea(String cityId, String areaId) {
+    //     // Implement logic for filtering by both city and area
+    //     return Database.query(
+    //         newQueryFactory()
+    //             .setCondition('City__r.Id=:cityId AND Area__r.Id=:areaId  AND Key_Customer__c != null AND (Status__c = \'Active\' OR Status__c = \'Approved\' OR Status__c = \'Auto Approved\')')  
+    //             .toSOQL()
+    //     );
+    // }
     
-    /**
-     * @Description - Get a list of Account records filtered by Subclass.
-     * @param List : subclass (String).
-     * @return  - List<Account>.
-     */
-    public List<Account> getAccountListBySubclass(String subclass) {
-        // Implement logic for filtering by subclass
-        return Database.query(
-            newQueryFactory()
-                .setCondition('Sub_Classification__c=:subclass AND Key_Customer__c != null AND (Status__c = \'Active\' OR Status__c = \'Approved\' OR Status__c = \'Auto Approved\')')  
-                .toSOQL()
-        );
-    }
+    // /**
+    //  * @Description - Get a list of Account records filtered by Subclass.
+    //  * @param List : subclass (String).
+    //  * @return  - List<Account>.
+    //  */
+    // public List<Account> getAccountListBySubclass(String subclass) {
+    //     // Implement logic for filtering by subclass
+    //     return Database.query(
+    //         newQueryFactory()
+    //             .setCondition('Sub_Classification__c=:subclass AND Key_Customer__c != null AND (Status__c = \'Active\' OR Status__c = \'Approved\' OR Status__c = \'Auto Approved\')')  
+    //             .toSOQL()
+    //     );
+    // }
     
-    /**
-     * @Description - Get a list of Account records filtered by City, Area, and Subclass.
-     * @param List : cityId (String), areaId (String), subclass (String).
-     * @return  - List<Account>.
-     */
-    public List<Account> getAccountListByCityAndAreaAndSubclass(String cityId, String areaId, String subclass) {
-        // Implement logic for filtering by city, area, and subclass
-        return Database.query(
-            newQueryFactory()
-                .setCondition('City__r.Id=:cityId AND Area__r.Id=:areaId AND Sub_Classification__c=:subclass AND Key_Customer__c != null AND (Status__c = \'Active\' OR Status__c = \'Approved\' OR Status__c = \'Auto Approved\')')  
-                .toSOQL()
-        );
-    }
+    // /**
+    //  * @Description - Get a list of Account records filtered by City, Area, and Subclass.
+    //  * @param List : cityId (String), areaId (String), subclass (String).
+    //  * @return  - List<Account>.
+    //  */
+    // public List<Account> getAccountListByCityAndAreaAndSubclass(String cityId, String areaId, String subclass) {
+    //     // Implement logic for filtering by city, area, and subclass
+    //     return Database.query(
+    //         newQueryFactory()
+    //             .setCondition('City__r.Id=:cityId AND Area__r.Id=:areaId AND Sub_Classification__c=:subclass AND Key_Customer__c != null AND (Status__c = \'Active\' OR Status__c = \'Approved\' OR Status__c = \'Auto Approved\')')  
+    //             .toSOQL()
+    //     );
+    // }
     
-    /**
-     * @Description - Get a list of Account records filtered by City and Subclass.
-     * @param List : cityId (String), subclass (String).
-     * @return  - List<Account>.
-     */
-    public List<Account> getAccountListByCityAndSubclass(String cityId, String subclass) {
-        // Implement logic for filtering by city and subclass
-        return Database.query(
-            newQueryFactory()
-                .setCondition('City__r.Id=:cityId AND Sub_Classification__c=:subclass AND Key_Customer__c != null AND (Status__c = \'Active\' OR Status__c = \'Approved\' OR Status__c = \'Auto Approved\')')  
-                .toSOQL()
-        );
-    }
+    // /**
+    //  * @Description - Get a list of Account records filtered by City and Subclass.
+    //  * @param List : cityId (String), subclass (String).
+    //  * @return  - List<Account>.
+    //  */
+    // public List<Account> getAccountListByCityAndSubclass(String cityId, String subclass) {
+    //     // Implement logic for filtering by city and subclass
+    //     return Database.query(
+    //         newQueryFactory()
+    //             .setCondition('City__r.Id=:cityId AND Sub_Classification__c=:subclass AND Key_Customer__c != null AND (Status__c = \'Active\' OR Status__c = \'Approved\' OR Status__c = \'Auto Approved\')')  
+    //             .toSOQL()
+    //     );
+    // }
     
-    /**
-     * @Description - Get a list of Account records filtered by Area and Subclass.
-     * @param List : areaId (String), subclass (String).
-     * @return  - List<Account>.
-     */
-    public List<Account> getAccountListByAreaAndSubclass(String areaId, String subclass) {
-        // Implement logic for filtering by area and subclass
-        return Database.query(
-            newQueryFactory()
-                .setCondition('Area__r.Id=:areaId AND Sub_Classification__c=:subclass AND Key_Customer__c != null AND (Status__c = \'Active\' OR Status__c = \'Approved\' OR Status__c = \'Auto Approved\')')  
-                .toSOQL()
-        );
-    }
+    // /**
+    //  * @Description - Get a list of Account records filtered by Area and Subclass.
+    //  * @param List : areaId (String), subclass (String).
+    //  * @return  - List<Account>.
+    //  */
+    // public List<Account> getAccountListByAreaAndSubclass(String areaId, String subclass) {
+    //     // Implement logic for filtering by area and subclass
+    //     return Database.query(
+    //         newQueryFactory()
+    //             .setCondition('Area__r.Id=:areaId AND Sub_Classification__c=:subclass AND Key_Customer__c != null AND (Status__c = \'Active\' OR Status__c = \'Approved\' OR Status__c = \'Auto Approved\')')  
+    //             .toSOQL()
+    //     );
+    // }
     
-    /**
-     * @Description - Get a list of Account records filtered by Key Customer and Status.
-     * @param List : None.
-     * @return  - List<Account>.
-     */
-    public List<Account> getSubclassFromApex() {
-        return Database.query(
-            newQueryFactory()
-                .setCondition('Key_Customer__c != null AND (Status__c = \'Active\' OR Status__c = \'Approved\' OR Status__c = \'Auto Approved\')')
-                .toSOQL()
-        );
-    }
+    // /**
+    //  * @Description - Get a list of Account records filtered by Key Customer and Status.
+    //  * @param List : None.
+    //  * @return  - List<Account>.
+    //  */
+    // public List<Account> getSubclassFromApex() {
+    //     return Database.query(
+    //         newQueryFactory()
+    //             .setCondition('Key_Customer__c != null AND (Status__c = \'Active\' OR Status__c = \'Approved\' OR Status__c = \'Auto Approved\')')
+    //             .toSOQL()
+    //     );
+    // }
     
     /**
      * Added by:Amol Patil
@@ -285,7 +285,6 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
      * @return  - List<Account>.
      */  
     public List<Account> getDealerIdfromCode(List<String> codeList)  {
-        // Implement logic for filtering by area and subclass
         return Database.query(
             newQueryFactory()
                 .setCondition('SFDC_Customer_Code__c IN:codeList')  
