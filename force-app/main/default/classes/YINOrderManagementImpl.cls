@@ -22,6 +22,12 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
                 return null;
             }
         } catch (Exception e) {
+            YINMonitorLogWrap log = new YINMonitorLogWrap();
+            log.exObj = e;
+            log.module = 'Sales Order';
+            log.apexClass = 'YINOrderManagementImpl';
+            YINMonitorService monitorLog = new YINMonitorService();
+            monitorLog.exceptionHandler(log);
             throw new YINOrderManagementException('Meta data is not configured '+e.getMessage()+' Line Number '+e.getLineNumber());
         }
     }
@@ -34,7 +40,12 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             SObjectType objectType = Id.valueOf(recordId).getSObjectType();
             objectApiName = objectType.getDescribe().getName();
         } catch(Exception e) {
-            // Handle any exceptions if necessary
+            YINMonitorLogWrap log = new YINMonitorLogWrap();
+            log.exObj = e;
+            log.module = 'Sales Order';
+            log.apexClass = 'YINOrderManagementImpl';
+            YINMonitorService monitorLog = new YINMonitorService();
+            monitorLog.exceptionHandler(log);
             System.debug('Error retrieving object API name: ' + e.getMessage());
         }
         return objectApiName;
@@ -88,6 +99,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
                 cartOrder.ShippingCountry = accountDetails.ShippingCountry;
 
                 cartOrder.Pricebook2Id = wrapperProduct.pricebookEntry.Pricebook2Id;
+                // cartOrder.Type__c = 'Normal';
 
                 // Save Cart Order to Database
                 unitofwork.registerNew(cartOrder);    
@@ -97,6 +109,12 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
                 return true;
             }
         } catch (Exception e) {
+            YINMonitorLogWrap log = new YINMonitorLogWrap();
+            log.exObj = e;
+            log.module = 'Sales Order';
+            log.apexClass = 'YINOrderManagementImpl';
+            YINMonitorService monitorLog = new YINMonitorService();
+            monitorLog.exceptionHandler(log);
             System.debug('Message '+e.getMessage() +' LineNumber '+e.getLineNumber());
             throw new YINOrderManagementException('Message '+e.getMessage() +' LineNumber '+e.getLineNumber());
         }
@@ -280,6 +298,12 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             }
             return 'success';
         } catch (Exception e) {
+            YINMonitorLogWrap log = new YINMonitorLogWrap();
+            log.exObj = e;
+            log.module = 'Sales Order';
+            log.apexClass = 'YINOrderManagementImpl';
+            YINMonitorService monitorLog = new YINMonitorService();
+            monitorLog.exceptionHandler(log);
             throw new YINOrderManagementException(e.getMessage());
         }
     }
@@ -295,7 +319,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
        
         // 2. Check Credit Days
         Boolean checkCreditDays = checkCreditDays(docommit.accountId);
-        if(checkCreditDays){// TODO : Add Not Operator Once Credit Days Formula field is in working state
+        if(!checkCreditDays){// TODO : Add Not Operator Once Credit Days Formula field is in working state
             throw new YINOrderManagementException('Credit days expired');
         }
 
@@ -408,7 +432,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
 
             if(wrapper.discountPercentage > 0 && discountedProductData!=null && wrapper.variantCode!=null){ // For Product With Discounts
                 processProductWithVariant(wrapper,discountedProductData,item);
-            }else if(normalProductData!=null && item!=null){
+            }else if(normalProductData!=null && item!=null && normalProductData?.totalInventory!='0'){
                 processProductWithoutVariant(wrapper,normalProductData,item);
             }else if(item!=null){
                 System.debug('product '+wrapper.pricebookEntry.ProductCode+' is not available');
@@ -513,7 +537,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
     private static void processProductWithoutVariant(YINProductWrapper wrapper,YINStockinventoryWrap.YINData normalProductData,OrderItem item){       
         Decimal quantityNeed = wrapper.quantity;
         for(YINStockinventoryWrap.YINVariantwise variantWise : normalProductData.variantwise){//2,4
-            Integer availableQty = variantWise.inventory;
+            Decimal availableQty = Decimal.valueOf(variantWise.inventory);
             String variantCode = variantWise.variant;
             if (availableQty >= quantityNeed && quantityNeed!=0) { // 1. 5>=12:false ,2. 6>=7:false,3. 0>=2  
                 System.debug('Normal OrderLineItem where Order Status = Closed ');
@@ -683,6 +707,12 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             }
             return accountId;
         } catch (Exception e) {
+            YINMonitorLogWrap log = new YINMonitorLogWrap();
+            log.exObj = e;
+            log.module = 'Sales Order';
+            log.apexClass = 'YINOrderManagementImpl';
+            YINMonitorService monitorLog = new YINMonitorService();
+            monitorLog.exceptionHandler(log);
             throw new YINOrderManagementException(e.getMessage());
         }
     }
@@ -698,6 +728,12 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             }
             return account;
         } catch (Exception e) {
+            YINMonitorLogWrap log = new YINMonitorLogWrap();
+            log.exObj = e;
+            log.module = 'Sales Order';
+            log.apexClass = 'YINOrderManagementImpl';
+            YINMonitorService monitorLog = new YINMonitorService();
+            monitorLog.exceptionHandler(log);
             throw new YINOrderManagementException(e.getMessage());
         }
     }

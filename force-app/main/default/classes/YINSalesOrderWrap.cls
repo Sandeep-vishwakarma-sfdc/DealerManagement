@@ -2,7 +2,7 @@ public with sharing class YINSalesOrderWrap {
     // Request Properties
     public YINHeader header;
 	public YINLines[] lines;
-	class YINHeader {
+	public class YINHeader {
 		public String sfdcOrderNumber;	//SF0000342
 		public String erpOrderNumber;	//
 		public String erpCustomerCode;	//C000000234
@@ -12,7 +12,7 @@ public with sharing class YINSalesOrderWrap {
 		public String erpShipToCode;	//C000343
 		public String remark;	//
 	}
-	class YINLines {
+	public class YINLines {
 		public String itemNumber;	//10
 		public String itemCode;	//FG-R1249
 		public String variant;	//2023

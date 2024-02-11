@@ -1,3 +1,4 @@
+@SuppressWarnings('PMD.ExcessivePublicCount,PMD.TooManyFields')
 public with sharing class YINProductWrapper implements Comparable{
 
     @AuraEnabled public Id  orderItemId;

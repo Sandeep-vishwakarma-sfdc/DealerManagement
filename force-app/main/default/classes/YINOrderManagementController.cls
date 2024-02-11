@@ -6,40 +6,40 @@ Created Date       : Nov 16, 2023
 */
 
 public without sharing class YINOrderManagementController {
+
+    private static YINIOrderManagement orderService;
+
+    static {
+        orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
+    }
     
     @AuraEnabled(cacheable=true)
     public static List<String> getExperienceUserProfiles(){
-        YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
         return orderService.getExperienceUserProfiles();
     }
 
     @AuraEnabled
     public static string getObjectApiName(String recordId){
-        YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
         return orderService.getObjectApiName(recordId);
     }
 
     @AuraEnabled
     public static List<Order> getOrderDetails(String recordId){
-        YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
         return orderService.getOrderDetails(recordId);
     }
 
     @AuraEnabled(cacheable=true)
     public static User getCurrentUser(){
-        YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
         return orderService.getCurrentUser();
     }
 
     @AuraEnabled
     public static string getExperienceUserAccount(){
-        YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
         return orderService.getExperienceUserAccount();
     }
 
     @AuraEnabled
     public static Account getAccount(String accountId){
-        YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
         return orderService.getAccount(accountId);
     }
 
@@ -49,19 +49,16 @@ public without sharing class YINOrderManagementController {
     */
     @AuraEnabled
     public static List<YINProductWrapper> getProducts(String accountId,String orderType,String orderModuleType){ 
-        YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
         return orderService.getProducts(accountId,OrderType,orderModuleType);
     }
 
     @AuraEnabled
     public static boolean addToCart(String productWrapper,String accountId,String openOrderId){
-        YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
         return orderService.addToCart(productWrapper,accountId,openOrderId);
     }
 
     @AuraEnabled
     public static List<YINProductWrapper> getCartDetails(String accountId,String openOrderId){
-        YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
         return orderService.getCartDetails(accountId,openOrderId);
     }
     
@@ -69,23 +66,16 @@ public without sharing class YINOrderManagementController {
 
     @AuraEnabled
     public static string deleteCartItem(String productWrapper,String accountId,String openOrderId){
-        YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
         return orderService.deleteCartItem(productWrapper,accountId,openOrderId);
     }
 
     @AuraEnabled
     public static List<Account> getShippingAccounts(String accountId){
-        YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
         return orderService.getShippingAccounts(accountId);
     }
 
     @AuraEnabled
     public static String createOrder(String productWrapper,String wrapCommit){
-        YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
         return orderService.createOrder(productWrapper,wrapCommit);
     }
-
-   
-
-    
 }

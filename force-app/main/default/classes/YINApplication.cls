@@ -116,10 +116,7 @@ public class YINApplication {
    */   
    public static final LibApplication.SelectorFactory SELECTOR =
       new LibApplication.SelectorFactory(
-         new Map<SObjectType, Type> {
-
-         
-
+         new Map<SObjectType, Type> {       
                 Pricebook2.sObjectType => YINPriceBookSelector.class,                            //Prashant Kumbhar
                 YIN_Price_List__c.sObjectType  =>YINPriceListSelector.class,                     //Prashant Kumbhar
                 YIN_Monitor_Log__c.sObjectType =>YINMonitorSelector.class,                       //Prashant Kumbhar
@@ -169,6 +166,7 @@ public class YINApplication {
                Contract.sObjectType => YINContractSelector.class,                               // Nikhil Dhoke ...   
                YIN_Vehicle_Detail__c.sObjectType => YINVehicleDetailSelector.class,             // Nikhil Dhoke ...
                Asset.sObjectType => YINAssetSelector.class,                                     // Nikhil Dhoke ...
+               YIN_Channel_Code__c.sObjectType => YINChannelCodeSelector.class,                 // Nikhil Dhoke ...
                YIN_Invoice__c.sObjectType =>YINInvoiceSelector.class                            //Kalpesh Chande
          }
       );

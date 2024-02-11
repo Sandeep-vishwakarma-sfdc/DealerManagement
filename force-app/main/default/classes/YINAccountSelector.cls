@@ -243,6 +243,7 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
                     .selectField('Country__r.Name')
                     .selectField('District__r.Name')
                     .selectField('Sub_District__r.Name')
+                    .selectField('Channel_Code__c')
                     .setCondition('Id=:dealerAcc')
                     .toSOQL()
         );
@@ -357,5 +358,27 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
             .toSOQL()
         );
      }
+
+     /**
+     * Added by:Nikhil Dhoke
+     * @Description - Get a list of Account based on Mobile no.
+     * @param List<String> : mobile no list.
+     * @return  - List<Account>.
+     */
+    public List<Account> getAccountByMobileNo(List<String> mobileNos) {
+        return Database.query(
+            newQueryFactory()
+                    .selectField('Owner.Email')
+                    .selectField('Pincode__r.Pincode__c')
+                    .selectField('Pincode__r.Name')
+                    .selectField('City__r.Name')
+                    .selectField('State__r.Name')
+                    .selectField('Country__r.Name')
+                    .selectField('District__r.Name')
+                    .selectField('Sub_District__r.Name')
+                    .setCondition('Phone IN: mobileNos')
+                    .toSOQL()
+        );
+    }
 
 }

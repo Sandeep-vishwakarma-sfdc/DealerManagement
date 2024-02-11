@@ -82,3 +82,134 @@ body : { "productWrapper":"{\"combinationKey\":\"PC-002\",\"discountPercentage\"
 5) POST : /services/apexrest/order/createorder
 Apex : YINOrderRestDelete.createOrder();
 body : {"productWrappers":"","wrapCommit":"{\"doCommit\":false,\"grandTotal\":53000,\"accountId\":\"0010T00000fYTVB\"}"}
+
+
+YINMonitorLogWrap log = new YINMonitorLogWrap();
+log.exObj = '';
+log.module = '';
+log.request = '';
+log.response = '';
+log.recordId = '';
+log.apexClass = '';
+
+exceptionHandler(log)
+----------------------------------------------------------------------------------
+YINMonitorLogWrap log = new YINMonitorLogWrap();
+log.apexClass = '';
+log.recordId = '';
+log.module = '';
+log.userId = '';
+log.message = '';
+log.headers = '';
+
+log(log)
+-----------------------------------------------------------------------------------
+
+YINMonitorLogWrap log = new YINMonitorLogWrap();
+log.apexClass = '';                                         
+log.request = '';
+log.response = '';
+log.statusCode = '';
+log.apexClass = '';
+log.recordId = '';
+log.module = '';
+log.userId = '';
+log.message = '';
+log.typeOfIntegration = '';
+log.method = '';
+log.requestURL = '';
+log.remoteAddress = '';
+log.headers = '';
+log.dataSource = '';
+log.externalSystemName = '';
+
+requestResponseLog(log)
+
+----------------------------------------------------------------------------------------------------------
+STOCK WITh VARIANT 
+----- Request ----
+<?xml version="1.0" encoding="UTF-8"?>
+<Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/">
+   <Body>
+      <GetInventoryNormalOrder xmlns="urn:microsoft-dynamics-schemas/codeunit/SFDCIntegration">
+         <requestMsg>{"requestbody": [{"itemCode":"FG-R1249","locationCode":"IN-TG-HYD3",},{"itemCode":"FG-R1249","locationCode":"IN-DL-DEL",}]}</requestMsg>
+      </GetInventoryNormalOrder>
+   </Body>
+</Envelope>
+
+----- Response ----
+<?xml version="1.0" encoding="UTF-8"?>
+<Soap:Envelope xmlns:Soap="http://schemas.xmlsoap.org/soap/envelope/">
+   <Soap:Body>
+      <GetInventoryNormalOrder_Result xmlns="urn:microsoft-dynamics-schemas/codeunit/SFDCIntegration">
+         <requestMsg>{"data":[{"Response Code":"200","itemCode":"FG-R1249","locationCode":"IN-TG-HYD3","totalInventory":"0","variantwise":[{"variant":"2015","inventory":0.0},{"variant":"2016","inventory":0.0},{"variant":"2017","inventory":0.0},{"variant":"2018","inventory":0.0},{"variant":"2019","inventory":0.0},{"variant":"2020","inventory":0.0},{"variant":"2021","inventory":0.0},{"variant":"2022","inventory":0.0},{"variant":"2023","inventory":0.0},{"variant":"2024","inventory":0.0}]},[{"Response Code":"200","itemCode":"FG-R1249","locationCode":"IN-DL-DEL","totalInventory":"0","variantwise":[{"variant":"2015","inventory":0.0},{"variant":"2016","inventory":0.0},{"variant":"2017","inventory":0.0},{"variant":"2018","inventory":0.0},{"variant":"2019","inventory":0.0},{"variant":"2020","inventory":0.0},{"variant":"2021","inventory":0.0},{"variant":"2022","inventory":0.0},{"variant":"2023","inventory":0.0},{"variant":"2024","inventory":0.0}]}]]}</requestMsg>
+      </GetInventoryNormalOrder_Result>
+   </Soap:Body>
+</Soap:Envelope>
+
+---------------------------------------------------------------------------------------------------------------------------------
+STOCK WITHOUT VARIANT 
+----- Request ----
+<Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/">
+    <Body>
+        <GetInventory xmlns="urn:microsoft-dynamics-schemas/codeunit/SFDCIntegration">
+            <requestMsg>{"requestbody":[{"itemCode":"FG-R1249","locationCode":"IN-DL-DEL","variant":"2021"},{"itemCode":"FG-R1249","locationCode":"IN-TG-HYD3","variant":"2023"}]}</requestMsg>
+        </GetInventory>
+    </Body>
+</Envelope>
+----- Response ----
+<Soap:Envelope xmlns:Soap="http://schemas.xmlsoap.org/soap/envelope/">
+    <Soap:Body>
+        <GetInventory_Result xmlns="urn:microsoft-dynamics-schemas/codeunit/SFDCIntegration">
+            <requestMsg>{"data":[{"Response Code":"200","itemCode":"FG-R1249","locationCode":"IN-DL-DEL","variant":"2021","Quanity":"0"},{"Response Code":"200","itemCode":"FG-R1249","locationCode":"IN-TG-HYD3","variant":"2023","Quanity":"0"}]}</requestMsg>
+        </GetInventory_Result>
+    </Soap:Body>
+</Soap:Envelope>
+---------------------------------------------------------------------------------------------------------------------------------
+STOCK WITHOUT VARIANT 
+----- Request ----
+<Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/">
+    <Body>
+        <GetOrderDetails xmlns="urn:microsoft-dynamics-schemas/codeunit/SFDCIntegration">
+            <requestMsg>{"header":{"OrderType":"Normal","SFDCOrderNumber":"SF0000342","ERPOrderNumber":"","ERPCustomerCode":"C000000234","orderDate":"25-01-2024","externalDocumentNumber":"","status":"Closed","ERPShipToCode":"C000343","remark":""},"lines":[{"itemNumber":"10","itemCode":"FG-R1249","variant":"2023","quantity":"4","discount":"4","discountAmount":"","unitPrice":"1000","TDSTCSPercent":"1","TDSTCSBaseAmount":"","TDSTCSAmount":"","type":"Item","docketNo":"","discountType":"","discountRemark":"","GSTpercent":"28","GSTAmount":"","totalAmount":""}]}</requestMsg>
+        </GetOrderDetails>
+    </Body>
+</Envelope>
+----- Response ----
+<Soap:Envelope xmlns:Soap="http://schemas.xmlsoap.org/soap/envelope/">
+    <Soap:Body>
+        <GetOrderDetails_Result xmlns="urn:microsoft-dynamics-schemas/codeunit/SFDCIntegration">
+            <requestMsg>{"success":true,"Order_No":SFDC/0002, TotalLines:1}</requestMsg>
+        </GetOrderDetails_Result>
+    </Soap:Body>
+</Soap:Envelope>
+
+
+------------------------------------------------------------------------
+Test
+
+String data = '<Soap:Envelope xmlns:Soap="http://schemas.xmlsoap.org/soap/envelope/"><Soap:Body><GetInventoryNormalOrder_Result xmlns="urn:microsoft-dynamics-schemas/codeunit/SFDCIntegration"><requestMsg>{"data": [{"Response Code": "200","itemCode": "PC-002","locationCode": "IN-DL-DEL","totalInventory": "0"}]}</requestMsg></GetInventoryNormalOrder_Result></Soap:Body></Soap:Envelope>';
+
+String res = YINStockInventory.extractJsonData(data,'GetInventoryNormalOrder_Result');
+System.debug(res);
+
+String soapResponse = '<Soap:Envelope xmlns:Soap="http://schemas.xmlsoap.org/soap/envelope/"><Soap:Body><GetInventoryNormalOrder_Result xmlns="urn:microsoft-dynamics-schemas/codeunit/SFDCIntegration"><requestMsg>{"data": [{"Response Code": "200","itemCode": "PC-002","locationCode": "IN-DL-DEL","totalInventory": "0"}]}</requestMsg></GetInventoryNormalOrder_Result></Soap:Body></Soap:Envelope>';
+Dom.Document doc = new Dom.Document();
+doc.load(soapResponse);
+Dom.XmlNode root = doc.getRootElement();
+String nms1 = root.getNameSpace();
+string nms2 =''; 
+DOM.XmlNode body = root.getChildElement('Body', nms1);
+List<DOM.XMLNode> bodyChildrenList = body.getChildElements();
+for (DOM.XMLNode passRes : bodyChildrenList) {
+  nms2 = passRes.getnamespace();
+}
+DOM.XmlNode getCustomerDetailsResult = body.getChildElement('GetInventoryNormalOrder_Result', nms2);
+DOM.XmlNode requestMsgNode = getCustomerDetailsResult.getChildElement('requestMsg', nms2);
+if (requestMsgNode != null) {
+    String requestMsg = requestMsgNode.getText();
+    System.Debug('requestMsg Value: ' + requestMsg);
+} else {
+    System.Debug('requestMsg node not found');
+}
+

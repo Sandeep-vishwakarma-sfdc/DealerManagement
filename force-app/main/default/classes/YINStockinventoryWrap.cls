@@ -17,16 +17,16 @@ public with sharing class YINStockinventoryWrap {
        }
        public class YINVariantwise implements Comparable{
            public String variant;	//2020
-           public Integer inventory;	//15
+           public String inventory;	//15
 
            public Integer compareTo(Object compareTo) {
                YINStockinventoryWrap.YINVariantwise compareToVarirant = (YINStockinventoryWrap.YINVariantwise)compareTo;
                // The return value of 0 indicates that both elements are equal.
                Integer returnValue = 0;
-               if(inventory > compareToVarirant.inventory){
+               if(Decimal.valueOf(inventory) > Decimal.valueOf(compareToVarirant.inventory)){
                 // Set return value to a positive value.
                 returnValue = -1;
-               }else if(inventory < compareToVarirant.inventory){
+               }else if(Decimal.valueOf(inventory) < Decimal.valueOf(compareToVarirant.inventory)){
                 // Set return value to a negative value.
                 returnValue = 1;
                }
