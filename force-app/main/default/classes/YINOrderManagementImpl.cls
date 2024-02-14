@@ -1,16 +1,32 @@
+@SuppressWarnings('PMD.CognitiveComplexity,PMD.ExcessiveClassLength')
+/**
+ * Apex class for managing Sales Order functionality.
+ * Implements the YINIOrderManagement interface.
+ * Contains methods for retrieving, updating, and deleting order-related information.
+ * @author            : Sandeep Vishwakarma <sandeep.vishwakarma@skinternational.com>
+ * @see YINIOrderManagement
+ */
 public without sharing class YINOrderManagementImpl implements YINIOrderManagement{
+    /**
+     * Retrieves a list of products based on the provided parameters.
+     *
+     * @param accountId - The unique identifier for the account.
+     * @param orderType - The type of the order.
+     * @param orderModuleType - The module type associated with the order.
+     * @return List<YINProductWrapper> - A list of product wrappers containing product details.
+     * @throws YINOrderManagementException - Throws an exception if there is an issue in the process.
+     */
     public static List<YINProductWrapper> getProducts(String accountId,String orderType,String orderModuleType){ 
         try {
-            // Get class for which Instance should create by OrderType
-            // YIN_PriceBookImplByType__mdt metaDataConfig = YIN_PriceBookImplByType__mdt.getInstance(orderType);
+            // 1. Get Configured Class Name based on Order type and module type 
             YIN_PriceBookImplByType__mdt metaDataConfig = Database.query('Select Id,Class_Name__c,ModuleType__c,Order_Type__c from YIN_PriceBookImplByType__mdt where Order_Type__c=:orderType and ModuleType__c=:orderModuleType');
-            // Create Instance of Class Dynamically
+            // 2. Create Instance of Class Dynamically
             Type apiClassName  = Type.forName(metaDataConfig.Class_Name__c);
             if (apiClassName != null) {
                 YINIGetProducts classInstance  = (YINIGetProducts)apiClassName.newInstance();
                 if (classInstance != null) {
 
-                    // Calling GetProduct implementations
+                    // 3. Calling GetProduct implementations
                     List<YINProductWrapper> productsWrapper = classInstance.getProducts(accountId);
                     return productsWrapper;
                 } else {
@@ -22,6 +38,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
                 return null;
             }
         } catch (Exception e) {
+            // 4. Log the Exception
             YINMonitorLogWrap log = new YINMonitorLogWrap();
             log.exObj = e;
             log.module = 'Sales Order';
@@ -32,14 +49,20 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         }
     }
 
-    
+    /**
+     * Retrieves the API name of the object associated with the provided record ID.
+     *
+     * @param recordId - The unique identifier for the record.
+     * @return String - The API name of the object.
+     */
     public static String getObjectApiName(String recordId) {
         String objectApiName = null;
         try {
-            // Query the object type from the record
+            // 1. Query the object Schema type from the record
             SObjectType objectType = Id.valueOf(recordId).getSObjectType();
             objectApiName = objectType.getDescribe().getName();
         } catch(Exception e) {
+            // Log the Exception
             YINMonitorLogWrap log = new YINMonitorLogWrap();
             log.exObj = e;
             log.module = 'Sales Order';
@@ -50,11 +73,27 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         }
         return objectApiName;
     }
+
+    /**
+     * Retrieves order details for the specified record ID.
+     *
+     * @param recordId - The unique identifier for the record.
+     * @return List<Order> - A list of order details.
+     */
     public static List<Order> getOrderDetails(String recordId){
         YINOrderSelector orderSelector = (YINOrderSelector)YINApplication.selector.newInstance(Order.SObjectType);
         return orderSelector.selectById(new Set<Id>{recordId});
     }
 
+    /**
+     * Adds a product to the cart for the specified account and open order ID.
+     *
+     * @param productWrapper - Serialized JSON representation of the product wrapper.
+     * @param accountId - The unique identifier for the account.
+     * @param openOrderId - The unique identifier for the open order.
+     * @return boolean - True if the product is successfully added to the cart, false otherwise.
+     * @throws YINOrderManagementException - Throws an exception if there is an issue in the process.
+     */
     public static boolean addToCart(String productWrapper,String accountId,String openOrderId){
         try {
             LibISobjectUnitOfWork unitofwork = YINApplication.unitofwork.newInstance();
@@ -109,6 +148,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
                 return true;
             }
         } catch (Exception e) {
+            // Log the Exception
             YINMonitorLogWrap log = new YINMonitorLogWrap();
             log.exObj = e;
             log.module = 'Sales Order';
@@ -120,6 +160,13 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         }
     }
 
+    /**
+     * Retrieves the details of products in the cart for the specified account and open order ID.
+     *
+     * @param accountId - The unique identifier for the account.
+     * @param openOrderId - The unique identifier for the open order.
+     * @return List<YINProductWrapper> - A list of product wrappers containing cart details.
+     */
     public static List<YINProductWrapper> getCartDetails(String accountId,String openOrderId){
         
             // 1. Get Draft Cart of Current Account
@@ -146,6 +193,13 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
        
     }
 
+    /**
+     * Retrieves a list of product wrappers based on the provided order products and account ID.
+     *
+     * @param orderProducts - List of OrderItem objects representing products in the order.
+     * @param accountId - The unique identifier for the account.
+     * @return List<YINProductWrapper> - A list of product wrappers containing cart details.
+     */
     private static List<YINProductWrapper> getCartItems(List<OrderItem> orderProducts,String accountId){
         if(orderProducts.size()>0){
 
@@ -184,6 +238,14 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         }
     }
 
+    /**
+     * Sets order item details based on the provided order products, price lists, and product entries.
+     *
+     * @param orderProducts - List of OrderItem objects representing products in the order.
+     * @param priceListByKey - Map containing price lists keyed by ProductId + VariantId.
+     * @param priceBookEntriesByProductId - Map containing PricebookEntry objects keyed by ProductId.
+     * @return List<YINProductWrapper> - A list of product wrappers with updated details.
+     */
     private static List<YINProductWrapper> setOrderItem(List<OrderItem> orderProducts,Map<String,List<YIN_Price_List__c>> priceListByKey,Map<Id,PricebookEntry> priceBookEntriesByProductId){
         // Declaring Variables
         List<YINProductWrapper>  wrapperProducts = new List<YINProductWrapper>();
@@ -260,13 +322,20 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             wrapperProduct.tdsPercentage = item.TDS__c;
             wrapperProduct.variantId = item.Variant__c;
             wrapperProduct.variantCode = item.Variant__r.Variant_Code__c;
-            wrapperProduct.combinationKey = item.Product2.ProductCode;
+            wrapperProduct.combinationKey = item.Product2.Product_Code__c;
             wrapperProduct.locationCode = item.Order.Account.Location__r?.Location_Code__c;
             wrapperProducts.add(wrapperProduct);
         }
         return wrapperProducts;
     }
 
+    /**
+     * Retrieves the active price list for a given order item.
+     *
+     * @param item - OrderItem object for which the price list is determined.
+     * @param priceLists1 - List of price lists for the specified item.
+     * @return YIN_Price_List__c - The active price list for the item.
+     */
     private static YIN_Price_List__c getActivePriceList(OrderItem item,List<YIN_Price_List__c> priceLists1){
         YIN_Price_List__c priceList = new YIN_Price_List__c();
         if(priceLists1!=null){
@@ -277,7 +346,15 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         return priceList;
     }
 
-
+    /**
+     * Deletes a product from the cart for the specified account, product wrapper, and open order ID.
+     *
+     * @param productWrapper - Serialized JSON representation of the product wrapper.
+     * @param accountId - The unique identifier for the account.
+     * @param openOrderId - The unique identifier for the open order.
+     * @return String - Success message if the product is successfully deleted from the cart.
+     * @throws YINOrderManagementException - Throws an exception if there is an issue in the process.
+     */
     public static string deleteCartItem(String productWrapper,String accountId,String openOrderId){
         try {
             System.debug('Body : '+JSON.serialize(productWrapper));
@@ -309,7 +386,14 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
     }
 
     
-
+    /**
+     * Creates an order based on the provided product wrapper and wrap commit details.
+     *
+     * @param productWrapper - Serialized JSON representation of the product wrapper.
+     * @param wrapCommit - Serialized JSON representation of the wrap commit details.
+     * @return String - Success message if the order is successfully created.
+     * @throws YINOrderManagementException - Throws an exception if there is an issue in the process.
+     */
     public static string createOrder(String productWrapper,String wrapCommit){
         System.debug('body 1 '+JSON.serialize(productWrapper));
         System.debug('body 2 '+JSON.serialize(wrapCommit));
@@ -356,6 +440,15 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
     static Order openOrder = null;
     static LibISobjectUnitOfWork unitofworkProcessOrder = null;
     
+    /**
+     * Processes the order based on the provided list of product wrappers and wrap commit details.
+     * Manages the creation, update, and deletion of order items and orders.
+     *
+     * @param productWrappers - List of YINProductWrapper objects containing details of products in the order.
+     * @param docommit - WrapCommit object containing additional details for order processing.
+     * @return String - Serialized JSON representation of orders by status.
+     * @throws YINOrderManagementException - Throws an exception if there is an issue in the process.
+     */
     public static String processOrder(List<YINProductWrapper> productWrappers,WrapCommit docommit){
         // 1. Instance of UnitOfWork
         unitofworkProcessOrder = YINApplication.unitofwork.newInstance(); 
@@ -416,18 +509,27 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         return JSON.serialize(ordersByStatus);
     }
 
+    /**
+     * Processes the logic for each product in the cart, determining whether to call processProductWithVariant
+     * or processProductWithoutVariant based on the discount availability and product data.
+     *
+     * @param productWrappers - List of YINProductWrapper objects containing details of products in the order.
+     * @param docommit - WrapCommit object containing additional details for order processing.
+     * @param orderItemById - Map of order item Ids to OrderItem objects.
+     * @return List<Order> - List of orders resulting from the processing logic.
+     */
     private static List<Order> processLogic(List<YINProductWrapper> productWrappers,WrapCommit docommit,Map<String,OrderItem> orderItemById){
         // 2. Get Inventory ,Variants and Order information
         Map<String,YINStockinventoryWrap.YINData> normalProduct = YINStockInventory.withoutVariant(productWrappers);
         Map<String,YINStockInventoryVarientWrap.YINData> discountProduct = YINStockInventory.withVariant(productWrappers);
 		System.debug('normalProduct '+normalProduct);
         for(YINProductWrapper wrapper:productWrappers){
-            String pCode = wrapper.pricebookEntry.ProductCode;
+            String pCode = wrapper.pricebookEntry.Product2.Product_Code__c;
             if(Test.isRunningTest()){
                 pCode = 'PC-001';
             }
             YINStockinventoryWrap.YINData normalProductData = normalProduct.get(pCode);
-            YINStockInventoryVarientWrap.YINData discountedProductData = discountProduct.get(wrapper.pricebookEntry.ProductCode+'_'+wrapper.variantCode);
+            YINStockInventoryVarientWrap.YINData discountedProductData = discountProduct.get(wrapper.pricebookEntry.Product2.Product_Code__c+'_'+wrapper.variantCode);
             OrderItem item = orderItemById.get(wrapper.orderItemId);
 
             if(wrapper.discountPercentage > 0 && discountedProductData!=null && wrapper.variantCode!=null){ // For Product With Discounts
@@ -435,7 +537,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             }else if(normalProductData!=null && item!=null && normalProductData?.totalInventory!='0'){
                 processProductWithoutVariant(wrapper,normalProductData,item);
             }else if(item!=null){
-                System.debug('product '+wrapper.pricebookEntry.ProductCode+' is not available');
+                System.debug('product '+wrapper.pricebookEntry.Product2.Product_Code__c+' is not available');
                 System.debug('D item.clone()'+item +' OrderItem.OrderId '+OrderItem.OrderId+' openOrder '+openOrder);
                 unitofworkProcessOrder.registerNew(item.clone(), OrderItem.OrderId, openOrder);
                 deleteOpenOrder = false;
@@ -456,16 +558,22 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         return orders;
     }
 
+    /**
+     * Commits the processed order items and manages the deletion and creation of orders based on certain conditions.
+     *
+     * @return List<Order> - List of orders resulting from the commit process.
+     */
     private static List<Order> commitTheProcess(){
         String responseSAP = '';
         List<Order> orders = new List<Order>();
-        unitofworkProcessOrder.commitWork();
+        // unitofworkProcessOrder.commitWork();
             if(!deleteClosedOrder){
                 responseSAP = YINStockInventory.sendOrder(new List<Order> {closedOrder});
                 YINSalesOrderWrap salesOrder = (YINSalesOrderWrap)JSON.deserialize(responseSAP,YINSalesOrderWrap.class);
                 closedOrder.ERP_Order_Number__c = salesOrder.erpOrderNumber;
                 orders.add(closedOrder);
             }
+            unitofworkProcessOrder.commitWork();
             LibISobjectUnitOfWork unitofworkOpenOrder = YINApplication.unitofwork.newInstance(); 
             if(deleteOpenOrder){
                 unitofworkOpenOrder.registerDeleted(openOrder);
@@ -479,11 +587,25 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             if(!deleteOpenOrder){
                 orders.add(openOrder);
             }
+            Set<Id> newOrderIds = new Set<Id>();
+            for(Order o:orders){
+                newOrderIds.add(o.Id);
+            }
+            if(newOrderIds.size()>0){
+                YINOrderSelector orderSelector = (YINOrderSelector)YINApplication.selector.newInstance(Order.SObjectType);
+                orders = orderSelector.selectById(newOrderIds);
+            }
             return orders;
     }
 
    
-
+    /**
+     * Processes a product with a variant, handling the logic for items with discounts.
+     *
+     * @param wrapper - YINProductWrapper object representing the product details.
+     * @param discountedProductData - YINStockInventoryVarientWrap.YINData object containing data for discounted products.
+     * @param item - OrderItem object representing the order item.
+     */
     private static void processProductWithVariant(YINProductWrapper wrapper,YINStockInventoryVarientWrap.YINData discountedProductData,OrderItem item){
         Decimal inventoryQty = Decimal.valueOf(discountedProductData.quantity);
         
@@ -534,13 +656,20 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         itemToDelete.add(item);
     }
 
+    /**
+     * Processes a product without a variant, handling the logic for items without discounts.
+     *
+     * @param wrapper - YINProductWrapper object representing the product details.
+     * @param normalProductData - YINStockinventoryWrap.YINData object containing data for products without variants.
+     * @param item - OrderItem object representing the order item.
+     */
     private static void processProductWithoutVariant(YINProductWrapper wrapper,YINStockinventoryWrap.YINData normalProductData,OrderItem item){       
         Decimal quantityNeed = wrapper.quantity;
         for(YINStockinventoryWrap.YINVariantwise variantWise : normalProductData.variantwise){//2,4
             Decimal availableQty = Decimal.valueOf(variantWise.inventory);
             String variantCode = variantWise.variant;
             if (availableQty >= quantityNeed && quantityNeed!=0) { // 1. 5>=12:false ,2. 6>=7:false,3. 0>=2  
-                System.debug('Normal OrderLineItem where Order Status = Closed ');
+                System.debug('Normal OrderLineItem where Order Status = Closed for Varient Code '+variantCode);
                 //closedLineItemNormal++;
                 OrderItem newItem = item.clone();
                 newItem.Variant__c = variantByVariantCode.get(variantWise.variant).Id;
@@ -589,7 +718,12 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         }
     }
     
-
+    /**
+     * Recalculates various fields for a list of order items, updating values like net price, discounts, GST, TDS, etc.
+     *
+     * @param items - List of OrderItem objects to recalculate.
+     * @return List<OrderItem> - Recalculated list of order items.
+     */
     private static List<OrderItem> reCalculate(List<OrderItem> items){
         for(OrderItem item:items){
             System.debug('OrderId '+item.OrderId+'  item Id '+item.Product2Id);
@@ -620,6 +754,12 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         return items;
     }
 
+    /**
+     * Checks if the account associated with the order has sufficient credit days based on the ledger information.
+     *
+     * @param accountId - Id of the account to check.
+     * @return Boolean - True if credit days are within the limit, false otherwise.
+     */
     private static boolean checkCreditDays(String accountId){
         YINLedgerSelector ledgerSelector = (YINLedgerSelector)YINApplication.selector.newInstance(YIN_Ledger__c.SObjectType);
         List<YIN_Ledger__c> accountLedgers = ledgerSelector.selectByAccount(new Set<Id>{accountId});
@@ -636,6 +776,13 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         }
     }
 
+    /**
+     * Checks if the account associated with the order has sufficient credit limit based on the account information.
+     *
+     * @param accountId - Id of the account to check.
+     * @param grandTotal - Grand total of the order.
+     * @return Boolean - True if credit limit is sufficient, false otherwise.
+     */
     private static boolean checkCreditLimit(String accountId,Decimal grandTotal){
         YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
         List<Account> accounts = accountSelector.getAccounts(new List<String>{accountId});
@@ -659,6 +806,11 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         // return (accountLedgers[0].Dealer_Code__r?.Available_Credit_Limit__c >= grandTotal);
     }
 
+    /**
+     * Checks if the application is in maintenance mode based on the configured start and end dates.
+     *
+     * @return Boolean - True if the application is in maintenance, false otherwise.
+     */
     public static Boolean inMaintenance(){
         YINOrderConfig__mdt orderMaintenance = YINOrderConfig__mdt.getInstance('orderMaintenance');
         Boolean result = false;
@@ -668,12 +820,22 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         return result;
     }
 
+    /**
+     * Retrieves the profiles of experience users from the custom metadata.
+     *
+     * @return List<String> - List of profile names for experience users.
+     */
     public static List<String> getExperienceUserProfiles(){
         YIN_Community_Profile__mdt communityProfiles = YIN_Community_Profile__mdt.getInstance('community');
         List<String> profilesNames = communityProfiles.Profile_Names__c.split(',');
         return profilesNames; // TODO: This is to be Dynamic
     }
 
+    /**
+     * Retrieves the current user based on the user's Id.
+     *
+     * @return User - Current User object.
+     */
     public static User getCurrentUser(){
         YINUserSelector userSelector = (YINUserSelector)YINApplication.selector.newInstance(User.SObjectType);
         List<User> users = userSelector.getUserbyId(Userinfo.getUserId());
@@ -684,6 +846,12 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         return user;
     }
 
+    /**
+     * Retrieves the account Id of the experience user based on the current user's contact and account information.
+     *
+     * @return String - Account Id of the experience user.
+     * @throws YINOrderManagementException - Throws an exception if there is an issue in the process.
+     */
     public static string getExperienceUserAccount(){
         try {
             String contactId = '';
@@ -717,6 +885,13 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         }
     }
 
+    /**
+     * Retrieves the account information based on the provided account Id.
+     *
+     * @param accountId - Id of the account to retrieve.
+     * @return Account - Account object representing the account information.
+     * @throws YINOrderManagementException - Throws an exception if there is an issue in the process.
+     */
     public static Account getAccount(String accountId){
         try {
 
@@ -738,13 +913,27 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         }
     }
 
+    /**
+     * Retrieves a list of shipping accounts associated with the provided account Id.
+     *
+     * @param accountId - Id of the account for which shipping accounts are retrieved.
+     * @return List<Account> - List of shipping accounts.
+     */
     public static List<Account> getShippingAccounts(String accountId){
         YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
         List<Account> accounts = accountSelector.selectShippingAccounts(accountId);
         return accounts;
     }
 
-    // Private Methods
+    /**
+     * Adds a product to the cart as an order item, updating the unit price, discounts, and other related information.
+     *
+     * @param cartOrder - Order object representing the cart.
+     * @param wrapperProduct - YINProductWrapper object representing the product details.
+     * @param unitofwork - LibISobjectUnitOfWork object for handling unit of work operations.
+     * @return Boolean - True if the addition to the cart is successful, false otherwise.
+     * @throws YINOrderManagementException - Throws an exception if there is an issue in the process.
+     */
     private static boolean addToCartLineItem(Order cartOrder,YINProductWrapper wrapperProduct,LibISobjectUnitOfWork unitofwork){
         //try {
             Decimal netPrice = wrapperProduct.pricebookEntry.UnitPrice * wrapperProduct.quantity;

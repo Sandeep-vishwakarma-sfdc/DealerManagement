@@ -213,3 +213,6 @@ if (requestMsgNode != null) {
     System.Debug('requestMsg node not found');
 }
 
+List<Order> orders = new List<Order>();
+orders.add(new Order(Id='8010T000000N6j5QAC'));
+YINStockInventory.sendOrder(orders);

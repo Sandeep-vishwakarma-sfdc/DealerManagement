@@ -7,6 +7,7 @@ public with sharing class YINProductSelector extends LibSObjectSelector{
         return new List<Schema.SObjectField> {
             Product2.Name,
             Product2.ProductCode, 
+            Product2.Product_Code__c, 
             Product2.Description, 
             Product2.IsActive, 
             Product2.DisplayUrl, 

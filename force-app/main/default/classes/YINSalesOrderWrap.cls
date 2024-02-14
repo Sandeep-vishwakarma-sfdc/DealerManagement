@@ -3,14 +3,15 @@ public with sharing class YINSalesOrderWrap {
     public YINHeader header;
 	public YINLines[] lines;
 	public class YINHeader {
-		public String sfdcOrderNumber;	//SF0000342
-		public String erpOrderNumber;	//
-		public String erpCustomerCode;	//C000000234
+		public String SFDCOrderNumber;	//SF0000342
+		public String ERPOrderNumber;	//
+		public String ERPCustomerCode;	//C000000234
 		public String orderDate;	//25-01-2024
 		public String externalDocumentNumber;	//
 		public String status;	//Closed
-		public String erpShipToCode;	//C000343
+		public String ERPShipToCode;	//C000343
 		public String remark;	//
+		public String OrderType;
 	}
 	public class YINLines {
 		public String itemNumber;	//10
@@ -20,15 +21,15 @@ public with sharing class YINSalesOrderWrap {
 		public String discount;	//4
 		public String discountAmount;	//
 		public String unitPrice;	//1000
-		public String tdstcsPercent;	//1
-		public String tdstcsBaseAmount;	//
-		public String tdstcsAmount;	//
+		public String TDSTCSPercent;	//1
+		public String TDSTCSBaseAmount;	//
+		public String TDSTCSAmount;	//
 		public String type;	//Normal Order
 		public String docketNo;	//
 		public String discountType;	//Aged Discount
 		public String discountRemark;	//
-		public String gstPercent;	//28
-		public String gstAmount;	//
+		public String GSTpercent;	//28
+		public String GSTAmount;	//
 		public String totalAmount;	//
     }
 

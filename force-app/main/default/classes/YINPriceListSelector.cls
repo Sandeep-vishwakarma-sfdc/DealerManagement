@@ -117,30 +117,33 @@ public without Sharing class YINPriceListSelector extends LIBSObjectSelector{
     }
     
     public List<YIN_Price_List__c> selectPriceListByCustomer(String accountId){
+        String status = 'Approved';
         String query =  newQueryFactory()
         .selectField('Variant__r.Variant_Code__c')
         .selectField('Product__r.Product_Code__c')
-        .setCondition('Customer__c=:accountId and Start_Date__c <= TODAY and End_Date__c>=TODAY')
+        .setCondition('Customer__c=:accountId and Start_Date__c <= TODAY and End_Date__c>=TODAY and Discount_Type__c !=null and Status__c=:status')
         .setOrdering('Minimum_Quantity__c',LIBQueryFactory.SortOrder.ASCENDING, false)
         .toSOQL();  
         return Database.query(query);
     }
        
     public List<YIN_Price_List__c> selectPriceListByCustomerGroup(List<String> customerGroups){
+        String status = 'Approved';
         String query =  newQueryFactory()
         .selectField('Variant__r.Variant_Code__c')
         .selectField('Product__r.Product_Code__c')
-        .setCondition('Customer_Group__c IN:customerGroups and Start_Date__c <= TODAY and End_Date__c>= TODAY')
+        .setCondition('Customer_Group__c IN:customerGroups and Start_Date__c <= TODAY and End_Date__c>= TODAY and Discount_Type__c !=null and Status__c=:status')
         .setOrdering('Minimum_Quantity__c',LIBQueryFactory.SortOrder.ASCENDING, false)
         .toSOQL();  
         return Database.query(query);
     }
     
     public List<YIN_Price_List__c> selectCommonPriceList(){
+        String status = 'Approved';
         String query =  newQueryFactory()
         .selectField('Variant__r.Variant_Code__c')
         .selectField('Product__r.Product_Code__c')
-        .setCondition('Customer_Group__c=null and Customer__c=null and Start_Date__c <= TODAY and End_Date__c>= TODAY')
+        .setCondition('Customer_Group__c=null and Customer__c=null and Start_Date__c <= TODAY and End_Date__c>= TODAY and Discount_Type__c !=null and Status__c=:status')
         .setOrdering('Minimum_Quantity__c',LIBQueryFactory.SortOrder.ASCENDING, false)
         .toSOQL();  
         return Database.query(query);

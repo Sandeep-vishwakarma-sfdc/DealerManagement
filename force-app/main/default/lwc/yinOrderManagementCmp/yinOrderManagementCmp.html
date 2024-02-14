@@ -138,7 +138,7 @@
                         Tyre Size: {productWrap.productSize} inchs | Tread Pattern:
                         {productWrap.pricebookEntry.Product2.Tread_Pattern__c} | <span
                           lwc:if={productWrap.variantCode}>Variant: {productWrap.variantCode}</span> |
-                        {productWrap.pricebookEntry.ProductCode}
+                        {productWrap.pricebookEntry.Product2.Product_Code__c}
                         <!-- {productWrap.pricebookEntry.Product2.Description} -->
                         <div class="wcf-left"><span class="qty">Quantity: </span></div>
                         <div class="wcf-right">
@@ -308,7 +308,7 @@
                 <div>Tyre Size: {cartDetail.pricebookEntry.Product2.Size__c} inch</div>
                 <div>Tread Pattern: {cartDetail.pricebookEntry.Product2.Tread_Pattern__c}</div>
                 <div lwc:if={cartDetail.variantCode}>Variant Code: {cartDetail.variantCode}</div>
-                <!-- <div>Item Number: {cartDetail.pricebookEntry.Product2.ProductCode}</div> -->
+                <!-- <div>Item Number: {cartDetail.pricebookEntry.Product2.Product_Code__c}</div> -->
                 <div class="product-removal">
                   <a data-index={index} onclick={handleCartDelete} class="buy-btn">
                     <i class="fa fa-trash fa-1x" style="color: #fff;"></i>
@@ -336,6 +336,11 @@
           <label>Sub Total Price</label>
           <div class="totals-value" id="cart-subtotal">71.97</div>
         </div>-->
+        <!-- <div class="totals-item">
+          <label style="color:#333; background:#fff;">Order value</label>
+          <div class="totals-value" id="cart-netOrderValue"> {netOrderValue} </div>
+        </div> -->
+
           <div class="totals-item">
             <label style="color:#333; background:#fff;">GST ({gstPercentage} %)</label>
             <div class="totals-value" id="cart-tax"> {totalGSTAmount} </div>
@@ -385,36 +390,33 @@
           <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
             <!-- <h2>Submitted Order</h2> -->
             <div class="col-md-12 col-xs-6">
-              <!-- <div class="slds-section__title-action"
-                      style="background:#262626; color:#fff; font-weight:600; border-top-left-radius:4px; border-bottom-left-radius:4px; border-top-right-radius:4px; border-bottom-right-radius:4px; font-size:18px; padding:5px;">
-                      <lightning-icon label="" icon-name="standard:work_order_item" style="color:#fff!important;"></lightning-icon>
-                      <span style="margin-left:10px; font-size: 16px; font-weight: 500;">Submitted Order</span>
-                    </div>
-                   -->
-              <table>
+              <p>Submitted : Order will be placed and status will be Order submitted</p>
+              <p>Open : Order will be in Open status as SKU is out of stock.</p>
+              <table class="slds-m-top_large">
                 <tr
                   style="background:#262626; color:#fff; font-weight:600; border-top-left-radius:4px; border-bottom-left-radius:4px; border-top-right-radius:4px; border-bottom-right-radius:4px; font-size:18px; padding:5px;">
                   <th style="border: 1px solid black;text-align: center;">Item Code</th>
+                  <th style="border: 1px solid black;text-align: center;">Item Description</th>
                   <th style="border: 1px solid black;text-align: center;">Quantity</th>
                   <th style="border: 1px solid black;text-align: center;">Variant</th>
-                  <th style="border: 1px solid black;text-align: center;">Status</th>
+                  <th style="border: 1px solid black;text-align: center;">Order Status</th>
                 </tr>
                 <template for:each={orderPreview.Submitted} for:item="submitted">
                   <tr key={submitted.tempId}>
-                    <td style="border: 1px solid black;text-align: center;">{submitted.Product2.ProductCode}</td>
+                    <td style="border: 1px solid black;text-align: center;">{submitted.Product2.Product_Code__c}</td>
+                    <td style="border: 1px solid rgb(141, 57, 57);text-align: center;">{submitted.Product2.Description}</td>
                     <td style="border: 1px solid black;text-align: center;">{submitted.Quantity}</td>
                     <td style="border: 1px solid black;text-align: center;">{submitted.VariantCode}</td>
-                    <td style="border: 1px solid black;text-align: center;">Submitted <lightning-icon size="x-small"
-                        icon-name="standard:task2" alternative-text="Submitted" title="Submitted"></lightning-icon></td>
+                    <td style="border: 1px solid black;text-align: center;">Submitted</td>
                   </tr>
                 </template>
                 <template for:each={orderPreview.Open} for:item="open">
                   <tr key={open.tempId}>
-                    <td style="border: 1px solid black;text-align: center;">{open.Product2.ProductCode}</td>
+                    <td style="border: 1px solid black;text-align: center;">{open.Product2.Product_Code__c}</td>
+                    <td style="border: 1px solid black;text-align: center;">{open.Product2.Description}</td>
                     <td style="border: 1px solid black;text-align: center;">{open.Quantity}</td>
                     <td style="border: 1px solid black;text-align: center;">{open.VariantCode}</td>
-                    <td style="border: 1px solid black;text-align: center;">Open <lightning-icon size="x-small"
-                        icon-name="standard:today" alternative-text="Open" title="Open"></lightning-icon></td>
+                    <td style="border: 1px solid black;text-align: center;">Open</td>
                   </tr>
                 </template>
               </table>

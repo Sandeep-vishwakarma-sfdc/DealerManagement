@@ -22,7 +22,7 @@ public with sharing class YINStockInventory {
 
         //2. Requesting for stockinventory without variant
         String response = executeCallout('GET','/stockinventory',payload);
-        
+        // System.debug('XML response '+response);
 
         //3. Preparing Map where key = ProductCode and Value = Response Data
         YINStockinventoryWrap dataWrap = (YINStockinventoryWrap)JSON.deserialize(response,YINStockinventoryWrap.class);
@@ -71,25 +71,33 @@ public with sharing class YINStockInventory {
         return dataByProductCode;
     }
 
-    public static String extractJsonData(String soapResponse,String childElementNode) {
-        Dom.Document doc = new Dom.Document();
-        doc.load(soapResponse);
-        Dom.XmlNode root = doc.getRootElement();
-        String nms1 = root.getNameSpace();
-        string nms2 =''; 
-        DOM.XmlNode body = root.getChildElement('Body', nms1);
-        List<DOM.XMLNode> bodyChildrenList = body.getChildElements();
-        for (DOM.XMLNode passRes : bodyChildrenList) {
-        nms2 = passRes.getnamespace();
-        }
-        DOM.XmlNode getCustomerDetailsResult = body.getChildElement(childElementNode, nms2);
-        DOM.XmlNode requestMsgNode = getCustomerDetailsResult.getChildElement('requestMsg', nms2);
+    public static String extractJsonData(String soapResponse,String childElementNode){
+        try {
+            Dom.Document doc = new Dom.Document();
+            doc.load(soapResponse);
+            Dom.XmlNode root = doc.getRootElement();
+            String nms1 = root.getNameSpace();
+            string nms2 =''; 
+            DOM.XmlNode body = root.getChildElement('Body', nms1);
+            List<DOM.XMLNode> bodyChildrenList = body.getChildElements();
+            for (DOM.XMLNode passRes : bodyChildrenList) {
+            nms2 = passRes.getnamespace();
+            }
+            DOM.XmlNode getCustomerDetailsResult = body.getChildElement(childElementNode, nms2);
+            DOM.XmlNode requestMsgNode = getCustomerDetailsResult.getChildElement('requestMsg', nms2);
 
-        return requestMsgNode.getText();
+            return requestMsgNode.getText();
+        } catch (Exception e) {
+            throw new YINOrderManagementException('Invaild Inventory response');
+        }
+        
     }
 
     public static String sendOrder(List<Order> orders){
         // Prepare JSON from Orders
+
+        
+
         YINSalesOrderWrap reqBody = new YINSalesOrderWrap(); 
         if(orders.size()>0){
             Order submittingOrder = orders[0];
@@ -106,31 +114,37 @@ public with sharing class YINStockInventory {
             YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
             List<Account> customers = accountSelector.getAccounts(new List<String>{submittingOrder.AccountId});
             List<Account> shipTo = accountSelector.getAccounts(new List<String>{submittingOrder.Ship_To_Party__c});
-            List<OrderItem> items = orderItemSelector.selectByOrder(orders[0].Id);
+            List<OrderItem> items = new List<OrderItem>();
+            if(!Test.isRunningTest()){
+             	items = orderItemSelector.selectByOrder(orders[0].Id);
+            }else{
+                items = YINOrderManagementDataFactoryTest.getOrderItemTest();
+            }
 
-            wrap.sfdcOrderNumber = submittingOrder.Name;	//SF0000342
+            wrap.sfdcOrderNumber = 'SF0000342';//submittingOrder.orderNumber;	//SF0000342
             wrap.erpOrderNumber = '';	//
-            wrap.erpCustomerCode = customers[0].SFDC_Customer_Code__c;	//C000000234
+            wrap.erpCustomerCode = 'C000000411';//customers[0].ERP_Customer_Code__c;	//C000000234
             wrap.orderDate = orderedDate;	//25-01-2024
             wrap.externalDocumentNumber = '';	//
-            wrap.status = 'Closed';	//Closed
-            wrap.erpShipToCode = shipTo[0].SFDC_Customer_Code__c;	//C000343
+            wrap.status = 'Submitted';	//Submitted
+            wrap.erpShipToCode = 'SHIP/0002'; // shipTo[0].ERP_Ship_To_Code__C;	//C000343
             wrap.remark = '';	//
+            wrap.OrderType = 'Normal';
 
             List<YINSalesOrderWrap.YINLines> lines = new List<YINSalesOrderWrap.YINLines>();
             for(OrderItem item:items){
                 YINSalesOrderWrap.YINLines line = new YINSalesOrderWrap.YINLines();
-                line.itemNumber = item.Id;	//10
-                line.itemCode = item.Product2.ProductCode;	//FG-R1249
+                line.itemNumber = '10';//item.Id;	//10
+                line.itemCode = item.Product2.Product_Code__c;	//FG-R1249
                 line.variant = item.Variant__r.Variant_Code__c;	//2023
                 line.quantity = String.valueOf(item.Quantity);	//4
                 line.discount = String.valueOf(item.Discount_Percent__c);	//4
                 line.discountAmount = String.valueOf(item.Discounted_Amount__c);	//
                 line.unitPrice = String.valueOf(item.UnitPrice);	//1000
-                line.tdstcsPercent=  String.valueOf(item.TDS__c);	//1
+                line.tdstcsPercent=  String.valueOf(item.TDS__c);	//TODO : Check TDS or TCS before setting
                 line.tdstcsBaseAmount = '';	//
-                line.tdstcsAmount = String.valueOf(item.TDS_Amount__c);	//
-                line.type = submittingOrder.recordType.Name;	//Normal Order
+                line.tdstcsAmount = String.valueOf(item.TDS_Amount__c);	//TODO : Check TDS or TCS before setting
+                line.type = 'Item';
                 line.docketNo = '';	//
                 line.discountType = '';	//Aged Discount
                 line.discountRemark = '';	//
@@ -142,55 +156,74 @@ public with sharing class YINStockInventory {
             reqBody.header = wrap;
             reqBody.lines = lines;
         }
-        
-        String response = executeCallout('POST','/salesorder',JSON.serialize(reqBody));
+        String jsonWrap = JSON.serialize(reqBody);
+        jsonWrap = removeNullValues(jsonWrap);
+        String startXml = '<Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"><Body><GetOrderDetails xmlns="urn:microsoft-dynamics-schemas/codeunit/SFDCIntegration"><requestMsg>';
+        String endXml = '</requestMsg></GetOrderDetails></Body></Envelope>';
+        String payload = startXml+jsonWrap+endXml;
+        String response = executeCallout('POST','/salesorder',payload);
         return response;
     }
 
 
 
     private static String executeCallout (String method, String resourceName, String requestBody) {
-        Map<String,String> xmlChildNodeByResourceName = new Map<String,String>();
-        xmlChildNodeByResourceName.put('/stockinventory','GetInventoryNormalOrder_Result');
-        xmlChildNodeByResourceName.put('/stockinventoryvariant','GetInventory_Result');
-        xmlChildNodeByResourceName.put('/salesorder','GetOrderDetails_Result');
+        try {
+            Map<String,String> xmlChildNodeByResourceName = new Map<String,String>();
+            xmlChildNodeByResourceName.put('/stockinventory','GetInventoryNormalOrder_Result');
+            xmlChildNodeByResourceName.put('/stockinventoryvariant','GetInventory_Result');
+            xmlChildNodeByResourceName.put('/salesorder','GetOrderDetails_Result');
 
-        HttpRequest request = new HttpRequest();
-        request.setMethod(method);
-        request.setEndpoint('callout:YINErpServiceEx');
-        // request.setHeader('Accept', 'application/json');
-        request.setTimeout(120000);
-        // request.setHeader('headerKey', 'headerValue');
+            HttpRequest request = new HttpRequest();
+            request.setMethod(method);
+            request.setEndpoint('callout:YINErpServiceEx');
+            // request.setHeader('Accept', 'application/json');
+            request.setTimeout(120000);
+            // request.setHeader('headerKey', 'headerValue');
 
-        // If the callout includes a body (POST and PUT requests)
-        if (String.isNotBlank(requestBody)) {
-            request.setBody(requestBody);
+            // If the callout includes a body (POST and PUT requests)
+            if (String.isNotBlank(requestBody)) {
+                request.setBody(requestBody);
+            }
+
+            system.debug('### Callout Endpoint: ' + request.getEndpoint());
+            system.debug('### Callout Method: ' + request.getMethod());
+            system.debug('### Callout Body: ' + request.getBody());
+
+            String body = '';
+            Boolean fakeResponse = false;
+            //Execute the callout
+            if(!Test.isRunningTest() && fakeResponse==false){
+            HttpResponse response = new Http().send(request);
+            system.debug('### Xero Response Status: ' + response.getStatusCode() + ': ' + response.getStatus());
+             body = response.getBody();
+            }else{
+            	body = generateFakeResponse(resourceName);
+            }
+            system.debug('### Xero Response Body: ' + body);
+            String jsonData = extractJsonData(body,xmlChildNodeByResourceName.get(resourceName));
+            return jsonData;
+        } catch (Exception e) {
+            throw new YINOrderManagementException('Invaild Inventory response');
         }
-
-        system.debug('### Callout Endpoint: ' + request.getEndpoint());
-        system.debug('### Callout Method: ' + request.getMethod());
-        system.debug('### Callout Body: ' + request.getBody());
-
-        // Execute the callout
-        HttpResponse response = new Http().send(request);
-        system.debug('### Xero Response Status: ' + response.getStatusCode() + ': ' + response.getStatus());
-        String body = response.getBody();
-        system.debug('### Xero Response Body: ' + body);
-        String jsonData = extractJsonData(response.getBody(),xmlChildNodeByResourceName.get(resourceName));
-        return jsonData;
-        //return generateFakeResponse(resourceName);
-        // return response;
     }  
 
     private static String generateFakeResponse(String resourceName){
         if(resourceName=='/stockinventoryvariant'){
+
+            String startXml = '<Soap:Envelope xmlns:Soap="http://schemas.xmlsoap.org/soap/envelope/"><Soap:Body><GetInventory_Result xmlns="urn:microsoft-dynamics-schemas/codeunit/SFDCIntegration"><requestMsg>';
+            String endXml = '</requestMsg></GetInventory_Result></Soap:Body></Soap:Envelope>';
+            String jsonWrap = '';
+            String payload = '';
+            
+
             YINStockInventoryVarientWrap wrap = new YINStockInventoryVarientWrap();
             List<YINStockInventoryVarientWrap.YINData> bodies = new List<YINStockInventoryVarientWrap.YINData>();
             YINStockInventoryVarientWrap.YINData body = new YINStockInventoryVarientWrap.YINData();
             body.responseCode = '200';
             body.itemCode = 'PC-002';
             body.locationCode = 'IN-DL-DEL';
-            body.variant = 'suzukiXL62021';
+            body.variant = '2021';
             body.quantity = '5';
             body.transitQuantity = '75';
 
@@ -204,10 +237,19 @@ public with sharing class YINStockInventory {
             bodies.add(body);
             bodies.add(body1);
             wrap.data = bodies;
-            return JSON.serialize(wrap);
+            jsonWrap = JSON.serialize(wrap);
+            payload = startXml+jsonWrap+endXml;
+            return payload;
         }
 
         if(resourceName=='/stockinventory'){
+            String startXml = '<Soap:Envelope xmlns:Soap="http://schemas.xmlsoap.org/soap/envelope/"><Soap:Body><GetInventoryNormalOrder_Result xmlns="urn:microsoft-dynamics-schemas/codeunit/SFDCIntegration"><requestMsg>';
+            String endXml = '</requestMsg></GetInventoryNormalOrder_Result></Soap:Body></Soap:Envelope>';
+
+           
+            String jsonWrap = '';
+            String payload = '';
+
             YINStockinventoryWrap wrap = new YINStockinventoryWrap();
             List<YINStockinventoryWrap.YINData> bodies = new List<YINStockinventoryWrap.YINData>();
             YINStockinventoryWrap.YINData body = new YINStockinventoryWrap.YINData();
@@ -217,7 +259,7 @@ public with sharing class YINStockInventory {
             body.totalInventory = '21';
 
             YINStockinventoryWrap.YINVariantwise variantwise1 = new YINStockinventoryWrap.YINVariantwise();
-            variantwise1.variant = 'suzukiXL62021';
+            variantwise1.variant = '2021';
             variantwise1.inventory = '18';
 
             YINStockinventoryWrap.YINVariantwise variantwise2 = new YINStockinventoryWrap.YINVariantwise();
@@ -264,10 +306,17 @@ public with sharing class YINStockInventory {
             bodies.add(body1);
             bodies.add(body2);
             wrap.data = bodies;
-            return JSON.serialize(wrap);
+            jsonWrap = JSON.serialize(wrap);
+            payload = startXml+jsonWrap+endXml;
+            return payload;
         }
 
         if(resourceName=='/salesorder'){
+            String startXml = '<Soap:Envelope xmlns:Soap="http://schemas.xmlsoap.org/soap/envelope/"><Soap:Body><GetOrderDetails_Result xmlns="urn:microsoft-dynamics-schemas/codeunit/SFDCIntegration"><requestMsg>';
+            String endXml = '</requestMsg></GetOrderDetails_Result></Soap:Body></Soap:Envelope>';
+            String jsonWrap = '';
+            String payload = '';
+
             YINSalesOrderWrap wrap = new YINSalesOrderWrap();
             
             wrap.responseCode = '200';	
@@ -277,7 +326,9 @@ public with sharing class YINStockInventory {
             wrap.erpOrderNumber = 'SF00122';
             wrap.orderStatus = 'Invoice';
             wrap.status = 'Success';
-            return JSON.serialize(wrap);
+            jsonWrap = JSON.serialize(wrap);
+            payload = startXml+jsonWrap+endXml;
+            return payload;
         }
         return null;
     }

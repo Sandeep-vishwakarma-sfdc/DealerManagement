@@ -33,7 +33,7 @@ public with sharing class YINOrderItemSelector extends LibSObjectSelector{
         List<OrderItem> orders = new List<OrderItem>();
         String query =  newQueryFactory()
                             .selectField('PricebookEntry.Pricebook2Id')
-                            .selectField('Product2.ProductCode')
+                            .selectField('Product2.Product_Code__c')
                             .selectField('Product2.Size__c')
                             .selectField('Variant__r.Variant_Code__c')
                             .selectField('Order.AccountId')

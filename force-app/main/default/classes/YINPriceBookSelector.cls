@@ -63,7 +63,7 @@ public without Sharing class  YINPriceBookSelector extends LIBSObjectSelector{
     }
     
 /**
-* @description:This method is used to get All Pricebook data by active checkbox and based on Customer Group
+* @description:This method is used to get All Pricebook data by active checkbox and based on Customer Price Group
 * @return List<Pricebook2>
 */    
 
@@ -80,7 +80,7 @@ public without Sharing class  YINPriceBookSelector extends LIBSObjectSelector{
 */    
      
     public List<Pricebook2> priceBookbyCustomerComman(){
-        String type='Common';
+        String type='All Customer';
         LIBQueryFactory aQF = newQueryFactory()
             .setCondition('IsActive =true and Customer_Group__c =null and Customer__c =null'+ ' And' +' '+ 'Type__c=\''+type+'\'');          
         System.debug('PriceBook Query in Application Group Comman'+aQF.toSOQL());    
@@ -100,11 +100,11 @@ public without Sharing class  YINPriceBookSelector extends LIBSObjectSelector{
     }
        
 /**
-* @description:This method is used to get ALl active and Common type Price Book.
+* @description:This method is used to get ALl active and All Customer type Price Book.
 * @return List<Pricebook2>
 */    
     public List<Pricebook2> selectByActivePriceBook1(){
-        String type='Common';
+        String type='All Customer';
         LIBQueryFactory aQF = newQueryFactory()
             .setCondition('IsActive =true AND IsDiscount__c=false'+ ' And' +' '+ 'Type__c=\''+type+'\'');          
         System.debug('PriceBook Query in Application'+aQF.toSOQL());    
@@ -112,11 +112,11 @@ public without Sharing class  YINPriceBookSelector extends LIBSObjectSelector{
     }
     
 /**
-* @description:This method is used to get ALl active and Common type Price Book with Discount.
+* @description:This method is used to get ALl active and All Customer type Price Book with Discount.
 * @return List<Pricebook2>
 */    
     public List<Pricebook2> selectByActivePriceBookwithDiscount1(){
-        String type='Common';
+        String type='All Customer';
         LIBQueryFactory aQF = newQueryFactory()
             .setCondition('IsActive =true AND IsDiscount__c=true'+ ' And' +' '+ 'Type__c=\''+type+'\'');          
         System.debug('PriceBook Query in Application'+aQF.toSOQL());    
@@ -127,7 +127,7 @@ public without Sharing class  YINPriceBookSelector extends LIBSObjectSelector{
     
     
     /**
-* @description:This method is used to get ALl active and Common type Price Book.
+* @description:This method is used to get ALl active and All Customer type Price Book.
 * @return List<Pricebook2>
 */    
     public List<Pricebook2> selectByActivePriceBook2(){
@@ -139,7 +139,7 @@ public without Sharing class  YINPriceBookSelector extends LIBSObjectSelector{
     }
     
 /**
-* @description:This method is used to get ALl active and Common type Price Book with Discount.
+* @description:This method is used to get ALl active and All Customer type Price Book with Discount.
 * @return List<Pricebook2>
 */    
     public List<Pricebook2> selectByActivePriceBookwithDiscount2(){
@@ -152,11 +152,11 @@ public without Sharing class  YINPriceBookSelector extends LIBSObjectSelector{
 
     
     /**
-* @description:This method is used to get ALl active and Common type Price Book.
+* @description:This method is used to get ALl active and All Customer type Price Book.
 * @return List<Pricebook2>
 */    
     public List<Pricebook2> selectByActivePriceBook3(){
-        String type='Customer Group';
+        String type='Customer Price Group';
         LIBQueryFactory aQF = newQueryFactory()
             .setCondition('IsActive =true AND IsDiscount__c=false and Customer_Group__c !=null '+ ' And' +' '+ 'Type__c=\''+type+'\'');          
         System.debug('PriceBook Query in Application'+aQF.toSOQL());    
@@ -164,11 +164,11 @@ public without Sharing class  YINPriceBookSelector extends LIBSObjectSelector{
     }
     
 /**
-* @description:This method is used to get ALl active and Common type Price Book with Discount.
+* @description:This method is used to get ALl active and All Customer type Price Book with Discount.
 * @return List<Pricebook2>
 */    
     public List<Pricebook2> selectByActivePriceBookwithDiscount3(){
-        String type='Customer Group';
+        String type='Customer Price Group';
         LIBQueryFactory aQF = newQueryFactory()
             .setCondition('IsActive =true AND IsDiscount__c=true and Customer_Group__c !=null '+ ' And' +' '+ 'Type__c=\''+type+'\'');          
         System.debug('PriceBook Query in Application'+aQF.toSOQL());    
@@ -185,7 +185,7 @@ public without Sharing class  YINPriceBookSelector extends LIBSObjectSelector{
     }
 
     public List<PriceBook2> selectPriceBookByCustomerGroup(List<String> customerGroups){
-        String type = 'Customer Group';
+        String type = 'Customer Price Group';
         Boolean isActive = true;
         String query = newQueryFactory()
         .setCondition('Customer_Group__c IN:customerGroups and Type__c=:type and IsActive=:isActive')

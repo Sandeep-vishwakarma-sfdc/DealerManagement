@@ -25,7 +25,8 @@ public with sharing class YINOrderSelector extends LibSObjectSelector {
             Order.Status,
             Order.Pricebook2Id,
             Order.Total_Amount_with_Tax__c,
-            Order.Total_Amount_without_Tax__c
+            Order.Total_Amount_without_Tax__c,
+            Order.OrderNumber
 
         };
     }

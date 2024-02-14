@@ -61,6 +61,7 @@ export default class YinOrderManagementCmp extends LightningElement {
     shippingAccountValue = '';
     selectedShippingAccount = {name:'',accountCode:'',phone:'',email:'',address:''};
     shippingAddressOption = [];
+    netOrderValue = 0;
     totalTDS = 0;
     totalTCS = 0;
     totalOrderQuantity = 0;
@@ -210,13 +211,15 @@ export default class YinOrderManagementCmp extends LightningElement {
             this.totalOrderQuantity = this.totalOrderQuantity + item.quantity;
         });
         if(this.cartDetails.length > 0){
+        this.netOrderValue = subTotal;    
         this.totalGSTAmount = isNaN(totalGSTAmount)?0:Number(totalGSTAmount).toFixed(2);
         this.totalTDS = isNaN(totalTDS)?0:Number(totalTDS).toFixed(2);
         this.totalTCS = isNaN(totalTCS)?0:Number(totalTCS).toFixed(2);
         this.gstPercentage = this.cartDetails[0].gstPercentage;
         this.tdsPercentage = this.cartDetails[0].tdsPercentage;
         this.tcsPercentage = this.cartDetails[0].tcsPercentage;
-        this.grandTotal = subTotal + Number(this.totalGSTAmount) + Number(this.totalTDS) - Number(this.totalTCS);
+        this.grandTotal = subTotal + Number(this.totalTDS) - Number(this.totalTCS);
+        // this.grandTotal = subTotal + Number(this.totalGSTAmount) + Number(this.totalTDS) - Number(this.totalTCS);
         this.grandTotal = isNaN(this.grandTotal)?0:Number(this.grandTotal).toFixed(2);
         }else{
             this.totalGSTAmount = 0;
