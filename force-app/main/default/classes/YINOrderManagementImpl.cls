@@ -570,7 +570,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             if(!deleteClosedOrder){
                 responseSAP = YINStockInventory.sendOrder(new List<Order> {closedOrder});
                 YINSalesOrderWrap salesOrder = (YINSalesOrderWrap)JSON.deserialize(responseSAP,YINSalesOrderWrap.class);
-                closedOrder.ERP_Order_Number__c = salesOrder.erpOrderNumber;
+                closedOrder.ERP_Order_Number__c = salesOrder.Order_No;
                 orders.add(closedOrder);
             }
             unitofworkProcessOrder.commitWork();

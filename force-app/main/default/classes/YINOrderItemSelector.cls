@@ -53,4 +53,20 @@ public with sharing class YINOrderItemSelector extends LibSObjectSelector{
                             .toSOQL();
         return (List<OrderItem>) Database.query(query);
     }
+    
+    
+    public List<OrderItem> fetchDealerAccountData(Id accountId){
+        List<OrderItem> openOrderItems = new List<OrderItem>();
+        String query =  newQueryFactory()
+              .selectField('Product2.Name')
+              .selectField('Product2.product_Code__c')
+              .selectField('Variant__r.variant_code__c')
+              .selectField('Order.Account.Location__r.Location_Code__c')
+              .selectField('Order.Account.Owner.Name')
+              .setCondition('Order.Status = \'open\' AND Order.Account.Id = :accountId')
+              .toSOQL();
+            return (List<OrderItem>) Database.query(query);
+            }
+
+    
 }

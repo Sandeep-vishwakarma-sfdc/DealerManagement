@@ -40,5 +40,7 @@ public with sharing class YINSalesOrderWrap {
 	public String sfdcOrderNumber;	//SF0000342
 	public String erpOrderNumber;	//SF00122
 	public String orderStatus;	//Invoice
-	public String status;	//Success
+	public String status;	//status
+	public String Order_No;	//Order_No
+	public String success;	//Success
 }
