@@ -7,7 +7,6 @@ public with sharing class YINProductSelector extends LibSObjectSelector{
         return new List<Schema.SObjectField> {
             Product2.Name,
             Product2.ProductCode, 
-            Product2.Product_Code__c, 
             Product2.Description, 
             Product2.IsActive, 
             Product2.DisplayUrl, 
@@ -22,4 +21,24 @@ public with sharing class YINProductSelector extends LibSObjectSelector{
     public List<Product2> selectById(Set<Id> recordIds){
         return (List<Product2>) selectSObjectsById(recordIds);
     }
+     public List<Product2> getProductData() {
+        return Database.query(
+            newQueryFactory()
+            .selectField('Id')
+            .selectField('Product_Code__c')
+            .setCondition('Product_Code__c !=null')
+            .toSOQL()
+        );
+     }
+    public List<Product2> fetchProductData(List<String> productList) {
+        return Database.query(
+            newQueryFactory()
+            .selectField('Id')
+            .selectField('Name')
+            .selectField('Product_Code__c')
+            .toSOQL()
+        );
+     }
+    
+    
 }

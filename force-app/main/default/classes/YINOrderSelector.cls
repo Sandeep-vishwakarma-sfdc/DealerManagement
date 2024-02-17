@@ -26,7 +26,7 @@ public with sharing class YINOrderSelector extends LibSObjectSelector {
             Order.Pricebook2Id,
             Order.Total_Amount_with_Tax__c,
             Order.Total_Amount_without_Tax__c,
-            Order.OrderNumber
+            Order.ERP_Order_Number__c
 
         };
     }
@@ -43,5 +43,15 @@ public with sharing class YINOrderSelector extends LibSObjectSelector {
         .setLimit(1)
         .toSOQL();  
         return (List<Order>) Database.query(query);
+    }
+    //added by kalpesh
+    public List<Order> getOrderDataForUpdate() {
+        return Database.query(
+            newQueryFactory()
+                    .selectField('Id')
+                    .selectField('ERP_Order_Number__c')
+                    .setCondition('ERP_Order_Number__c!=null')
+                    .toSOQL()
+        );
     }
 }

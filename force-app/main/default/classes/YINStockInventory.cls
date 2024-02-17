@@ -93,7 +93,7 @@ public with sharing class YINStockInventory {
         
     }
 
-    public static String sendOrder(List<Order> orders){
+    public static String sendOrder(List<Order> orders,List<OrderItem> items,Map<String,YIN_Variant__c> variantByVariantId){
         // Prepare JSON from Orders
 
         
@@ -103,40 +103,48 @@ public with sharing class YINStockInventory {
             Order submittingOrder = orders[0];
             Date dToday = Date.today();
             DateTime dt = DateTime.newInstance(dToday.year(), dToday.month(),dToday.day());
-            String orderedDate = dt.format('dd-MM-YYYY');
+            String orderedDate = dt.format('YYYY-MM-dd');
             System.debug('Date '+orderedDate);
 
-            
+            System.debug('submittingOrder.AccountId '+submittingOrder.AccountId);
+            System.debug('submittingOrder.Ship_To_Party__c '+submittingOrder.Ship_To_Party__c);
 
             YINSalesOrderWrap.YINHeader wrap = new YINSalesOrderWrap.YINHeader();
-            YINOrderItemSelector orderItemSelector = (YINOrderItemSelector)YINApplication.selector.newInstance(OrderItem.SObjectType);
+            //YINOrderItemSelector orderItemSelector = (YINOrderItemSelector)YINApplication.selector.newInstance(OrderItem.SObjectType);
             
             YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
             List<Account> customers = accountSelector.getAccounts(new List<String>{submittingOrder.AccountId});
             List<Account> shipTo = accountSelector.getAccounts(new List<String>{submittingOrder.Ship_To_Party__c});
-            List<OrderItem> items = new List<OrderItem>();
-            if(!Test.isRunningTest()){
-             	items = orderItemSelector.selectByOrder(orders[0].Id);
-            }else{
+            //List<OrderItem> items = new List<OrderItem>();
+            if(Test.isRunningTest()){
                 items = YINOrderManagementDataFactoryTest.getOrderItemTest();
             }
 
-            wrap.sfdcOrderNumber = 'SF0000342';//submittingOrder.orderNumber;	//SF0000342
+            System.debug('customers[0]?.ERP_Customer_Code__c '+customers[0]?.ERP_Customer_Code__c);
+            System.debug('shipTo[0]?.ERP_Ship_To_Code__c '+shipTo[0]?.ERP_Ship_To_Code__c);
+            if(submittingOrder.orderNumber==null || customers[0]?.ERP_Customer_Code__c==null || shipTo[0]?.ERP_Ship_To_Code__c==null){
+                throw new YINOrderManagementException('Please Check Customer Code And Ship To Party');
+            }
+
+            wrap.sfdcOrderNumber = submittingOrder.orderNumber;	//'SF0000342'
             wrap.erpOrderNumber = '';	//
-            wrap.erpCustomerCode = 'C000000411';//customers[0].ERP_Customer_Code__c;	//C000000234
+            wrap.erpCustomerCode = customers[0].ERP_Customer_Code__c;	//'C000000411'
             wrap.orderDate = orderedDate;	//25-01-2024
             wrap.externalDocumentNumber = '';	//
             wrap.status = 'Submitted';	//Submitted
-            wrap.erpShipToCode = 'SHIP/0002'; // shipTo[0].ERP_Ship_To_Code__C;	//C000343
+            wrap.erpShipToCode = shipTo[0].ERP_Ship_To_Code__c;	//'SHIP/0002'
             wrap.remark = '';	//
-            wrap.OrderType = 'Normal';
+            wrap.OrderType = 'Normal'; //submittingOrder.orderNumber;// TODO : Order Type should be Dynamic : Logic While Creating Cart set Order Type as well
 
             List<YINSalesOrderWrap.YINLines> lines = new List<YINSalesOrderWrap.YINLines>();
+            Integer itemCount = 0;
             for(OrderItem item:items){
+                System.debug('item.Variant__r.Variant_Code__c '+variantByVariantId.get(item.Variant__c).Variant_Code__c);
+                itemCount = itemCount + 10;
                 YINSalesOrderWrap.YINLines line = new YINSalesOrderWrap.YINLines();
-                line.itemNumber = '10';//item.Id;	//10
+                line.itemNumber = String.valueOf(itemCount);//item.Id;	//10
                 line.itemCode = item.Product2.Product_Code__c;	//FG-R1249
-                line.variant = item.Variant__r.Variant_Code__c;	//2023
+                line.variant = variantByVariantId.get(item.Variant__c).Variant_Code__c;//item.Variant__r.Variant_Code__c;	//2023
                 line.quantity = String.valueOf(item.Quantity);	//4
                 line.discount = String.valueOf(item.Discount_Percent__c);	//4
                 line.discountAmount = String.valueOf(item.Discounted_Amount__c);	//
@@ -197,16 +205,34 @@ public with sharing class YINStockInventory {
             HttpResponse response = new Http().send(request);
             system.debug('### Xero Response Status: ' + response.getStatusCode() + ': ' + response.getStatus());
              body = response.getBody();
+             setLog(request,response);
             }else{
             	body = generateFakeResponse(resourceName);
             }
             system.debug('### Xero Response Body: ' + body);
+            
             String jsonData = extractJsonData(body,xmlChildNodeByResourceName.get(resourceName));
             return jsonData;
         } catch (Exception e) {
             throw new YINOrderManagementException('Invaild Inventory response');
         }
     }  
+
+    private static void setLog(HttpRequest request,HttpResponse response){
+        YINMonitorLogWrap log = new YINMonitorLogWrap();
+        log.apexClass = 'YINStockInventory';                                         
+        log.request = request.getBody();
+        log.response = response.getBody();
+        log.statusCode = response.getStatus();
+        log.module = 'Sales Order';
+        log.userId = UserInfo.getuserId();
+        log.typeOfIntegration = '';
+        log.method = request.getMethod();
+        log.requestURL = request.getEndpoint();
+
+        YINMonitorService monitorLog = new YINMonitorService();
+        //monitorLog.requestResponseLog(log); Commented beacuse of error You have uncommitted work pending. Please commit or rollback before calling out
+    }
 
     private static String generateFakeResponse(String resourceName){
         if(resourceName=='/stockinventoryvariant'){

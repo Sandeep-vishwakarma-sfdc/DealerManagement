@@ -97,7 +97,9 @@ export default class YinOrderManagementCmp extends LightningElement {
     isModalOrder = false;
     orderModuleType = 'Normal';
 
-    
+    get isDisableBtn(){
+        return this.isLoading;
+    }
     
     get options() {
         return [
@@ -338,6 +340,7 @@ export default class YinOrderManagementCmp extends LightningElement {
 
     // Add to Cart
     async handleCartAdd(event){
+        this.isLoading = true;
         let index = event.currentTarget.dataset.index;
         // console.log('Add to Cart index',index);
         let productWrap = this.productswrapper[index];
@@ -359,24 +362,29 @@ export default class YinOrderManagementCmp extends LightningElement {
             if(this.accountDetails.Is_Locking_Enable__c){
                 if(productWrap.lockingSKUAccount){
                     this.showAlert(`Product ${productWrap.productName} is locked for the customer.`,'warning','Warning'); 
+                    this.isLoading = false;
                     return;
                 }
                 if(productWrap.lockingSKULocation){
                     this.showAlert(`Product ${productWrap.productName} is locked for cutsomer location.`,'warning','Warning'); 
+                    this.isLoading = false;
                     return;
                 }
             }else{
                 this.showAlert('Locking is disabled for customer','warning','Warning');   
+                this.isLoading = false;
                 return; 
             }
             if(this.accountDetails.Is_Capping_Enable__c){
                 if(productWrap.maximumCappingQuantity < productWrap.quantity){
                     productWrap.quantity = 1;
                     this.showAlert(`You can add only ${productWrap.maximumCappingQuantity} quantity for Product ${productWrap.productName}.`,'warning','Warning'); 
+                    this.isLoading = false;
                     return;
                 }
             }else{
                 this.showAlert('Capping is disabled for customer','warning','Warning');  
+                this.isLoading = false;
                 return;
             }
             productWrap.netPrice = productWrap.pricebookEntry.UnitPrice * productWrap.quantity;
@@ -387,11 +395,12 @@ export default class YinOrderManagementCmp extends LightningElement {
             this.cartDetails = await getCartDetails({accountId:this.accountId,openOrderId:this.openOrderId});
             this.CartDetailLength = this.cartDetails.length;
             this.cartCalculation();
-            this.showToast('Success ','Added to Cart','success','dismissable');
+            this.showToast('Success ','Product Added To Cart','success','dismissable');
         }else{
-            this.showAlert('Already added to cart','warning','Warning'); 
+            this.showAlert('Product Already Added To Cart','warning','Warning'); 
             productWrap.quantity = this.oldQty;
         }
+        this.isLoading = false;
     }
 
     async handleCartDelete(event){
@@ -411,7 +420,7 @@ export default class YinOrderManagementCmp extends LightningElement {
                 this.cartDetails = this.cartDetails;
                 this.CartDetailLength = this.cartDetails.length;
                 this.cartCalculation();
-                this.showToast('Success ','Removed from Cart','success','dismissable');
+                this.showToast('Success ','Product Removed From Cart','success','dismissable');
             }
         }else{
             this.showAlert('Unable to find selected Item','warning','Warning'); 
@@ -499,8 +508,8 @@ export default class YinOrderManagementCmp extends LightningElement {
         const allItems = this.productswrapperVirtual; // Replace with your array of items
     
         // Calculate the start and end indices for the slice
-        const start = this.counter * 5;
-        const end = start + 5;
+        const start = this.counter * 10;
+        const end = start + 10;
     
         // Increment the counter for the next call
         this.counter++;
@@ -561,6 +570,7 @@ export default class YinOrderManagementCmp extends LightningElement {
     }
 
     async handleCheckout(event){
+        this.isLoading = true;
         let commitCheckOut = event.target.dataset.confirm;
         commitCheckOut = commitCheckOut=='true';
         console.log('commit ',commitCheckOut);
@@ -606,6 +616,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         }else{
             this.showAlert('Please Select Shipping Address','error','Error');
         }
+        this.isLoading = false;
     }
 
     oldQty = 1;
@@ -615,6 +626,7 @@ export default class YinOrderManagementCmp extends LightningElement {
     }
 
     async changeCartQuantity(event){
+        this.isLoading = true;
         let index = event.currentTarget.dataset.index;
         let quantity = event.target.value;
         let item = this.cartDetails[index];
@@ -630,6 +642,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         console.log('cart ',item);
         if(quantity==0){
             this.showAlert('Quantity must be greater then "0" ','warning','Warning'); 
+            this.isLoading = false;
             return;
         }
 
@@ -637,10 +650,12 @@ export default class YinOrderManagementCmp extends LightningElement {
             if(item.maximumCappingQuantity < item.quantity){
                 item.quantity = this.oldQty;
                 this.showAlert(`You can add only ${item.maximumCappingQuantity} quantity for Product ${item.pricebookEntry.Product2.Name}.`,'warning','Warning '); 
+                this.isLoading = false;
                 return;
             }
         }else{
             this.showAlert('Capping is disabled for customer','warning','Warning ');  
+            this.isLoading = false;
             return;
         }
 
@@ -648,7 +663,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         this.cartDetails = await getCartDetails({accountId:this.accountId,openOrderId:this.openOrderId});
         this.CartDetailLength = this.cartDetails.length;
         this.cartCalculation();
-
+        this.isLoading = false;
     }
 
     changeQuantity(event){

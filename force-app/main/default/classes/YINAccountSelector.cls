@@ -2,7 +2,7 @@
  * @description       : This class provides methods to query and filter Account records.
  * @author            : Saurabh Pandey
  * @group             : SKI
- * @last modified on  : 02-03-2024
+ * @last modified on  : 02-14-2024
  * @last modified by  : saurabh.pandey@skinternational.com
  **/
 public with sharing class YINAccountSelector extends LibSObjectSelector {
@@ -78,6 +78,7 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
         Account.Total_Credit_Limit__c,
         Account.Available_Credit_Limit__c,
         Account.Credit_Days_Group_Dealer__c,
+        Account.ERP_Ship_To_Code__c,
         // End Adding by Sandeep Vishwakarma
         
         // Start Added by Amol Patil
@@ -274,6 +275,14 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
         return Database.query(
             newQueryFactory()
                 // .selectField('Owner.Email')
+                .setCondition('ERP_Customer_Code__c IN:dealerCodelist')  
+                .toSOQL()
+        );
+    }
+
+    public List<Account> selectBySFDCCustomerCode(List<String> dealerCodelist)  {
+        return Database.query(
+            newQueryFactory()
                 .setCondition('SFDC_Customer_Code__c IN:dealerCodelist')  
                 .toSOQL()
         );
@@ -288,7 +297,7 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
     public List<Account> getDealerIdfromCode(List<String> codeList)  {
         return Database.query(
             newQueryFactory()
-                .setCondition('SFDC_Customer_Code__c IN:codeList')  
+                .setCondition('ERP_Customer_Code__c IN:codeList')  
                 .toSOQL()
         );
     }
@@ -346,8 +355,7 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
      }
      /**
      * Added by:Kalpesh chande
-     * @Description - Get a list of Account for send email.
-     * @param List :
+     * @description - Get a list of Account for send email.
      * @return  - List<Account>.
      */
     public List<Account> getAccountForEmail() {
@@ -361,14 +369,14 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
 
      /**
      * Added by:Nikhil Dhoke
-     * @Description - Get a list of Account based on Mobile no.
+     * @description - Get a list of Account based on Mobile no.
      * @param List<String> : mobile no list.
      * @return  - List<Account>.
      */
     public List<Account> getAccountByMobileNo(List<String> mobileNos) {
         return Database.query(
             newQueryFactory()
-                    .selectField('Owner.Email')
+                    .selectField('Contact_Person_Phone__c')
                     .selectField('Pincode__r.Pincode__c')
                     .selectField('Pincode__r.Name')
                     .selectField('City__r.Name')
@@ -376,9 +384,27 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
                     .selectField('Country__r.Name')
                     .selectField('District__r.Name')
                     .selectField('Sub_District__r.Name')
-                    .setCondition('Phone IN: mobileNos')
+                    .setCondition('Contact_Person_Phone__c IN: mobileNos')
                     .toSOQL()
         );
     }
-
+    /**
+     * @Added by:Kalpesh chande
+     * @description :Retrieves a list of Accounts with specific fields for email purposes based on RecordType names.
+     * @return List<Account> List of Accounts with selected fields.
+     */
+    public List<Account> getAccountForFileLink() {
+        String recordTypeCondition = 'Channel_Code__r.name = \'4S Dealer\' OR Channel_Code__r.name = \'YCN\' OR Channel_Code__r.name = \'Non YCN\' OR Channel_Code__r.name = \'Sub Dealer\'';
+        return Database.query(
+            newQueryFactory()
+            .selectField('Id')
+            .selectField('ERP_Customer_Code__c')
+            .selectField('RecordTypeId')
+            .selectField('RecordType.Name')
+            .selectField('Contact_Person_Email__c')
+            .selectField('Channel_Code__r.name')
+            .setCondition(recordTypeCondition)
+            .toSOQL()
+        );
+     }
 }

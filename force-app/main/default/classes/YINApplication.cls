@@ -1,8 +1,8 @@
 /**
  * @description       : This Class is used to create All layer like service,selector,domain and unit of work.                                          
  * @author            : Saurabh.pandey@skinternational.com
- * @last modified on  : 08-02-2024
- * @last modified by  : Amol Patil/amol.patil@skinternational.com
+ * @last modified on  : 02-14-2024
+ * @last modified by  : saurabh.pandey@skinternational.com
 **/
 
 public class YINApplication {
@@ -36,6 +36,7 @@ public class YINApplication {
               YIN_Atttandance__c.SObjectType,                //Saurabh Pandey
               ContentDocument.sObjectType,                   //Saurabh Pandey
               Document.sObjectType,                          //Saurabh Pandey
+              YIN_Community_Configuration__c.SObjectType,    //Saurabh Pandey
               YIN_Target__c.SObjectType,                     //Nikhil Dhoke
               YIN_Target_Distributor__c.SObjectType,         //Nikhil Dhoke
               //  Target_Schedule__c.SObjectType,            //Nikhil Dhoke 
@@ -104,9 +105,9 @@ public class YINApplication {
             YINIBalanceConfirmation.class => YINBalanceConfirmationImpl.class,              //Saurabh Pandey
             YINILockingProductFileUpload.class => YINLockingProductFileUploadImpl.class,    //Saurabh Pandey
             YINIAttendanceModule.class => YINAttandanceModuleServiceImpl.class,             //Saurabh Pandey
+            YINICommunityConfiguration.class => YINCommnityConfigurationImpl.class,         //Saurabh Pandey
             YINIOrderManagement.class => YINOrderManagementImpl.class,                      // Sandeep Vishwakarma
             YINIWarranty.class => YINWarrantyImpl.class,                                    // Nikhil Dhoke ...
-            YINIClaim.class => YINClaimImpl.class,                                          // Nikhil Dhoke ...
             YINIExternalApiService.class => YINExternalApiServiceImpl.class,                 //Kalpesh Chande
             YINIDocumentDataTable.class => YINDocumentDataTableImpl.class                    //Satish Tiware
             
@@ -149,6 +150,7 @@ public class YINApplication {
                Document.SObjectType => YINDocumentSelector.class,                                //Saurabh Pandey
                YIN_Balance_Confirmation__c.SObjectType => YINBalanceConfirmationSelector.class,  //Saurabh Pandey
                YIN_Atttandance__c.SObjectType => YINAttandanceSelector.class,                    //Saurabh Pandey
+               YIN_Community_Configuration__c.SObjectType => YINCommunityConfigurationSelector.class, //Saurabh Pandey
               // RecordType.Schema.SObjectType=>RecordTypeSelector.class,                        //Kalpesh Chande 
                RecordType.getSObjectType()=>YINRecordTypeSelector.class,                         //Kalpesh Chande 
                CollaborationGroup.SObjectType=>YINCollaborationGroupSelector.Class,              //Kalpesh Chande*/

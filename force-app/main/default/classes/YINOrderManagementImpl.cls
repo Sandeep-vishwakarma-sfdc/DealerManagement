@@ -249,7 +249,6 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
     private static List<YINProductWrapper> setOrderItem(List<OrderItem> orderProducts,Map<String,List<YIN_Price_List__c>> priceListByKey,Map<Id,PricebookEntry> priceBookEntriesByProductId){
         // Declaring Variables
         List<YINProductWrapper>  wrapperProducts = new List<YINProductWrapper>();
-        
         LibISobjectUnitOfWork unitofwork = YINApplication.unitofwork.newInstance();
 
         List<YIN_Product_Capping__mdt> productsCapping = YIN_Product_Capping__mdt.getAll().values();
@@ -269,7 +268,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             accountProductMappingByProduct.put(accountProduct.Product__c,accountProduct);
         }
 
-        Tax_Constants__mdt taxConstant = Tax_Constants__mdt.getInstance('Tax_Constant');
+        YIN_Tax_Constants__mdt taxConstant = YIN_Tax_Constants__mdt.getInstance('Tax_Constant');
         Decimal vTCSPercentage = 0;
         Decimal vTDSPercentage = 0;
         if(orderProducts[0].Order.Account.X1H_TCS__c==true){
@@ -413,6 +412,10 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             throw new YINOrderManagementException('Credit Limit exceed');
         }
 
+        if(!checkBlockedAccount(docommit.accountId)){
+            throw new YINOrderManagementException('Account is blocked.');
+        }
+
         if(inMaintenance()){
             throw new YINOrderManagementException('System In Maintenance');
         }
@@ -425,6 +428,9 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
 
         return response;
     }
+
+   
+
     static Map<String,String> ordersByStatus = new Map<String,String>();// Use to Virtually store Order Item to display prompt on LWC
     
     static  List<OrderItem> itemOpen = new List<OrderItem>();
@@ -436,6 +442,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
     static Boolean deleteOpenOrder = true; // If No. of orderLineItem for Open Order is 0, then delete openOrder
     static Boolean deleteClosedOrder = true;
     static Map<String,YIN_Variant__c> variantByVariantCode = new Map<String,YIN_Variant__c>();
+    static Map<String,YIN_Variant__c> variantByVariantId = new Map<String,YIN_Variant__c>();
     static Order closedOrder = null;
     static Order openOrder = null;
     static LibISobjectUnitOfWork unitofworkProcessOrder = null;
@@ -454,9 +461,11 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         unitofworkProcessOrder = YINApplication.unitofwork.newInstance(); 
         Map<String,Account> shippingAccountMap = new Map<String,Account>();
         YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
-        List<Account> account = accountSelector.getDealerIdList(new List<String>{docommit.shippingAccountCode});
-        if(account.size()>0){
-            shippingAccountMap.put(account[0].SFDC_Customer_Code__c,account[0]);
+        System.debug('docommit.shippingAccountCode ::: '+docommit.shippingAccountCode);
+        List<Account> shippingAccounts = accountSelector.selectBySFDCCustomerCode(new List<String>{docommit.shippingAccountCode});
+        System.debug('docommit.shippingAccountCode account '+shippingAccounts);
+        if(shippingAccounts.size()>0){
+            shippingAccountMap.put(shippingAccounts[0].SFDC_Customer_Code__c,shippingAccounts[0]);
         }
         
         // 2a. Getting Inventory from ERP
@@ -474,6 +483,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         List<YIN_Variant__c> variants = variantSelector.selectAll();     
         for(YIN_Variant__c variant:variants){
             variantByVariantCode.put(variant.Variant_Code__c,variant);
+            variantByVariantId.put(variant.Id,variant);
         }
         // 2c. Getting Cart Order
         YINOrderSelector orderSelector = (YINOrderSelector)YINApplication.selector.newInstance(Order.SObjectType);
@@ -487,6 +497,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
 
         // 4. Creating Empty Open and Close Order
         closedOrder = closedOrders[0];
+        System.debug('docommit.shippingAccountCode '+docommit.shippingAccountCode);
         closedOrder.Ship_To_Party__c = shippingAccountMap.get(docommit.shippingAccountCode)?.Id;
         closedOrder.Order_Date__c = System.today();
         closedOrder.recordTypeId = Schema.SObjectType.Order.getRecordTypeInfosByName().get('Normal').getRecordTypeId();
@@ -552,6 +563,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         unitofworkProcessOrder.registerNew(itemToadd);
         
         List<Order> orders = new List<Order>();
+        System.debug('docommit.doCommit '+docommit.doCommit);
         if(docommit.doCommit==true){
             orders = commitTheProcess();
         }
@@ -566,11 +578,16 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
     private static List<Order> commitTheProcess(){
         String responseSAP = '';
         List<Order> orders = new List<Order>();
+        System.debug('Commiting ');
         // unitofworkProcessOrder.commitWork();
             if(!deleteClosedOrder){
-                responseSAP = YINStockInventory.sendOrder(new List<Order> {closedOrder});
+                System.debug('Commiting and Submit');
+                responseSAP = YINStockInventory.sendOrder(new List<Order> {closedOrder},itemSubmitted,variantByVariantId);
                 YINSalesOrderWrap salesOrder = (YINSalesOrderWrap)JSON.deserialize(responseSAP,YINSalesOrderWrap.class);
-                closedOrder.ERP_Order_Number__c = salesOrder.Order_No;
+                if(salesOrder.error!=null){
+                    throw new YINOrderManagementException('Error '+salesOrder.error);
+                }
+                closedOrder.ERP_Order_Number__c = salesOrder.OrderNo;
                 orders.add(closedOrder);
             }
             unitofworkProcessOrder.commitWork();
@@ -607,7 +624,8 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
      * @param item - OrderItem object representing the order item.
      */
     private static void processProductWithVariant(YINProductWrapper wrapper,YINStockInventoryVarientWrap.YINData discountedProductData,OrderItem item){
-        Decimal inventoryQty = Decimal.valueOf(discountedProductData.quantity);
+
+        Decimal inventoryQty = discountedProductData.quantity==null?0:Decimal.valueOf(discountedProductData.quantity);
         
             System.debug('Discounted OrderLineItem where Order Status = Closed ');
             Decimal quantityNeed = wrapper.quantity;
@@ -770,7 +788,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             Integer creditDays = accountLedgers[0].Dealer_Code__r.Credit_Days_Group_Dealer__c!=null?Integer.valueOf(accountLedgers[0].Dealer_Code__r.Credit_Days_Group_Dealer__c.removeEnd('D')):0;
             numberDaysDue = oldestOpenPostingDate.daysBetween(System.today());
             System.debug('creditDays '+creditDays +' numberDaysDue '+numberDaysDue);
-            return creditDays >= numberDaysDue;
+            return numberDaysDue <= creditDays;
         }else{
             return true;// if no transcation found
         }
@@ -786,7 +804,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
     private static boolean checkCreditLimit(String accountId,Decimal grandTotal){
         YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
         List<Account> accounts = accountSelector.getAccounts(new List<String>{accountId});
-        if(String.isEmpty(accounts[0].ParentId)){
+        /* if(String.isEmpty(accounts[0].ParentId)){
             Decimal availableCreditLimit = accounts[0].Available_Credit_Limit__c;
             if(Test.isRunningTest()){
                 availableCreditLimit = 500000;
@@ -801,9 +819,24 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
                 }
             }
             return result;
-        }
+        } */
 
-        // return (accountLedgers[0].Dealer_Code__r?.Available_Credit_Limit__c >= grandTotal);
+        return (accounts[0]?.Available_Credit_Limit__c >= grandTotal);
+    }
+
+    /**
+     * Checks if the account associated with the order is blocked.
+     *
+     * @param accountId - Id of the account to check.
+     * @return Boolean - True if account is not block, false otherwise.
+     */
+    private static boolean checkBlockedAccount(String accountId){
+        YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
+        List<Account> accounts = accountSelector.getAccounts(new List<String>{accountId});
+        if(accounts[0].Block__c=='All'){
+            return false; // Block if All is Selected
+        }
+        return true;
     }
 
     /**

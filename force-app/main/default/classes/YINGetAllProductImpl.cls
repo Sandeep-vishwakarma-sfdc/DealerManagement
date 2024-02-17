@@ -20,6 +20,7 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
      * @throws YINOrderManagementException - Custom exception thrown in case of errors during the execution.
      */
     public List<YINProductWrapper> getProducts(String accountId) {
+        
         // Declaring variables
         List<YINProductWrapper> productsWrapper = new List<YINProductWrapper>();
         List<Id> priceBookIds = new List<Id>();
@@ -77,7 +78,7 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
         YINAccountSelector accountSelector = (YINAccountSelector) YINApplication.selector.newInstance(Account.SObjectType);
         List<Account> accounts = accountSelector.getAccounts(new List<String>{accountId});
 
-        Tax_Constants__mdt taxConstant = Tax_Constants__mdt.getInstance('Tax_Constant');
+        YIN_Tax_Constants__mdt taxConstant = YIN_Tax_Constants__mdt.getInstance('Tax_Constant');
         Decimal vTCSPercentage = 0;
         Decimal vTDSPercentage = 0;
         if (accounts[0].X1H_TCS__c == true) {
@@ -106,7 +107,7 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
             productWrapper.productSize = priceBookEntry.Product2.Size__c;
             productWrapper.productPattern = priceBookEntry.Product2.Tread_Pattern__c;
             productWrapper.combinationKey = priceBookEntry.Product2.Product_Code__c;
-            productWrapper.maximumCappingQuantity = Integer.valueOf(productCappingBySize.get(priceBookEntry.Product2.Size__c).Maximum_Order_Capping__c);
+            productWrapper.maximumCappingQuantity = productCappingBySize.get(priceBookEntry.Product2.Size__c)!=null?Integer.valueOf(productCappingBySize.get(priceBookEntry.Product2.Size__c).Maximum_Order_Capping__c):0;
             productWrapper.GSTPercentage = taxConstant.GST__c;
             productWrapper.tdsPercentage = vTDSPercentage;
             productWrapper.tcsPercentage = vTCSPercentage;
