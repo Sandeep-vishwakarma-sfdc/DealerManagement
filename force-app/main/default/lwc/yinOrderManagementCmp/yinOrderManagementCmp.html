@@ -178,7 +178,7 @@
                         </template>
                         <template lwc:else>
                           <div class="wcf-left"><span class="price">Unit Price: ₹
-                              {productWrap.pricebookEntry.UnitPrice}.00</span>
+                              {productWrap.pricebookEntry.UnitPrice}</span>
                           </div>
                         </template>
                         <div class="wcf-right" title="Add to Cart"><a data-index={index} onfocus={copyOldQuanity}
@@ -260,7 +260,7 @@
             <div style="line-height:24px; border:1px solid #f1eef1; padding:5px">
               Name: <strong>{accountDetails.Name}</strong><br />
               Address: <strong>{billingAddress}</strong>.<br />
-              Email: <strong></strong><br />
+              Email: <strong>{accountDetails.Contact_Person_Email__c}</strong><br />
               Telephone/Mobile: <strong>{accountDetails.Phone}</strong>
             </div>
           </div>

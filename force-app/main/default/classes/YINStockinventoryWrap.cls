@@ -14,6 +14,7 @@ public with sharing class YINStockinventoryWrap {
            public String locationCode;	//IN-DL-DEL
            public String totalInventory;	//18
            public YINVariantwise[] variantwise;
+           public String error;
        }
        public class YINVariantwise implements Comparable{
            public String variant;	//2020

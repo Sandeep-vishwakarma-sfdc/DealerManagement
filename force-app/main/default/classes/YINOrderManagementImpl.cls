@@ -403,22 +403,20 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         // 2. Check Credit Days
         Boolean checkCreditDays = checkCreditDays(docommit.accountId);
         if(!checkCreditDays){// TODO : Add Not Operator Once Credit Days Formula field is in working state
-            throw new YINOrderManagementException('Credit days expired');
+            throw new YINOrderManagementException('Credit Days Expired');
         }
 
         // 3. Check Credit Limit
         Boolean checkCreditLimit = checkCreditLimit(docommit.accountId,docommit.grandTotal);
         if(!checkCreditLimit){
-            throw new YINOrderManagementException('Credit Limit exceed');
+            throw new YINOrderManagementException('Credit Limit Exceed');
         }
 
         if(!checkBlockedAccount(docommit.accountId)){
-            throw new YINOrderManagementException('Account is blocked.');
+            throw new YINOrderManagementException('Account is blocked, please contact your district manager');
         }
 
-        if(inMaintenance()){
-            throw new YINOrderManagementException('System In Maintenance');
-        }
+        inMaintenance();
 
         List<YINProductWrapper> productWrappers = (List<YINProductWrapper>)JSON.deserialize(productWrapper,List<YINProductWrapper>.class);
         if(productWrappers.size()>0){
@@ -542,10 +540,18 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             YINStockinventoryWrap.YINData normalProductData = normalProduct.get(pCode);
             YINStockInventoryVarientWrap.YINData discountedProductData = discountProduct.get(wrapper.pricebookEntry.Product2.Product_Code__c+'_'+wrapper.variantCode);
             OrderItem item = orderItemById.get(wrapper.orderItemId);
+            
+            
 
             if(wrapper.discountPercentage > 0 && discountedProductData!=null && wrapper.variantCode!=null){ // For Product With Discounts
+                if(discountedProductData.error!=null){
+                    throw new YINOrderManagementException('Error '+discountedProductData.error);
+                }
                 processProductWithVariant(wrapper,discountedProductData,item);
             }else if(normalProductData!=null && item!=null && normalProductData?.totalInventory!='0'){
+                if(normalProductData.error!=null){
+                    throw new YINOrderManagementException('Error '+normalProductData.error);
+                }
                 processProductWithoutVariant(wrapper,normalProductData,item);
             }else if(item!=null){
                 System.debug('product '+wrapper.pricebookEntry.Product2.Product_Code__c+' is not available');
@@ -833,10 +839,10 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
     private static boolean checkBlockedAccount(String accountId){
         YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
         List<Account> accounts = accountSelector.getAccounts(new List<String>{accountId});
-        if(accounts[0].Block__c=='All'){
+        if(accounts[0].Block__c=='All' || accounts[0].Block__c=='Shipping'){
             return false; // Block if All is Selected
         }
-        return true;
+        return true; 
     }
 
     /**
@@ -844,13 +850,15 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
      *
      * @return Boolean - True if the application is in maintenance, false otherwise.
      */
-    public static Boolean inMaintenance(){
+    public static void inMaintenance(){
         YINOrderConfig__mdt orderMaintenance = YINOrderConfig__mdt.getInstance('orderMaintenance');
         Boolean result = false;
-        if(orderMaintenance.Start_Date__c <= System.now() && orderMaintenance.End_Date__c >= System.now()){
+        if(orderMaintenance.Start_Date__c <= System.now() && orderMaintenance.End_Date__c >= System.now() && orderMaintenance.Active__c){
             result = true;
         }
-        return result;
+        if(result){
+            throw new YINOrderManagementException('System In Maintenance from '+orderMaintenance.Start_Date__c+' to '+orderMaintenance.End_Date__c);
+        }
     }
 
     /**

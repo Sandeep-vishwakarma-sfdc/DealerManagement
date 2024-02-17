@@ -79,6 +79,7 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
         Account.Available_Credit_Limit__c,
         Account.Credit_Days_Group_Dealer__c,
         Account.ERP_Ship_To_Code__c,
+        Account.Block__c,
         // End Adding by Sandeep Vishwakarma
         
         // Start Added by Amol Patil

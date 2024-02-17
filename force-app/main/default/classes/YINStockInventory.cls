@@ -27,6 +27,9 @@ public with sharing class YINStockInventory {
         //3. Preparing Map where key = ProductCode and Value = Response Data
         YINStockinventoryWrap dataWrap = (YINStockinventoryWrap)JSON.deserialize(response,YINStockinventoryWrap.class);
         Map<String,YINStockinventoryWrap.YINData> dataByProductCode = new Map<String,YINStockinventoryWrap.YINData>();
+        if(dataWrap.error!=null){
+            throw new YINOrderManagementException('Error '+dataWrap.error);
+        }
         for(YINStockinventoryWrap.YINData data:dataWrap.data){
             dataByProductCode.put(data.itemCode,data);
             if(data.totalInventory!='0'){

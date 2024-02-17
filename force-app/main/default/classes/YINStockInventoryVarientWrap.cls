@@ -16,6 +16,7 @@ public with sharing class YINStockInventoryVarientWrap {
 		public String variant;	//2021
 		public String quantity;	//100
 		public String transitQuantity;	//75
+		public String error;
 	}
 
     public static YINStockInventoryVarientWrap parse(String json){
