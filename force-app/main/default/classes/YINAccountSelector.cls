@@ -80,6 +80,7 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
         Account.Credit_Days_Group_Dealer__c,
         Account.ERP_Ship_To_Code__c,
         Account.Block__c,
+        Account.Account_Type__c,
         // End Adding by Sandeep Vishwakarma
         
         // Start Added by Amol Patil
@@ -281,10 +282,10 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
         );
     }
 
-    public List<Account> selectBySFDCCustomerCode(List<String> dealerCodelist)  {
+    public List<Account> selectByERPShipToAndSoldToPartyCode(List<String> dealerCodelist)  {
         return Database.query(
             newQueryFactory()
-                .setCondition('SFDC_Customer_Code__c IN:dealerCodelist')  
+                .setCondition('ERP_Ship_To_Code__c IN:dealerCodelist or ERP_Customer_Code__c IN:dealerCodelist')  
                 .toSOQL()
         );
     }
@@ -318,11 +319,13 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
         );
      }
 
-     public  List<Account> selectShippingAccounts(String accounId){
+     public  List<Account> selectShippingAccounts(String accountId){
+        String shipToPart = 'Ship To Party';
+        String soldToPart = 'Sold To Party';
         String query = newQueryFactory()
-        .setCondition('ParentId=:accounId')
-        .setCondition('SFDC_Customer_Code__c!=null')
+        .setCondition('(ParentId=:accountId and Account_Type__c=:shipToPart and ERP_Ship_To_Code__c!=null) or (Id=:accountId and Account_Type__c=:soldToPart and ERP_Customer_Code__c!=null)')
         .toSOQL();
+        System.debug('selectShippingAccounts query '+query);
         return Database.query(query);
      }
          /**

@@ -216,3 +216,11 @@ if (requestMsgNode != null) {
 List<Order> orders = new List<Order>();
 orders.add(new Order(Id='8010T000000N6j5QAC'));
 YINStockInventory.sendOrder(orders);
+
+
+
+YINOrderSelector orderSelector = (YINOrderSelector)YINApplication.selector.newInstance(Order.SObjectType);
+List<Order> orders = orderSelector.selectById(new Set<Id>{openOrderId});
+if(orders[0].Status!='Open'){
+throw new YINOrderManagementException('Order status is '+orders[0].Status);
+}

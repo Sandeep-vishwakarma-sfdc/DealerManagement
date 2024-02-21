@@ -21,7 +21,7 @@
 
             <div class="col-md-6" style="margin-bottom:5px;">
               <div class="input-group">
-                <div class="input-group-btn search-panel" data-search="students">
+                <!-- <div class="input-group-btn search-panel" data-search="students">
 
                   <lightning-button-menu label={menuFilterLabel} onselect={handleActionsMenuSelect}
                     style="width: 150px !important;">
@@ -30,7 +30,7 @@
                     <lightning-menu-item label="Pattern" value="pattern"></lightning-menu-item>
                   </lightning-button-menu>
 
-                </div>
+                </div> -->
 
                 <input type="text" lwc:ref="searchinput" class="form-control"
                   style="text-align: left !important;padding-left: 10px !important;" name="x"
@@ -135,7 +135,7 @@
                       <section class="product__name">{productWrap.pricebookEntry.Product2.Name}</section>
                       <section class="product__short-description">
                         <!-- Tyre Size: 145/80R13 75S | Tread Pattern: E400 | FG-F8669 -->
-                        Tyre Size: <span lwc:if={productWrap.productSize}>{productWrap.productSize}</span><span lwc:else>N/A</span> inchs | Tread Pattern:
+                        Tyre Size: <span lwc:if={productWrap.productSize}>{productWrap.productSize}</span><span lwc:else>N/A</span> inches | Tread Pattern:
                         {productWrap.pricebookEntry.Product2.Tread_Pattern__c} | <span
                           lwc:if={productWrap.variantCode}>Variant: {productWrap.variantCode}</span> |
                         {productWrap.pricebookEntry.Product2.Product_Code__c}
@@ -292,6 +292,7 @@
           <label class="product-price label1">Unit Price</label>
           <label class="product-discount label1">Discount</label>
           <label class="product-finalqty label1">Quantity</label>
+          <!-- <label class="product-price label1">Net Price</label> -->
           <label class="product-gst label1">GST</label>
           <label class="product-line-price label1">Sub Total</label>
         </div>
@@ -322,6 +323,7 @@
               <input type="number" data-index={index} value={cartDetail.quantity} min="0" onfocus={copyOldQuanity}
                 onchange={changeCartQuantity}>
             </div>
+            <!-- <div class="product-price"> {cartDetail.valueWithoutGST}</div> -->
             <!--<div class="product-removal">
           <button class="remove-product">
             Remove
@@ -336,23 +338,23 @@
           <label>Sub Total Price</label>
           <div class="totals-value" id="cart-subtotal">71.97</div>
         </div>-->
-        <!-- <div class="totals-item">
-          <label style="color:#333; background:#fff;">Order value</label>
+        <div class="totals-item">
+          <label style="color:#333; background:#fff;">Order value without GST</label>
           <div class="totals-value" id="cart-netOrderValue"> {netOrderValue} </div>
-        </div> -->
+        </div>
 
           <div class="totals-item">
-            <label style="color:#333; background:#fff;">GST ({gstPercentage} %)</label>
+            <label style="color:#333; background:#fff;">GST @{gstPercentage} %</label>
             <div class="totals-value" id="cart-tax"> {totalGSTAmount} </div>
           </div>
 
           <div class="totals-item">
-            <label style="color:#333; background:#fff;">TDS ({tdsPercentage} %)</label>
+            <label style="color:#333; background:#fff;">TDS @{tdsPercentage} %</label>
             <div class="totals-value" id="cart-tds"> {totalTDS} </div>
           </div>
 
           <div class="totals-item">
-            <label style="color:#333; background:#fff;">TCS ({tcsPercentage} %)</label>
+            <label style="color:#333; background:#fff;">TCS @{tcsPercentage} %</label>
             <div class="totals-value" id="cart-tcs"> - {totalTCS} </div>
           </div>
           <!--    <div class="totals-item">
@@ -403,7 +405,7 @@
                   <th style="border: 1px solid black;text-align: center;width: 150px;">Item Code</th>
                   <th style="border: 1px solid black;text-align: center;width: 150px">Item Description</th>
                   <th style="border: 1px solid black;text-align: center;width: 150px">Quantity</th>
-                  <th style="border: 1px solid black;text-align: center;width: 150px">Variant</th>
+                  <!-- <th style="border: 1px solid black;text-align: center;width: 150px">Variant</th> -->
                   <th style="border: 1px solid black;text-align: center;width: 150px">Order Status</th>
                 </tr>
                 <template for:each={orderPreview.Submitted} for:item="submitted">
@@ -411,7 +413,7 @@
                     <td style="border: 1px solid black;text-align: center;">{submitted.Product2.Product_Code__c}</td>
                     <td style="border: 1px solid rgb(141, 57, 57);text-align: center;">{submitted.Product2.Name}</td>
                     <td style="border: 1px solid black;text-align: center;">{submitted.Quantity}</td>
-                    <td style="border: 1px solid black;text-align: center;"><p lwc:if={submitted.VariantCode}>{submitted.VariantCode}</p><p lwc:else> N/A </p></td>
+                    <!-- <td style="border: 1px solid black;text-align: center;"><p lwc:if={submitted.VariantCode}>{submitted.VariantCode}</p><p lwc:else> N/A </p></td> -->
                     <td style="border: 1px solid black;text-align: center;">Submitted</td>
                   </tr>
                 </template>
@@ -420,7 +422,7 @@
                     <td style="border: 1px solid black;text-align: center;">{open.Product2.Product_Code__c}</td>
                     <td style="border: 1px solid black;text-align: center;">{open.Product2.Name}</td>
                     <td style="border: 1px solid black;text-align: center;">{open.Quantity}</td>
-                    <td style="border: 1px solid black;text-align: center;"><p lwc:if={open.VariantCode}>{open.VariantCode}</p><p lwc:else> N/A </p></td>
+                    <!-- <td style="border: 1px solid black;text-align: center;"><p lwc:if={open.VariantCode}>{open.VariantCode}</p><p lwc:else> N/A </p></td> -->
                     <td style="border: 1px solid black;text-align: center;">Open</td>
                   </tr>
                 </template>

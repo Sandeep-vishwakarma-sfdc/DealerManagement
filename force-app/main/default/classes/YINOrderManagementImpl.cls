@@ -99,11 +99,16 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             LibISobjectUnitOfWork unitofwork = YINApplication.unitofwork.newInstance();
             List<Order> cartOrders = new List<Order>();
             // 1. Get Draft Cart of Current Account
+            YINOrderSelector orderSelector = (YINOrderSelector)YINApplication.selector.newInstance(Order.SObjectType);
             if(String.isEmpty(openOrderId)){
-                YINOrderSelector orderSelector = (YINOrderSelector)YINApplication.selector.newInstance(Order.SObjectType);
                 cartOrders = orderSelector.selectRecentOrderOfAccountByStatus(accountId,'Cart');
             }else{
+                List<Order> orders = orderSelector.selectById(new Set<Id>{openOrderId});
+                if(orders[0].Status=='Open'){
                 cartOrders = new List<Order>{new Order(Id=openOrderId)};
+                }else{
+                    throw new YINOrderManagementException('Can not add Product to '+orders[0].Status+' Order');
+                }
             }
             System.debug('String productWrapper '+JSON.serialize(productWrapper));
             // 2. convert JSON to Apex class
@@ -156,7 +161,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             YINMonitorService monitorLog = new YINMonitorService();
             monitorLog.exceptionHandler(log);
             System.debug('Message '+e.getMessage() +' LineNumber '+e.getLineNumber());
-            throw new YINOrderManagementException('Message '+e.getMessage() +' LineNumber '+e.getLineNumber());
+            throw new YINOrderManagementException(''+e.getMessage());
         }
     }
 
@@ -413,10 +418,12 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         }
 
         if(!checkBlockedAccount(docommit.accountId)){
-            throw new YINOrderManagementException('Account is blocked, please contact your district manager');
+            throw new YINOrderManagementException('We are unable to process your order currently, please get in touch with local sales representative');
         }
 
         inMaintenance();
+
+
 
         List<YINProductWrapper> productWrappers = (List<YINProductWrapper>)JSON.deserialize(productWrapper,List<YINProductWrapper>.class);
         if(productWrappers.size()>0){
@@ -460,10 +467,11 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         Map<String,Account> shippingAccountMap = new Map<String,Account>();
         YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
         System.debug('docommit.shippingAccountCode ::: '+docommit.shippingAccountCode);
-        List<Account> shippingAccounts = accountSelector.selectBySFDCCustomerCode(new List<String>{docommit.shippingAccountCode});
+        List<Account> shippingAccounts = accountSelector.selectByERPShipToAndSoldToPartyCode(new List<String>{docommit.shippingAccountCode});
         System.debug('docommit.shippingAccountCode account '+shippingAccounts);
         if(shippingAccounts.size()>0){
-            shippingAccountMap.put(shippingAccounts[0].SFDC_Customer_Code__c,shippingAccounts[0]);
+            String key = shippingAccounts[0].Id == docommit.accountId?shippingAccounts[0].ERP_Customer_Code__c:shippingAccounts[0].ERP_Ship_To_Code__c;
+            shippingAccountMap.put(key,shippingAccounts[0]);
         }
         
         // 2a. Getting Inventory from ERP
@@ -570,8 +578,12 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         
         List<Order> orders = new List<Order>();
         System.debug('docommit.doCommit '+docommit.doCommit);
-        if(docommit.doCommit==true){
+        if(docommit.doCommit==true && itemSubmitted.size()>0){
             orders = commitTheProcess();
+        }else{
+            openOrder = closedOrder;
+            openOrder.Status = 'Open';
+            orders = new List<Order>{openOrder};
         }
         return orders;
     }
@@ -839,7 +851,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
     private static boolean checkBlockedAccount(String accountId){
         YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
         List<Account> accounts = accountSelector.getAccounts(new List<String>{accountId});
-        if(accounts[0].Block__c=='All' || accounts[0].Block__c=='Shipping'){
+        if(accounts[0].Block__c=='All' || accounts[0].Block__c=='Ship'){
             return false; // Block if All is Selected
         }
         return true; 
@@ -963,6 +975,11 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
     public static List<Account> getShippingAccounts(String accountId){
         YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
         List<Account> accounts = accountSelector.selectShippingAccounts(accountId);
+        for(Account acc:accounts){
+            if(acc.Id==accountId){
+                acc.ERP_Ship_To_Code__c = acc.ERP_Customer_Code__c;
+            }
+        }
         return accounts;
     }
 
@@ -1028,13 +1045,14 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             lineItem.TDS__c = wrapperProduct.tdsPercentage;
             lineItem.TDS_Amount__c = (netOrderValue * (lineItem.TDS__c/100));
 
-            // Calculate Total Order value
-            lineItem.Total_Amount__c = netOrderValue + lineItem.GST_Amount__c;
-
             // Calculate TCS
             
             lineItem.TCS__c =  wrapperProduct.tcsPercentage; // Need to Confirm 1% or 0.1% Condition
             lineItem.TCS_Amount__c =  (netOrderValue * (lineItem.TCS__c/100)); 
+
+             // Calculate Total Order valu
+             System.debug('cal netOrderValue: '+netOrderValue+' GST_Amount__c '+lineItem.GST_Amount__c+' TDS_Amount__c '+lineItem.TDS_Amount__c+' TCS_Amount__c '+lineItem.TCS_Amount__c);
+             lineItem.Total_Amount__c = netOrderValue + lineItem.GST_Amount__c + lineItem.TDS_Amount__c + lineItem.TCS_Amount__c;
             
             if(wrapperProduct?.orderItemId!=null){
                 lineItem.Id = wrapperProduct.orderItemId;

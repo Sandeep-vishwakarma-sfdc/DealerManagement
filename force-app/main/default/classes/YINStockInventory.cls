@@ -68,6 +68,9 @@ public with sharing class YINStockInventory {
         //3. Preparing Map where key = ProductCode_VariantCode and Value = Response Data
         YINStockInventoryVarientWrap dataWrap = (YINStockInventoryVarientWrap)JSON.deserialize(response,YINStockInventoryVarientWrap.class);
         Map<String,YINStockInventoryVarientWrap.YINData> dataByProductCode = new Map<String,YINStockInventoryVarientWrap.YINData>();
+        if(dataWrap.error!=null){
+            throw new YINOrderManagementException('Error '+dataWrap.error);
+        }
         for(YINStockInventoryVarientWrap.YINData data:dataWrap.data){
             dataByProductCode.put(data.itemCode+'_'+data.variant,data);
         }
@@ -234,7 +237,7 @@ public with sharing class YINStockInventory {
         log.requestURL = request.getEndpoint();
 
         YINMonitorService monitorLog = new YINMonitorService();
-        //monitorLog.requestResponseLog(log); Commented beacuse of error You have uncommitted work pending. Please commit or rollback before calling out
+        //monitorLog.requestResponseLog(log);
     }
 
     private static String generateFakeResponse(String resourceName){

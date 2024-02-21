@@ -167,7 +167,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         // Fetch Shipping Accounts
         this.shippingAccounts = await getShippingAccounts({accountId:this.accountId})
         let addresses = this.shippingAccounts.map(ele=>{
-            return ({label:ele.Name,value:ele.SFDC_Customer_Code__c})
+            return ({label:ele.Name,value:ele.ERP_Ship_To_Code__c})
         });
         let none = {label:'Select Shipping Address',value:''};
         addresses.unshift(none);
@@ -185,7 +185,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         let value = event.detail.value;
         this.shippingAccountValue = value;
         console.log('shipping value ',value);
-        let index = this.shippingAccounts.findIndex(ele=>ele.SFDC_Customer_Code__c==value);
+        let index = this.shippingAccounts.findIndex(ele=>ele.ERP_Ship_To_Code__c==value);
         if(index !=-1){
             this.selectedShippingAccount = this.shippingAccounts[index];
             console.log(this.selectedShippingAccount);
@@ -207,20 +207,26 @@ export default class YinOrderManagementCmp extends LightningElement {
         let totalDiscount = 0;
         let totalTDS = 0;
         let totalTCS = 0;
+        let netValue = 0;
         this.totalOrderQuantity = 0;
         
         this.cartDetails.forEach(item=>{
+            console.log('item net ',item.netPrice);
+            
+            console.log('item discount  ',(item.netPrice * item.discountPercentage/100));
             totalGSTAmount = totalGSTAmount+item.gstAmount;
             subTotal = subTotal + item.totalAmount;
             totalDiscount = totalDiscount + (item.netPrice * item.discountPercentage/100);
+            netValue = netValue + item.netPrice - (item.netPrice * item.discountPercentage/100);
             totalTDS = totalTDS + (item.netPrice * item.tdsPercentage/100);
             totalTCS = totalTCS + (item.netPrice * item.tcsPercentage/100);
             this.totalOrderQuantity = this.totalOrderQuantity + item.quantity;
 
             item.totalAmount = isNaN(item.totalAmount)?0:Number(item.totalAmount).toFixed(2);// Added to Fix decimal Issue
+            // item.valueWithoutGST = netValue;
         });
         if(this.cartDetails.length > 0){
-        this.netOrderValue = isNaN(subTotal)?0:Number(subTotal).toFixed(2);   
+        this.netOrderValue = isNaN(netValue)?0:Number(netValue).toFixed(2);   
         this.totalGSTAmount = isNaN(totalGSTAmount)?0:Number(totalGSTAmount).toFixed(2);
         this.totalTDS = isNaN(totalTDS)?0:Number(totalTDS).toFixed(2);
         this.totalTCS = isNaN(totalTCS)?0:Number(totalTCS).toFixed(2);
@@ -235,6 +241,7 @@ export default class YinOrderManagementCmp extends LightningElement {
             this.totalTDS = 0;
             this.totalTCS = 0;
             this.grandTotal = 0;
+            this.netOrderValue = 0;
         }
     }
 
@@ -327,7 +334,9 @@ export default class YinOrderManagementCmp extends LightningElement {
                 }
             }
         });
+        uniqueArray.sort((a, b) => parseInt(b.label) - parseInt(a.label));
         uniqueArray.unshift({ label: 'Select Variant', value: '' });
+
         this.varientOptions = uniqueArray;
     }
 
@@ -347,6 +356,7 @@ export default class YinOrderManagementCmp extends LightningElement {
 
     // Add to Cart
     async handleCartAdd(event){
+        try {
         this.isLoading = true;
         let index = event.currentTarget.dataset.index;
         // console.log('Add to Cart index',index);
@@ -395,9 +405,10 @@ export default class YinOrderManagementCmp extends LightningElement {
                 // return;
             }
             productWrap.netPrice = productWrap.pricebookEntry.UnitPrice * productWrap.quantity;
-            this.cartDetails.push(productWrap);
+            
             console.log('Cart productWrap ',JSON.stringify(productWrap));
             let isAddedToCart = await addToCart({productWrapper:JSON.stringify(productWrap),accountId:this.accountId,openOrderId:this.openOrderId});
+            this.cartDetails.push(productWrap);
             //  Refresh Carts
             this.cartDetails = await getCartDetails({accountId:this.accountId,openOrderId:this.openOrderId});
             this.CartDetailLength = this.cartDetails.length;
@@ -408,6 +419,12 @@ export default class YinOrderManagementCmp extends LightningElement {
             productWrap.quantity = this.oldQty;
         }
         this.isLoading = false;
+           
+        } catch (error) {
+            console.log(error);
+            this.isLoading = false;
+            this.showAlert(error.body.message,'error','Error');
+        }
     }
 
     async handleCartDelete(event){
@@ -553,7 +570,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         }
         console.log('field Name ',fieldName);
         if(searchValue){
-            this.productswrapper = this.productswrapperVirtual.filter(ele=>ele[fieldName].toLowerCase().includes(searchValue.toLowerCase()));
+            this.productswrapper = this.productswrapperVirtual.filter(ele=>(ele['productSize'].toLowerCase().includes(searchValue.toLowerCase())) || (ele['productPattern'].toLowerCase().includes(searchValue.toLowerCase())) || (ele['productName'].toLowerCase().includes(searchValue.toLowerCase())));
             if(this.displayToggle){
                 this.refs.trendingSKU.checked = false;
                 this.refs.productOfTheMonth.checked = false;
@@ -635,6 +652,8 @@ export default class YinOrderManagementCmp extends LightningElement {
     }
 
     async changeCartQuantity(event){
+        try {
+        
         this.isLoading = true;
         let index = event.currentTarget.dataset.index;
         let quantity = event.target.value;
@@ -673,6 +692,11 @@ export default class YinOrderManagementCmp extends LightningElement {
         this.CartDetailLength = this.cartDetails.length;
         this.cartCalculation();
         this.isLoading = false;
+            
+        } catch (error) {
+            this.isLoading = false;
+            this.showAlert(error.body.message,'error','Error');
+        }
     }
 
     changeQuantity(event){

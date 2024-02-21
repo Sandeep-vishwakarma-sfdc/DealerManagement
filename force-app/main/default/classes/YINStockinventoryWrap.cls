@@ -8,6 +8,7 @@ public with sharing class YINStockinventoryWrap {
    
        // Response Properties
        public YINData[] data;
+       public String error;
        public class YINData {
            public String responseCode;	//200
            public String itemCode;	//FG-R1249
