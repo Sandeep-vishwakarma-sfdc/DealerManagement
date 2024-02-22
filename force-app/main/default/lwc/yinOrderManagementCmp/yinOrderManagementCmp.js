@@ -212,8 +212,9 @@ export default class YinOrderManagementCmp extends LightningElement {
         
         this.cartDetails.forEach(item=>{
             console.log('item net ',item.netPrice);
-            
             console.log('item discount  ',(item.netPrice * item.discountPercentage/100));
+            item.totalAmount = ((item.netPrice) - (item.netPrice * item.discountPercentage/100)) + item.gstAmount;
+            console.log('totalAmount '+item.totalAmount);
             totalGSTAmount = totalGSTAmount+item.gstAmount;
             subTotal = subTotal + item.totalAmount;
             totalDiscount = totalDiscount + (item.netPrice * item.discountPercentage/100);
@@ -368,7 +369,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         }
         let cartIndex = undefined;
         if(this.selectedOrderType.all){ // Form Normal Product , No Need to check Variants
-            cartIndex = this.cartDetails.findIndex(ele=>ele.productId==productWrap.productId && productWrap.priceList);
+            cartIndex = this.cartDetails.findIndex(ele=>ele.productId==productWrap.productId);
         }else{ // Form Discount Product , Need to check Variants
             cartIndex = this.cartDetails.findIndex(ele=>ele.productId==productWrap.productId && ele.variantId==productWrap.priceList.Variant__c);
         }
@@ -383,7 +384,7 @@ export default class YinOrderManagementCmp extends LightningElement {
                     return;
                 }
                 if(productWrap.lockingSKULocation){
-                    this.showAlert(`Product ${productWrap.productName} is locked for cutsomer location.`,'warning','Warning'); 
+                    this.showAlert(`Product ${productWrap.productName} is locked for customer location.`,'warning','Warning'); 
                     this.isLoading = false;
                     return;
                 }

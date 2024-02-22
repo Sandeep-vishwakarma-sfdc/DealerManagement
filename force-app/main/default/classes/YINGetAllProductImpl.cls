@@ -28,8 +28,8 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
         Map<String, YIN_Account_product_Mapping__c> locationProductsTrending = new Map<String, YIN_Account_product_Mapping__c>();
         Map<String, YIN_Account_product_Mapping__c> locationProductsOfMonth = new Map<String, YIN_Account_product_Mapping__c>();
 
-        Map<Id, YIN_Account_product_Mapping__c> accountProductMappingByProduct = new Map<Id, YIN_Account_product_Mapping__c>();
-        Map<Id, YIN_Account_product_Mapping__c> locationProductMappingByProduct = new Map<Id, YIN_Account_product_Mapping__c>();
+        Map<String, YIN_Account_product_Mapping__c> accountProductMappingByProduct = new Map<String, YIN_Account_product_Mapping__c>();
+        Map<String, YIN_Account_product_Mapping__c> locationProductMappingByProduct = new Map<String, YIN_Account_product_Mapping__c>();
         Map<Id, YIN_Account_product_Mapping__c> locationProductByProduct = new Map<Id, YIN_Account_product_Mapping__c>();
         Map<Id, YIN_Account_product_Mapping__c> locationFrequentlyByProduct = new Map<Id, YIN_Account_product_Mapping__c>();
 
@@ -52,10 +52,10 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
         for (YIN_Account_product_Mapping__c accountProduct : accountProducts) {
             switch on accountProduct.Type__c {
                 when 'Locking Account Product' {
-                    accountProductMappingByProduct.put(accountProduct.Product__c, accountProduct);
+                    accountProductMappingByProduct.put(accountProduct.Product__c+''+accountProduct.Account__c, accountProduct);
                 }
                 when 'Locking Location Product' {
-                    locationProductMappingByProduct.put(accountProduct.Product__c, accountProduct);
+                    locationProductMappingByProduct.put(accountProduct.Product__c+''+accountProduct.Locations__c, accountProduct);
                 }
                 when 'Trending Products' {
                     locationProductsTrending.put(accountProduct.Product__c, accountProduct);
@@ -92,13 +92,13 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
             YINProductWrapper productWrapper = new YINProductWrapper();
             productWrapper.pricebookEntry = priceBookEntry;
             productWrapper.productId = priceBookEntry.Product2Id;
-            productWrapper.maximumOrderQuantity = accountProductMappingByProduct.get(priceBookEntry.Product2Id)?.Maximum_Order_Quantity__c;
-            productWrapper.minimumOrderQuantity = accountProductMappingByProduct.get(priceBookEntry.Product2Id)?.Minimum_Order_Quantity__c;
+            productWrapper.maximumOrderQuantity = accountProductMappingByProduct.get(priceBookEntry.Product2Id+'-'+accounts[0].Id)?.Maximum_Order_Quantity__c;
+            productWrapper.minimumOrderQuantity = accountProductMappingByProduct.get(priceBookEntry.Product2Id+''+accounts[0].Id)?.Minimum_Order_Quantity__c;
             productWrapper.quantity = 1; // Default Quantity value when Order page loads
             productWrapper.discountPercentage = 0;
             productWrapper.frequentlyBoughtProduct = locationFrequentlyByProduct.get(priceBookEntry.Product2Id)?.Status__c;
-            productWrapper.lockingSKUAccount = accountProductMappingByProduct.get(priceBookEntry.Product2Id)?.Status__c;
-            productWrapper.lockingSKULocation = locationProductMappingByProduct.get(priceBookEntry.Product2Id)?.Status__c;
+            productWrapper.lockingSKUAccount = accountProductMappingByProduct.get(priceBookEntry.Product2Id+''+accounts[0].Id)?.Status__c;
+            productWrapper.lockingSKULocation = locationProductMappingByProduct.get(priceBookEntry.Product2Id+''+accounts[0].Location__c)?.Status__c;
             productWrapper.trendingSKU = locationProductsTrending.get(priceBookEntry.Product2Id)?.Status__c;
             productWrapper.productOfTheMonth = locationProductsOfMonth.get(priceBookEntry.Product2Id)?.Status__c;
             productWrapper.unitPrice = priceBookEntry.UnitPrice;

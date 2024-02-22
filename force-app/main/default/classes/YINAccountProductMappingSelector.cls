@@ -1,9 +1,9 @@
 /**
- * @description       : 
- * @author            : ChangeMeIn@UserSettingsUnder.SFDoc
- * @group             : 
- * @last modified on  : 01-04-2024
- * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+ * @description       : This is Selector class for query on YIN_Account_product_Mapping__c object.
+ * @author            : saurabh.pandey@skinternational.com
+ * @group             : SKI
+ * @last modified on  : 02-20-2024
+ * @last modified by  : saurabh.pandey@skinternational.com
 **/
 public with sharing class YINAccountProductMappingSelector extends LIBSObjectSelector{
     public Schema.SObjectType getSObjectType() {
@@ -20,16 +20,26 @@ public with sharing class YINAccountProductMappingSelector extends LIBSObjectSel
             YIN_Account_product_Mapping__c.Type__c,
             YIN_Account_product_Mapping__c.Status__c,
             YIN_Account_product_Mapping__c.Start_Date__c,
+            YIN_Account_product_Mapping__c.Combination_Key__c,
             YIN_Account_product_Mapping__c.End_Date__c,
             YIN_Account_product_Mapping__c.Minimum_Order_Quantity__c,
             YIN_Account_product_Mapping__c.Maximum_Order_Quantity__c
         };
     }
 
+    /**
+     * @description: This method is used to get all fields with the help of Id.
+     * @param  String: recId.
+    */
     public List<YIN_Account_product_Mapping__c> selectById(Set<Id> recordIds){
         return (List<YIN_Account_product_Mapping__c>) selectSObjectsById(recordIds);
     }
 
+
+    /**
+     * @description: This method is used to retrieve records based on the Account field and its associated Product and Locations.
+     * @param  String: accountId.
+    */
     public List<YIN_Account_product_Mapping__c> selectByAccount(String accountId){
         String query = newQueryFactory()
         .setCondition('Product__c!=null and Account__c=:accountId')
@@ -37,6 +47,10 @@ public with sharing class YINAccountProductMappingSelector extends LIBSObjectSel
         return Database.query(query);
     }
 
+    /**
+     * @description: This method is used to retrieve all records.
+     * @param  None
+    */
     public List<YIN_Account_product_Mapping__c> selectAll(){
         String query = newQueryFactory()
         .setCondition('Start_Date__c<=TODAY and End_Date__c>=TODAY')
@@ -45,11 +59,53 @@ public with sharing class YINAccountProductMappingSelector extends LIBSObjectSel
         return Database.query(query);
     }
 
-    public List<YIN_Account_product_Mapping__c> selectLookUpFields(){
+
+    /**
+     * @description: This method is used to retrieve records based on a combination of fields.
+     * @param  Set<String>: combinationKeys.
+    */
+    public List<YIN_Account_product_Mapping__c> getAccProdMappings(Set<String> combinationKeys){
+        String query = newQueryFactory()
+        .selectfield('Account__r.ERP_Customer_code__c')
+        .selectfield('Product__r.Product_Code__c')
+        .selectfield('Product__r.Name')
+        .selectfield('Account__r.OwnerId')
+        .selectfield('Account__r.Name')
+        .selectfield('Locations__r.Location_Code__c')
+        .selectfield('Locations__r.Name')
+        .setCondition('Combination_Key__c IN: combinationKeys')
+        .toSOQL();
+        return Database.query(query);
+    }
+
+
+    /**
+     * @description: This method is used to retrieve specific fields based on Id.
+     * @param  None
+    */
+    public List<YIN_Account_product_Mapping__c> getAccProdDataByAccProd(String recType){
+        String query = newQueryFactory()
+        .selectfield('Account__r.ERP_Customer_code__c')
+        .selectfield('Product__r.Product_Code__c')
+        .setCondition('Type__c=:recType')
+        .toSOQL();
+        return Database.query(query);
+    }
+
+    public List<YIN_Account_product_Mapping__c> getAccProdDataByLocProd(String recType){
         String query = newQueryFactory()
         .selectfield('Account__r.SFDC_Customer_Code__c')
         .selectfield('Product__r.Product_Code__c')
         .selectfield('Locations__r.Location_Code__c')
+        .setCondition('Type__c=:recType')
+        .toSOQL();
+        return Database.query(query);
+    }
+   
+     public List<YIN_Account_product_Mapping__c> getAccProdDataToDelete(String recType){
+        String query = newQueryFactory()
+        .selectfield('Id')
+        .setCondition('Type__c=:recType')
         .toSOQL();
         return Database.query(query);
     }
