@@ -295,11 +295,12 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
                 totalPrice = item.UnitPrice * item.Quantity;
                 Decimal netOrderValue = (totalPrice - item.Discounted_Amount__c);
                 item.GST_Amount__c =  (netOrderValue * (item.GST__c/100));
-                item.Total_Amount__c = netOrderValue + item.GST_Amount__c;
+                
                 item.TDS__c = vTDSPercentage;
                 item.TCS__c = vTCSPercentage;
                 item.TDS_Amount__c = (netOrderValue * (vTDSPercentage/100));
                 item.TCS_Amount__c =  (netOrderValue * (vTCSPercentage/100)); 
+                item.Total_Amount__c = netOrderValue + item.GST_Amount__c - item.TDS_Amount__c + item.TCS_Amount__c ;
                 unitofwork.registerDirty(item);
             }
 
@@ -581,9 +582,12 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         if(docommit.doCommit==true && itemSubmitted.size()>0){
             orders = commitTheProcess();
         }else{
+            LibISobjectUnitOfWork unitofworkOpenOrder = YINApplication.unitofwork.newInstance(); 
             openOrder = closedOrder;
             openOrder.Status = 'Open';
             orders = new List<Order>{openOrder};
+            unitofworkOpenOrder.registerDirty(openOrder);
+            unitofworkOpenOrder.commitWork();
         }
         return orders;
     }
@@ -781,11 +785,12 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             // Calculate TDS : Add TDS Field on Order Line item
             item.TDS_Amount__c = (netOrderValue * (item.TDS__c/100));
 
-            // Calculate Total Order value
-            item.Total_Amount__c = netOrderValue + item.GST_Amount__c;
+            
 
             // Calculate TCS
             item.TCS_Amount__c =  (netOrderValue * (item.TCS__c/100)); 
+            // Calculate Total Order value
+            item.Total_Amount__c = netOrderValue + item.GST_Amount__c - item.TDS_Amount__c +  item.TCS_Amount__c;
         }
         return items;
     }
@@ -1052,7 +1057,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
 
              // Calculate Total Order valu
              System.debug('cal netOrderValue: '+netOrderValue+' GST_Amount__c '+lineItem.GST_Amount__c+' TDS_Amount__c '+lineItem.TDS_Amount__c+' TCS_Amount__c '+lineItem.TCS_Amount__c);
-             lineItem.Total_Amount__c = netOrderValue + lineItem.GST_Amount__c + lineItem.TDS_Amount__c + lineItem.TCS_Amount__c;
+             lineItem.Total_Amount__c = netOrderValue + lineItem.GST_Amount__c - lineItem.TDS_Amount__c + lineItem.TCS_Amount__c;
             
             if(wrapperProduct?.orderItemId!=null){
                 lineItem.Id = wrapperProduct.orderItemId;

@@ -56,10 +56,11 @@ public without Sharing class YINPriceBookEntrySelector extends LIBSObjectSelecto
     
         
         public List<PricebookEntry> selectPriceBookEntriesByPricebook(List<Id> priceBookIds){
+            String categoryCode = 'TIRE_I';
             LIBQueryFactory query = newQueryFactory();
             LIBSObjectSelector productSelector =  new YINProductSelector();
             productSelector.configureQueryFactoryFields(query, 'Product2');
-            query.setCondition('IsActive=true and Product2.IsActive=true and Pricebook2Id IN:priceBookIds and Start_Date__c <=TODAY and End_Date__c >=TODAY');
+            query.setCondition('IsActive=true and Product2.IsActive=true and Product2.Item_Category_Code__c=:categoryCode and Pricebook2Id IN:priceBookIds and Start_Date__c <=TODAY and End_Date__c >=TODAY');
             query.addOrdering(Order.LastModifiedDate, LIBQueryFactory.SortOrder.DESCENDING);
             return Database.query(query.toSOQL());
         }

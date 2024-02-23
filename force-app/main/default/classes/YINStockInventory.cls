@@ -125,10 +125,14 @@ public with sharing class YINStockInventory {
             if(Test.isRunningTest()){
                 items = YINOrderManagementDataFactoryTest.getOrderItemTest();
             }
+            String shipToCode = shipTo[0]?.ERP_Ship_To_Code__c;
+            if(submittingOrder.AccountId==submittingOrder.Ship_To_Party__c){// if selected shipping address is billing address then use customer code instead of ship to code
+                shipToCode = customers[0]?.ERP_Customer_Code__c;
+            }
 
             System.debug('customers[0]?.ERP_Customer_Code__c '+customers[0]?.ERP_Customer_Code__c);
             System.debug('shipTo[0]?.ERP_Ship_To_Code__c '+shipTo[0]?.ERP_Ship_To_Code__c);
-            if(submittingOrder.orderNumber==null || customers[0]?.ERP_Customer_Code__c==null || shipTo[0]?.ERP_Ship_To_Code__c==null){
+            if(submittingOrder.orderNumber==null || customers[0]?.ERP_Customer_Code__c==null || shipToCode==null){
                 throw new YINOrderManagementException('Please Check Customer Code And Ship To Party');
             }
 

@@ -234,7 +234,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         this.gstPercentage = this.cartDetails[0].gstPercentage;
         this.tdsPercentage = this.cartDetails[0].tdsPercentage;
         this.tcsPercentage = this.cartDetails[0].tcsPercentage;
-        this.grandTotal = subTotal + Number(this.totalTDS) - Number(this.totalTCS);
+        this.grandTotal = subTotal - Number(this.totalTDS) + Number(this.totalTCS);
         // this.grandTotal = subTotal + Number(this.totalGSTAmount) + Number(this.totalTDS) - Number(this.totalTCS);
         this.grandTotal = isNaN(this.grandTotal)?0:Number(this.grandTotal).toFixed(2);
         }else{
@@ -571,7 +571,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         }
         console.log('field Name ',fieldName);
         if(searchValue){
-            this.productswrapper = this.productswrapperVirtual.filter(ele=>(ele['productSize'].toLowerCase().includes(searchValue.toLowerCase())) || (ele['productPattern'].toLowerCase().includes(searchValue.toLowerCase())) || (ele['productName'].toLowerCase().includes(searchValue.toLowerCase())));
+            this.productswrapper = this.productswrapperVirtual.filter(ele=>(ele['productSize']?.toLowerCase().includes(searchValue.toLowerCase())) || (ele['productPattern']?.toLowerCase().includes(searchValue.toLowerCase())) || (ele['productName']?.toLowerCase().includes(searchValue.toLowerCase())));
             if(this.displayToggle){
                 this.refs.trendingSKU.checked = false;
                 this.refs.productOfTheMonth.checked = false;

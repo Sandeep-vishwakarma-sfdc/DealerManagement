@@ -14,7 +14,8 @@ public with sharing class YINProductSelector extends LibSObjectSelector{
             Product2.Minimum_Quantity__c, 
             Product2.Size__c, 
             Product2.Tread_Pattern__c, 
-            Product2.StockKeepingUnit
+            Product2.StockKeepingUnit,
+            Product2.Item_Category_Code__c
         };
     }
 
