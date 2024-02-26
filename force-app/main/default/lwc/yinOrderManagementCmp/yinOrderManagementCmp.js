@@ -167,7 +167,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         // Fetch Shipping Accounts
         this.shippingAccounts = await getShippingAccounts({accountId:this.accountId})
         let addresses = this.shippingAccounts.map(ele=>{
-            return ({label:ele.Name,value:ele.ERP_Ship_To_Code__c})
+            return ({label:ele?.Address__c+''+ele?.Address2__c,value:ele.ERP_Ship_To_Code__c})
         });
         let none = {label:'Select Shipping Address',value:''};
         addresses.unshift(none);
@@ -248,6 +248,7 @@ export default class YinOrderManagementCmp extends LightningElement {
 
     async handleOrderTypeChange(event){
         let orderType = event.target.value;
+        this.isLoading = true;
         console.log('order type ',orderType);
         if(orderType=='All'){
             this.selectedOrderType = {
@@ -268,9 +269,10 @@ export default class YinOrderManagementCmp extends LightningElement {
             this.refs.trendingSKU.checked = false;
             this.refs.productOfTheMonth.checked = false;
         }
-        setTimeout(() => {// TODO: Remove setTimout once working on real time Data
-            this.isLoading = false;
-        }, 200);
+        this.isLoading = false;
+        // setTimeout(() => {// TODO: Remove setTimout once working on real time Data
+        //     this.isLoading = false;
+        // }, 200);
     }
 
     async handleChangeToggle(event){
@@ -405,7 +407,7 @@ export default class YinOrderManagementCmp extends LightningElement {
                 // this.isLoading = false;
                 // return;
             }
-            productWrap.netPrice = productWrap.pricebookEntry.UnitPrice * productWrap.quantity;
+            productWrap.netPrice = productWrap.pricebookEntry.Sales_Price__c * productWrap.quantity;
             
             console.log('Cart productWrap ',JSON.stringify(productWrap));
             let isAddedToCart = await addToCart({productWrapper:JSON.stringify(productWrap),accountId:this.accountId,openOrderId:this.openOrderId});
@@ -632,7 +634,7 @@ export default class YinOrderManagementCmp extends LightningElement {
                 }else{
                     this.isModalOpen = false;
                     this.isModalOrder = true;
-                    this.showToast('SUCCESS','Order Created Succesfully','success');
+                    this.showToast('SUCCESS','Order Submitted Succesfully','success');
                 }
             } catch (error) {
                 console.log('error ',error);

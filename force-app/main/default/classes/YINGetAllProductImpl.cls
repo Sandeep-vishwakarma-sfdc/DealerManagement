@@ -31,7 +31,7 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
         Map<String, YIN_Account_product_Mapping__c> accountProductMappingByProduct = new Map<String, YIN_Account_product_Mapping__c>();
         Map<String, YIN_Account_product_Mapping__c> locationProductMappingByProduct = new Map<String, YIN_Account_product_Mapping__c>();
         Map<Id, YIN_Account_product_Mapping__c> locationProductByProduct = new Map<Id, YIN_Account_product_Mapping__c>();
-        Map<Id, YIN_Account_product_Mapping__c> locationFrequentlyByProduct = new Map<Id, YIN_Account_product_Mapping__c>();
+        Map<String, YIN_Account_product_Mapping__c> accountFrequentlyByProduct = new Map<String, YIN_Account_product_Mapping__c>();
 
         YINAccountProductMappingSelector accountProductSelector = (YINAccountProductMappingSelector) YINApplication.selector.newInstance(YIN_Account_product_Mapping__c.SObjectType);
 
@@ -58,13 +58,13 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
                     locationProductMappingByProduct.put(accountProduct.Product__c+''+accountProduct.Locations__c, accountProduct);
                 }
                 when 'Trending Products' {
-                    locationProductsTrending.put(accountProduct.Product__c, accountProduct);
+                    locationProductsTrending.put(accountProduct.Product__c+''+accountProduct.Locations__c, accountProduct);
                 }
                 when 'Product of the Month' {
-                    locationProductsOfMonth.put(accountProduct.Product__c, accountProduct);
+                    locationProductsOfMonth.put(accountProduct.Product__c+''+accountProduct.Locations__c, accountProduct);
                 }
                 when 'Frequently Bought Product' {
-                    locationFrequentlyByProduct.put(accountProduct.Product__c, accountProduct);
+                    accountFrequentlyByProduct.put(accountProduct.Product__c+''+accountProduct.Account__c, accountProduct);
                 }
             }
         }
@@ -96,13 +96,13 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
             productWrapper.minimumOrderQuantity = accountProductMappingByProduct.get(priceBookEntry.Product2Id+''+accounts[0].Id)?.Minimum_Order_Quantity__c;
             productWrapper.quantity = 1; // Default Quantity value when Order page loads
             productWrapper.discountPercentage = 0;
-            productWrapper.frequentlyBoughtProduct = locationFrequentlyByProduct.get(priceBookEntry.Product2Id)?.Status__c;
+            productWrapper.frequentlyBoughtProduct = accountFrequentlyByProduct.get(priceBookEntry.Product2Id+''+accounts[0].Id)?.Status__c;
             productWrapper.lockingSKUAccount = accountProductMappingByProduct.get(priceBookEntry.Product2Id+''+accounts[0].Id)?.Status__c;
             productWrapper.lockingSKULocation = locationProductMappingByProduct.get(priceBookEntry.Product2Id+''+accounts[0].Location__c)?.Status__c;
-            productWrapper.trendingSKU = locationProductsTrending.get(priceBookEntry.Product2Id)?.Status__c;
-            productWrapper.productOfTheMonth = locationProductsOfMonth.get(priceBookEntry.Product2Id)?.Status__c;
-            productWrapper.unitPrice = priceBookEntry.UnitPrice;
-            productWrapper.netPrice = (1 * priceBookEntry.UnitPrice);
+            productWrapper.trendingSKU = locationProductsTrending.get(priceBookEntry.Product2Id+''+accounts[0].Location__c)?.Status__c;
+            productWrapper.productOfTheMonth = locationProductsOfMonth.get(priceBookEntry.Product2Id+''+accounts[0].Location__c)?.Status__c;
+            productWrapper.unitPrice = priceBookEntry.Sales_Price__c;
+            productWrapper.netPrice = (1 * priceBookEntry.Sales_Price__c);
             productWrapper.productName = priceBookEntry.Product2.Name;
             productWrapper.productSize = priceBookEntry.Product2.Size__c;
             productWrapper.productPattern = priceBookEntry.Product2.Tread_Pattern__c;
@@ -130,25 +130,26 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
      */
     public static List<PriceBook2> getPriceBook(String accountId) {
         try {
+            List<PriceBook2> allPriceBooks = new List<PriceBook2>();
             // 1. Check for Customer PriceBook
             List<PriceBook2> priceBooks = getPriceBookByCustomer(accountId);
             if (priceBooks.size() > 0) {
-                return priceBooks;
+                allPriceBooks.addAll(priceBooks);
             }
 
             // 2. Check for Customer Group PriceBook If Step 1 Fails
-            List<String> customGroups = getCustomerGroupByCustomer(accountId);
+            List<String> customGroups = getCustomerGroupByCustomer(accountId,'price');
             priceBooks = getPriceBookByCustomerGroup(customGroups);
             if (priceBooks.size() > 0) {
-                return priceBooks;
+                allPriceBooks.addAll(priceBooks);
             }
 
             // 3. Check for Common PriceBook If Step 1 & 2 Fails
             priceBooks = getCommonPriceBook();
             if (priceBooks.size() > 0) {
-                return priceBooks;
+                allPriceBooks.addAll(priceBooks);
             }
-            return null;
+            return allPriceBooks;
         } catch (Exception e) {
             throw new YINOrderManagementException(e.getMessage() + ' Line Number ' + e.getLineNumber());
         }
@@ -200,12 +201,16 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
      * @return List<String> - List of customer groups associated with the account.
      * @throws YINOrderManagementException - Custom exception thrown in case of errors during the execution.
      */
-    public static List<String> getCustomerGroupByCustomer(String accountId) {
+    public static List<String> getCustomerGroupByCustomer(String accountId,String priceType) {
         YINAccountSelector accountSelector = (YINAccountSelector) YINApplication.selector.newInstance(Account.SObjectType);
         List<Account> accounts = accountSelector.getAccounts(new List<String>{accountId});
         List<String> customerGroups = new List<String>();
         for (Account account : accounts) {
-            customerGroups.add(account.Customer_Group__c);
+            if(priceType=='price'){
+                customerGroups.add(account.Customer_Group__c);
+            }else{
+                customerGroups.add(account.Customer_Discount_Price_Group__c);
+            }
         }
         return customerGroups;
     }
@@ -220,10 +225,59 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
     public static List<PricebookEntry> getPriceBookEntries(List<Id> priceBookIds) {
         try {
             YINPriceBookEntrySelector priceBookEntrySelector = (YINPriceBookEntrySelector) YINApplication.selector.newInstance(PricebookEntry.SObjectType);
+            List<PricebookEntry> pricebookEntriesWithUpdatePrice = new List<PricebookEntry>();
+            // 1. Get pricebookEntries from All price book (Common,Group,Customer)
             List<PricebookEntry> pricebookEntries = priceBookEntrySelector.selectPriceBookEntriesByPricebook(priceBookIds);
-            return pricebookEntries;
+            System.debug('All pricebookEntries '+pricebookEntries);
+            Map<String,List<PricebookEntry>> entriesOfPriceBook = new Map<String,List<PricebookEntry>>();
+            Map<String,PricebookEntry> groupEntriesOfPriceBook = new Map<String,PricebookEntry>();
+            Map<String,PricebookEntry> customerEntriesOfPriceBook = new Map<String,PricebookEntry>();
+           
+            // 2. Map based on type of PriceBooks and its related entries
+            for(PricebookEntry entries:pricebookEntries){
+                if (!entriesOfPriceBook.containsKey(entries.Pricebook2.Type__c)) {
+                    entriesOfPriceBook.put(entries.Pricebook2.Type__c, new List<PricebookEntry>());
+                }
+                System.debug('Type '+entries.Pricebook2.Type__c);
+                entriesOfPriceBook.get(entries.Pricebook2.Type__c).add(entries);
+            }
+            // 3. Getting Entries of Customers and Group customers and preparing map based on productcode key and its entrie
+            List<PricebookEntry> commonPriceBookEntries = entriesOfPriceBook.get('All Customer');
+            List<PricebookEntry> groupPriceBookEntries = entriesOfPriceBook.get('Customer Price Group');
+            System.debug('commonPriceBookEntries '+commonPriceBookEntries);
+            System.debug('groupPriceBookEntries '+groupPriceBookEntries);
+            if(groupPriceBookEntries!=null){
+                for(PricebookEntry entries:groupPriceBookEntries){
+                    groupEntriesOfPriceBook.put(entries.Product2.Product_Code__c,entries);
+                }
+            }
+            List<PricebookEntry> customerPriceBookEntries = entriesOfPriceBook.get('Customer');
+            if(customerPriceBookEntries!=null){
+                for(PricebookEntry entries:customerPriceBookEntries){
+                    customerEntriesOfPriceBook.put(entries.Product2.Product_Code__c,entries);
+                }
+            }
+            // 4. virtually updating price in common price book entries
+            if(commonPriceBookEntries!=null){
+            for(PricebookEntry entries: commonPriceBookEntries){
+                entries.Sales_Price__c = entries.UnitPrice;
+                // A. If product found in groupPriceBook update unit price 
+                PricebookEntry entriesOfGroup = groupEntriesOfPriceBook.get(entries.Product2.Product_Code__c);
+                if(entriesOfGroup!=null){
+                    entries.Sales_Price__c = entriesOfGroup.UnitPrice;
+                }
+                // B. If product found in customerPriceBook update unit price 
+                PricebookEntry entriesOfCustomer = customerEntriesOfPriceBook.get(entries.Product2.Product_Code__c);
+                if(entriesOfCustomer!=null){
+                    entries.Sales_Price__c = entriesOfCustomer.UnitPrice;
+                }
+                pricebookEntriesWithUpdatePrice.add(entries);
+            }
+            }
+
+            return pricebookEntriesWithUpdatePrice;
         } catch (Exception e) {
-            throw new YINOrderManagementException(e.getMessage());
+            throw new YINOrderManagementException(e.getMessage()+' '+e.getLineNumber());
         }
     }
 }

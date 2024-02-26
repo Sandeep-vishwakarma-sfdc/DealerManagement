@@ -2,7 +2,7 @@
  * @description       : This class provides methods to query and filter Account records.
  * @author            : Saurabh Pandey
  * @group             : SKI
- * @last modified on  : 02-14-2024
+ * @last modified on  : 02-23-2024
  * @last modified by  : saurabh.pandey@skinternational.com
  **/
 public with sharing class YINAccountSelector extends LibSObjectSelector {
@@ -81,6 +81,7 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
         Account.ERP_Ship_To_Code__c,
         Account.Block__c,
         Account.Account_Type__c,
+        Account.Customer_Discount_Price_Group__c,
         // End Adding by Sandeep Vishwakarma
         
         // Start Added by Amol Patil
@@ -303,6 +304,24 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
                 .toSOQL()
         );
     }
+
+    /**
+     * @description Retrieves account records based on ERP customer codes.
+     * @param accSet Set<String> Set of ERP customer codes to retrieve account records.
+     * @return List<Account> List of account records.
+     */
+    public List<Account> getAccountDataByERPCustomerCode(Set<String> accSet) {
+        return Database.query(
+            newQueryFactory()
+            .selectField('Id')
+            .selectField('Name')
+            .selectField('OwnerId')
+            .selectField('ERP_Customer_code__c')
+            .selectField('Contact_Person_Email__c')
+            .setCondition('ERP_Customer_code__c IN :accSet')
+            .toSOQL()
+        );
+    }
        
      /**
      * Added by:Saurabh Pandey
@@ -398,7 +417,7 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
      * @return List<Account> List of Accounts with selected fields.
      */
     public List<Account> getAccountForFileLink() {
-        String recordTypeCondition = 'Channel_Code__r.name = \'4S Dealer\' OR Channel_Code__r.name = \'YCN\' OR Channel_Code__r.name = \'Non YCN\' OR Channel_Code__r.name = \'Sub Dealer\'';
+        String recordTypeCondition = 'Channel_Code__c !=null';
         return Database.query(
             newQueryFactory()
             .selectField('Id')

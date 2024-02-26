@@ -207,8 +207,14 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
      */
     private static List<YINProductWrapper> getCartItems(List<OrderItem> orderProducts,String accountId){
         if(orderProducts.size()>0){
+            List<Id> priceBookIds = new List<Id>();
+            List<PriceBook2> priceBooks = YINGetAllProductImpl.getPriceBook(accountId);
 
-            List<PricebookEntry> pricebookentries = YINGetAllProductImpl.getPriceBookEntries(new List<Id>{orderProducts[0].PricebookEntry.Pricebook2Id});
+            for (PriceBook2 pricebook : priceBooks) {
+                priceBookIds.add(pricebook.Id);
+            }
+
+            List<PricebookEntry> pricebookentries = YINGetAllProductImpl.getPriceBookEntries(priceBookIds);
 
             List<YIN_Price_List__c> priceLists =  YINGetDiscountProductImpl.getDiscountedPriceList(accountId);
 
@@ -288,7 +294,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             List<YIN_Price_List__c> priceLists1 = priceListByKey.get(item.Product2Id+''+item.Variant__c);
             YIN_Price_List__c priceList = getActivePriceList(item,priceLists1);
 
-            item.UnitPrice = priceBookEntriesByProductId.get(item.Product2Id)?.UnitPrice;
+            item.UnitPrice = priceBookEntriesByProductId.get(item.Product2Id)?.Sales_Price__c;
             if(item.TotalPrice!=(item.UnitPrice * item.Quantity) || vTDSPercentage!=item.TDS__c || vTCSPercentage!=item.TCS__c){
                 
                 
@@ -469,6 +475,8 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
         System.debug('docommit.shippingAccountCode ::: '+docommit.shippingAccountCode);
         List<Account> shippingAccounts = accountSelector.selectByERPShipToAndSoldToPartyCode(new List<String>{docommit.shippingAccountCode});
+
+        List<Account> accounts = accountSelector.getAccounts(new List<String>{docommit.accountId});
         System.debug('docommit.shippingAccountCode account '+shippingAccounts);
         if(shippingAccounts.size()>0){
             String key = shippingAccounts[0].Id == docommit.accountId?shippingAccounts[0].ERP_Customer_Code__c:shippingAccounts[0].ERP_Ship_To_Code__c;
@@ -504,12 +512,14 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
 
         // 4. Creating Empty Open and Close Order
         closedOrder = closedOrders[0];
+        closedOrder.CNF_Email_Id__c = accounts[0]?.Location__r?.Contact_Email_Id__c;
         System.debug('docommit.shippingAccountCode '+docommit.shippingAccountCode);
         closedOrder.Ship_To_Party__c = shippingAccountMap.get(docommit.shippingAccountCode)?.Id;
         closedOrder.Order_Date__c = System.today();
         closedOrder.recordTypeId = Schema.SObjectType.Order.getRecordTypeInfosByName().get('Normal').getRecordTypeId();
         openOrder = closedOrder.clone();
         openOrder.Status = 'Open';
+        openOrder.Order_Date__c = null;
         closedOrder.Status = 'Submitted';
         unitofworkProcessOrder.registerNew(openOrder);
         unitofworkProcessOrder.registerDirty(closedOrder);
@@ -584,6 +594,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         }else{
             LibISobjectUnitOfWork unitofworkOpenOrder = YINApplication.unitofwork.newInstance(); 
             openOrder = closedOrder;
+            openOrder.Order_Date__c = null;
             openOrder.Status = 'Open';
             orders = new List<Order>{openOrder};
             unitofworkOpenOrder.registerDirty(openOrder);
@@ -999,7 +1010,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
      */
     private static boolean addToCartLineItem(Order cartOrder,YINProductWrapper wrapperProduct,LibISobjectUnitOfWork unitofwork){
         //try {
-            Decimal netPrice = wrapperProduct.pricebookEntry.UnitPrice * wrapperProduct.quantity;
+            Decimal netPrice = wrapperProduct.pricebookEntry.Sales_Price__c * wrapperProduct.quantity;
             Decimal netOrderValue = 0;
             Decimal totalOrderValue = 0;
 
@@ -1009,7 +1020,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             lineItem.Product2Id = wrapperProduct.productId;
             lineItem.OrderId = cartOrder.Id;
             lineItem.Quantity = wrapperProduct.quantity;
-            lineItem.UnitPrice = wrapperProduct.pricebookEntry.UnitPrice;
+            lineItem.UnitPrice = wrapperProduct.pricebookEntry.Sales_Price__c;
             lineItem.ListPrice = wrapperProduct.pricebookEntry.UnitPrice;
             lineItem.Description = wrapperProduct.pricebookEntry.Product2.Description;
             lineItem.Variant__c = wrapperProduct.priceList.Variant__c;// For Discounted Products only

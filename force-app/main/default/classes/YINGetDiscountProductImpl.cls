@@ -31,18 +31,22 @@ public with sharing class YINGetDiscountProductImpl implements YINIGetProducts {
             if (!priceListByProductId.containsKey(price.Product__c)) {
                 priceListByProductId.put(price.Product__c, new List<YIN_Price_List__c>());
             }
+            System.debug('price.Product__c '+price.Product__c);
             priceListByProductId.get(price.Product__c).add(price);
         }
+
+        System.debug('priceListByProductId '+priceListByProductId.size());//2
 
         // 4. Filter productWrappers to minimize search processing time
         List<YINProductWrapper> newProductWrapper = new List<YINProductWrapper>();
         for (YINProductWrapper originalWrapper : productWrappers) {
             if (priceListByProductId.containsKey(originalWrapper.productId)) {
                 // Adding productWrapper Which has Product same as PriceList
+                System.debug('originalWrapper '+originalWrapper);
                 newProductWrapper.add(originalWrapper);
             }
         }
-
+        System.debug('newProductWrapper '+newProductWrapper.size());//1
         // 5. Finally creating Discounted Products
         List<YINProductWrapper> discountProductWrappersWithDiscounts = getDiscountedItems(newProductWrapper, priceListByProductId);
 
@@ -131,24 +135,69 @@ public with sharing class YINGetDiscountProductImpl implements YINIGetProducts {
      * @return List<YIN_Price_List__c> - List of YIN_Price_List__c instances containing discounted price details.
      */
     public static List<YIN_Price_List__c> getDiscountedPriceList(String accountId) {
-        List<YIN_Price_List__c> priceList = new List<YIN_Price_List__c>();
+        List<YIN_Price_List__c> priceListsWithPrice = new List<YIN_Price_List__c>();
+        List<YIN_Price_List__c> discountPriceList = new List<YIN_Price_List__c>();
+        List<YIN_Price_List__c> priceListCustomer = new List<YIN_Price_List__c>();
+        List<YIN_Price_List__c> priceListGroup = new List<YIN_Price_List__c>();
+        List<YIN_Price_List__c> priceListCommon = new List<YIN_Price_List__c>();
+        List<String> customerGroups = YINGetAllProductImpl.getCustomerGroupByCustomer(accountId,'discount');
 
-        // 1. Check for customer price list
-        priceList = getPriceListByCustomer(accountId);
-        if (priceList.size() > 0) {
-            return priceList;
+        // 1. Get price list by Customer, Customer Group and Common
+        priceListCustomer = getPriceListByCustomer(accountId);
+        priceListGroup = getPriceListByCustomerGroup(customerGroups);
+        priceListCommon = getCommonPriceList();
+        
+        // 2. Get Discount Price list based on sequence ( 1.Customer, 2. Customer Group, 3. Common)
+        Map<String,List<YIN_Price_List__c>> priceListByDiscountedProduct = getUniqueDiscountedByProduct(priceListCustomer,priceListGroup,priceListCommon);
+        
+        //3. Prepare list and return
+        if(priceListByDiscountedProduct.size()>0){
+            for(List<YIN_Price_List__c> prices:priceListByDiscountedProduct.values()){
+                for(YIN_Price_List__c price:prices){
+                    priceListsWithPrice.add(price);
+                }
+            }
         }
 
-        // 2. Check for customer group price list
-        List<String> customerGroups = YINGetAllProductImpl.getCustomerGroupByCustomer(accountId);
-        priceList = getPriceListByCustomerGroup(customerGroups);
-        if (priceList.size() > 0) {
-            return priceList;
-        }
+        return priceListsWithPrice;
+    }
 
-        // 3. Check for common price list
-        priceList = getCommonPriceList();
-        return priceList;
+    private static Map<String,List<YIN_Price_List__c>> getUniqueDiscountedByProduct(List<YIN_Price_List__c> priceListCustomer,List<YIN_Price_List__c> priceListGroup,List<YIN_Price_List__c> priceListCommon){
+        Map<String,List<YIN_Price_List__c>> priceListByDiscountedProduct = new Map<String,List<YIN_Price_List__c>>();
+        Map<String,List<YIN_Price_List__c>> priceListByDiscountedProductCustomer = new Map<String,List<YIN_Price_List__c>>();
+        Map<String,List<YIN_Price_List__c>> priceListByDiscountedProductGroup = new Map<String,List<YIN_Price_List__c>>();
+        // A. Get Customers Price List by each products and Add to List
+        for(YIN_Price_List__c customerPrice:priceListCustomer){
+            if(!priceListByDiscountedProduct.containsKey(customerPrice.Product__c)){
+                priceListByDiscountedProduct.put(customerPrice.Product__c,new List<YIN_Price_List__c>());
+            }
+            priceListByDiscountedProduct.get(customerPrice.Product__c).add(customerPrice);
+        }
+        // Keeping track of customers pricelist
+        priceListByDiscountedProductCustomer = priceListByDiscountedProduct;
+
+        // B. Get Only those Group PriceList which product is not present in customers priceList
+        for(YIN_Price_List__c groupPrice:priceListGroup){
+            priceListByDiscountedProduct = getUniquePriceList(priceListByDiscountedProduct,priceListByDiscountedProductCustomer,groupPrice);
+        }
+        // Keeping track of group and customers pricelist (No Common product between Group and Pricelist)
+        priceListByDiscountedProductGroup.putAll(priceListByDiscountedProduct);
+        priceListByDiscountedProductGroup.putAll(priceListByDiscountedProductCustomer);
+
+        for(YIN_Price_List__c commonPrice:priceListCommon){
+            priceListByDiscountedProduct = getUniquePriceList(priceListByDiscountedProduct,priceListByDiscountedProductGroup,commonPrice);
+        }
+        return priceListByDiscountedProduct;
+    }
+
+    private static Map<String,List<YIN_Price_List__c>> getUniquePriceList(Map<String,List<YIN_Price_List__c>> priceListByDiscountedProduct,Map<String,List<YIN_Price_List__c>> priceListByDiscountedProductSalestype,YIN_Price_List__c price){
+        if(!priceListByDiscountedProductSalestype.containsKey(price.Product__c)){
+            if(!priceListByDiscountedProduct.containsKey(price.Product__c)){
+                priceListByDiscountedProduct.put(price.Product__c,new List<YIN_Price_List__c>());
+            }
+            priceListByDiscountedProduct.get(price.Product__c).add(price);
+        }
+        return priceListByDiscountedProduct;
     }
 
     /**
@@ -170,9 +219,17 @@ public with sharing class YINGetDiscountProductImpl implements YINIGetProducts {
      * @return List<YIN_Price_List__c> - List of YIN_Price_List__c instances containing discounted price details.
      */
     private static List<YIN_Price_List__c> getPriceListByCustomerGroup(List<String> customerGroups) {
-        YINPriceListSelector priceListSelector = (YINPriceListSelector) YINApplication.selector.newInstance(YIN_Price_List__c.SObjectType);
-        List<YIN_Price_List__c> priceList = priceListSelector.selectPriceListByCustomerGroup(customerGroups);
-        return priceList;
+        System.debug('customerGroups ::: '+customerGroups);
+        List<YIN_Price_List__c> newpriceList = new List<YIN_Price_List__c>();
+        if(customerGroups.size()>0){
+            if(customerGroups[0]!=null){
+            YINPriceListSelector priceListSelector = (YINPriceListSelector) YINApplication.selector.newInstance(YIN_Price_List__c.SObjectType);
+            System.debug('customerGroups ::::::::: '+customerGroups);
+            List<YIN_Price_List__c> priceList = priceListSelector.selectPriceListByCustomerGroup(customerGroups);
+            return priceList;
+            }
+        }
+        return newpriceList;
     }
 
     /**

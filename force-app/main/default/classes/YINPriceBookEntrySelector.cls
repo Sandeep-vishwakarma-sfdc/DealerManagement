@@ -39,9 +39,9 @@ public without Sharing class YINPriceBookEntrySelector extends LIBSObjectSelecto
     * @param  productId: Product Id to retrive Data.
     * @return List<PricebookEntry>
     */           
-        public List<PricebookEntry> getStandardPriceBookEntry(Id standPriceBookId,Id productId){
+        public List<PricebookEntry> getStandardPriceBookEntry(Id standPriceBookId){
             LIBQueryFactory query = newQueryFactory();
-            query.setCondition('Pricebook2Id=:standPriceBookId And Product2Id=:productId And IsActive = true');
+            query.setCondition('Pricebook2Id=:standPriceBookId And IsActive = true');
             System.debug('Query is'+query.toSOQL());
             return Database.query( query.toSOQL());    
         }
@@ -59,6 +59,8 @@ public without Sharing class YINPriceBookEntrySelector extends LIBSObjectSelecto
             String categoryCode = 'TIRE_I';
             LIBQueryFactory query = newQueryFactory();
             LIBSObjectSelector productSelector =  new YINProductSelector();
+            LIBSObjectSelector priceBookSelector =  new YINPriceBookSelector();
+            priceBookSelector.configureQueryFactoryFields(query,'Pricebook2');
             productSelector.configureQueryFactoryFields(query, 'Product2');
             query.setCondition('IsActive=true and Product2.IsActive=true and Product2.Item_Category_Code__c=:categoryCode and Pricebook2Id IN:priceBookIds and Start_Date__c <=TODAY and End_Date__c >=TODAY');
             query.addOrdering(Order.LastModifiedDate, LIBQueryFactory.SortOrder.DESCENDING);

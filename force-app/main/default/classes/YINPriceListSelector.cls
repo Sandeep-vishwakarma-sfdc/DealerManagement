@@ -35,6 +35,7 @@ public without Sharing class YINPriceListSelector extends LIBSObjectSelector{
                 YIN_Price_List__c.Variant__c,
                 YIN_Price_List__c.Discount_Type__c,
                 YIN_Price_List__c.Minimum_Quantity__c
+                
               
                 };
             }
@@ -47,7 +48,7 @@ public without Sharing class YINPriceListSelector extends LIBSObjectSelector{
     public Database.QueryLocator allPriceList(){
         String status='Open';
         string query;
-        query = 'SELECT Id, Name, Customer__c,Customer__r.Name,Customer__r.Account_Code__c,Customer_Group__c,Customer_Group__r.Name,Customer_Group__r.Group_Code__c, Product__c,Product__r.ProductCode,Price__c, Start_Date__c, End_Date__c, Combination_Key__c, Latest_Update_Status__c,Discount_Price__c,CreatedDate  FROM YIN_Price_List__c Where Latest_Update_Status__c=';
+        query = 'SELECT Id, Name, Customer__c,Customer__r.Name,Customer__r.Account_Code__c,Customer_Group__c,Customer_Group__r.Name,Customer_Group__r.Group_Code__c, Product__c,Product__r.ProductCode,Product__r.Product_Code__c,Price__c, Start_Date__c, End_Date__c, Combination_Key__c, Latest_Update_Status__c,Discount_Price__c,CreatedDate,Unit_Price__c  FROM YIN_Price_List__c Where Latest_Update_Status__c=';
         query=query+ '\''+status+'\'' +' '+'order by CreatedDate Asc';
         System.debug('Query is'+query);       
         return Database.getQueryLocator(query);
@@ -61,7 +62,7 @@ public without Sharing class YINPriceListSelector extends LIBSObjectSelector{
         boolean strParameter=true;
         String status='Open';
         string query;
-        query = 'SELECT Id, Name, Customer__c,Customer__r.Name,Customer__r.Account_Code__c, Customer_Group__c,Customer_Group__r.Name,Customer_Group__r.Group_Code__c, Product__c,Product__r.ProductCode,Price__c, Start_Date__c, End_Date__c, Combination_Key__c, Latest_Update_Status__c,Discount_Price__c,CreatedDate  FROM YIN_Price_List__c Where Latest_Update_Status__c=';
+        query = 'SELECT Id, Name, Customer__c,Customer__r.Name,Customer__r.Account_Code__c, Customer_Group__c,Customer_Group__r.Name,Customer_Group__r.Group_Code__c, Product__c,Product__r.ProductCode,Product__r.Product_Code__c,Price__c, Start_Date__c, End_Date__c, Combination_Key__c, Latest_Update_Status__c,Discount_Price__c,CreatedDate,Unit_Price__c  FROM YIN_Price_List__c Where Latest_Update_Status__c=';
         query=query+ '\''+status+'\''+' AND OnDemand__c='+strParameter +' '+'order by CreatedDate Asc';
         System.debug('Query Seond is'+query);       
         return Database.getQueryLocator(query);
@@ -74,20 +75,20 @@ public without Sharing class YINPriceListSelector extends LIBSObjectSelector{
         
     public List<YIN_Price_List__c> selectInprogressPriceList(){
         String status='In progress';    
-        LIBQueryFactory aQF = newQueryFactory();
-            aQF.setCondition('Latest_Update_Status__c=\''+status+'\'');
-            aQF.setLimit(9000); 
+        LIBQueryFactory aQF = newQueryFactory(); 
+        aQF.setCondition('Latest_Update_Status__c=\''+status+'\'');
+        aQF.setLimit(9000); 
         System.debug('PriceList Query in Application'+aQF.toSOQL());    
         return Database.query( aQF.toSOQL());
-    }
+    } 
     
     /**
     * @description:This method is used to get Price List based on RecordId.
     * @return YIN_Price_List__c
     */    
-    public YIN_Price_List__c selectById(Id recordIds){
+    public List<YIN_Price_List__c> selectById(List<String> recordIds){
         LIBQueryFactory query = newQueryFactory();
-        query.setCondition('Id =:recordIds');
+        query.setCondition('Id In: recordIds');
         System.debug('Query is'+query.toSOQL());
         return Database.query( query.toSOQL());    
     }
@@ -100,7 +101,7 @@ public without Sharing class YINPriceListSelector extends LIBSObjectSelector{
         boolean strParameter=false;
         String status='Open';
         string query;
-        query = 'SELECT Id, Name, Customer__c,Customer__r.Name,Customer__r.Account_Code__c,Customer_Group__c,Customer_Group__r.Name,Customer_Group__r.Group_Code__c, Product__c,Product__r.ProductCode, Price__c, Start_Date__c, End_Date__c, Combination_Key__c, Latest_Update_Status__c,Discount_Price__c,CreatedDate  FROM YIN_Price_List__c Where Latest_Update_Status__c=';
+        query = 'SELECT Id, Name,Customer__c, Customer__r.ERP_Customer_Code__c,Customer__r.Name,Customer__r.Account_Code__c,Customer_Group__c,Customer_Group__r.Name,Product__r.Product_Code__c,Customer_Group__r.Group_Code__c, Product__c,Product__r.ProductCode, Price__c, Start_Date__c, End_Date__c, Combination_Key__c, Latest_Update_Status__c,Discount_Price__c,CreatedDate,Unit_Price__c  FROM YIN_Price_List__c Where Latest_Update_Status__c=';
         query=query+ '\''+status+'\''+' AND OnDemand__c='+strParameter +' '+'order by CreatedDate Asc';
         System.debug('Query Seond is'+query);       
         return Database.query(query);
@@ -110,7 +111,7 @@ public without Sharing class YINPriceListSelector extends LIBSObjectSelector{
      public Database.QueryLocator allPriceList1(){
         String status='In progress';
         string query;
-        query = 'SELECT Id, Name, Customer__c,Customer__r.Name,Customer__r.Account_Code__c,Customer_Group__c,Customer_Group__r.Name,Customer_Group__r.Group_Code__c, Product__c,Product__r.ProductCode,Price__c, Start_Date__c, End_Date__c, Combination_Key__c, Latest_Update_Status__c,Discount_Price__c,CreatedDate  FROM YIN_Price_List__c Where Latest_Update_Status__c=';
+        query = 'SELECT Id, Name, Customer__c,Customer__r.Name,Customer__r.Account_Code__c,Customer_Group__c,Customer_Group__r.Name,Customer_Group__r.Group_Code__c,Product__r.Product_Code__c, Product__c,Product__r.ProductCode,Price__c, Start_Date__c, End_Date__c, Combination_Key__c, Latest_Update_Status__c,Discount_Price__c,CreatedDate,Unit_Price__c  FROM YIN_Price_List__c Where Latest_Update_Status__c=';
         query=query+ '\''+status+'\'' +' '+'order by CreatedDate Asc';
         System.debug('Query is'+query);       
         return Database.getQueryLocator(query);
