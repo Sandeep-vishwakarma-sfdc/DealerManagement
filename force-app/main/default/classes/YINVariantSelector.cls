@@ -18,4 +18,14 @@ public with sharing class YINVariantSelector extends LibSObjectSelector{
         String query =  newQueryFactory().toSOQL();
         return Database.query(query);
     }
+    //Added by kalpesh
+    public List<YIN_Variant__c> getVariantData() {
+        return Database.query(
+            newQueryFactory()
+            .selectField('Id')
+            .selectField('Variant_Code__c')
+            .setCondition('Variant_Code__c !=null')
+            .toSOQL()
+        );
+     }
 }

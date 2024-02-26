@@ -2,7 +2,7 @@
  * @description       : This is Selector class for query on YIN_Account_product_Mapping__c object.
  * @author            : saurabh.pandey@skinternational.com
  * @group             : SKI
- * @last modified on  : 02-20-2024
+ * @last modified on  : 02-23-2024
  * @last modified by  : saurabh.pandey@skinternational.com
 **/
 public with sharing class YINAccountProductMappingSelector extends LIBSObjectSelector{
@@ -53,7 +53,6 @@ public with sharing class YINAccountProductMappingSelector extends LIBSObjectSel
     */
     public List<YIN_Account_product_Mapping__c> selectAll(){
         String query = newQueryFactory()
-        .setCondition('Start_Date__c<=TODAY and End_Date__c>=TODAY')
         .setLimit(50000)
         .toSOQL();
         return Database.query(query);
@@ -80,9 +79,11 @@ public with sharing class YINAccountProductMappingSelector extends LIBSObjectSel
 
 
     /**
-     * @description: This method is used to retrieve specific fields based on Id.
-     * @param  None
+     * @description Retrieves specific fields based on Account and Product.
+     * @param recType The record type to filter the results.
+     * @return List<YIN_Account_product_Mapping__c> A list of records containing Account and Product fields.
     */
+
     public List<YIN_Account_product_Mapping__c> getAccProdDataByAccProd(String recType){
         String query = newQueryFactory()
         .selectfield('Account__r.ERP_Customer_code__c')
@@ -92,6 +93,11 @@ public with sharing class YINAccountProductMappingSelector extends LIBSObjectSel
         return Database.query(query);
     }
 
+    /**
+     * @description Retrieves specific fields based on Location and Product.
+     * @param recType The record type to filter the results.
+     * @return List<YIN_Account_product_Mapping__c> A list of records containing Location and Product fields.
+    */
     public List<YIN_Account_product_Mapping__c> getAccProdDataByLocProd(String recType){
         String query = newQueryFactory()
         .selectfield('Account__r.SFDC_Customer_Code__c')
@@ -102,6 +108,11 @@ public with sharing class YINAccountProductMappingSelector extends LIBSObjectSel
         return Database.query(query);
     }
    
+    /**
+     * @description Retrieves record IDs based on record type.
+     * @param recType The record type to filter the results.
+     * @return List<YIN_Account_product_Mapping__c> A list of record IDs.
+    */
      public List<YIN_Account_product_Mapping__c> getAccProdDataToDelete(String recType){
         String query = newQueryFactory()
         .selectfield('Id')

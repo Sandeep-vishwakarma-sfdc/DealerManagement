@@ -2,8 +2,8 @@
  * @description       : This class provides methods to select and query User records.
  * @author            : Saurabh Pandey
  * @group             : 
- * @last modified on  : 10-31-2023
- * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+ * @last modified on  : 02-14-2024
+ * @last modified by  : saurabh.pandey@skinternational.com
  **/
 public with sharing class YINUserSelector extends LibSObjectSelector {
 
@@ -34,6 +34,7 @@ public with sharing class YINUserSelector extends LibSObjectSelector {
             User.Email,
             User.Profile.Name,
             User.contactId,
+            User.TimeZoneSidKey,
             User.AccountId 
         };
     }
@@ -76,6 +77,8 @@ public with sharing class YINUserSelector extends LibSObjectSelector {
                 .toSOQL()
         );
     }
+
+    
     public List<User> currentUser(String usr_id) {
         return Database.query(
             newQueryFactory()

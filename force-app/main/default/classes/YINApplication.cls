@@ -1,8 +1,8 @@
 /**
  * @description       : This Class is used to create All layer like service,selector,domain and unit of work.                                          
  * @author            : Saurabh.pandey@skinternational.com
- * @last modified on  : 02-14-2024
- * @last modified by  : saurabh.pandey@skinternational.com
+ * @last modified on  : 15-02-2024
+ * @last modified by  : Amol Patil/amol.patil@skinternational.com
 **/
 
 public class YINApplication {
@@ -21,7 +21,7 @@ public class YINApplication {
               PricebookEntry.sObjectType,                    //Prashant Kumbhar   
               YIN_Monitor_Log__c.sObjectType,                //Prashant Kumbhar
               Attachment.sObjectType,                        //Prashant Kumbhar
-              // Distributor_Document__c.sObjectType,        //Satish Tiware
+             // Distributor_Document__c.sObjectType,        //Satish Tiware
               ContentVersion.sObjectType,                    //change by kalpesh
               ContentDocumentLink.sObjectType,               //change by kalpesh
               //  KYC_Doc_Configuration__mdt.SObjectType,    //Prashant Kumbhar
@@ -33,7 +33,7 @@ public class YINApplication {
               // PJP_Detail__c.SObjectType,                  //Saurabh Pandey
               YIN_Balance_Confirmation__c.SObjectType,       //Saurabh Pandey
               YIN_Account_product_Mapping__c.SObjectType,    //Saurabh Pandey
-              YIN_Atttandance__c.SObjectType,                //Saurabh Pandey
+             //-- YIN_Atttandance__c.SObjectType,                //Saurabh Pandey
               ContentDocument.sObjectType,                   //Saurabh Pandey
               Document.sObjectType,                          //Saurabh Pandey
               YIN_Community_Configuration__c.SObjectType,    //Saurabh Pandey
@@ -55,13 +55,15 @@ public class YINApplication {
               YIN_Ledger__c.SObjectType,                     //Sandeep Vishwakarma
               Order.SObjectType,                             //Sandeep Vishwakarma
               OrderItem.SObjectType,                         //Sandeep Vishwakarma
-              User.SObjectType,                              //Amol Patil
-              Contract.SObjectType,                          // Nikhil Dhoke ...
+              User.SObjectType, 
+             /*-- Contract.SObjectType,                          // Nikhil Dhoke ...
               YIN_Vehicle_Detail__c.SObjectType,             // Nikhil Dhoke ...
               Asset.SObjectType,                             // Nikhil Dhoke ...
-              YIN_Discount_Coupons__c.SObjectType,            // Nikhil Dhoke ...
+              YIN_Discount_Coupons__c.SObjectType,            // Nikhil Dhoke ...--*/
               YIN_Invoice__c.SObjectType,                      //Kalpesh Chande  
-              YIN_Invoice_Item__c.SObjectType                  //Kalpesh Chande  
+              YIN_Invoice_Item__c.SObjectType,                  //Kalpesh Chande 
+              YIN_Inventory__c.SObjectType,                  // vinayak godhade
+              YIN_Customer_Group__c.SObjectType              //Kalpesh chande
          }
       ); 
        
@@ -75,19 +77,19 @@ public class YINApplication {
          new Map<Type, Type> {
          
 
-             YINIPriceBookService.class =>YINIPriceBookServiceImp.class,                    //Prashant Kumbhar
-              YINIPriceBookCreator.class =>YINCreatePriceBookByCustomerCommon.class,         //Prashant Kumbhar
-              YINIPriceBookCreator.class =>YINCreatePriceBookByCustomer.class,               //Prashant Kumbhar
-              YINIPriceBookCreator.class =>YINCreatePriceBookByCustomerGroup.class,          //Prashant Kumbhar
-             YINIMonitor.class => YINMonitorImp.class,                                      //Prashant Kumbhar
-             YINISecurityDeposit.class => YINSecurityDepositIncService.class,               //Prashant Kumbhar
+            YINIPriceBookService.class =>YINIPriceBookServiceImp.class,                    //Prashant Kumbhar
+            YINIPriceBookCreator.class =>YINCreatePriceBookByCustomerCommon.class,         //Prashant Kumbhar
+            YINIPriceBookCreator.class =>YINCreatePriceBookByCustomer.class,               //Prashant Kumbhar
+            YINIPriceBookCreator.class =>YINCreatePriceBookByCustomerGroup.class,          //Prashant Kumbhar
+            YINIMonitor.class => YINMonitorImp.class,                                      //Prashant Kumbhar
+            YINISecurityDeposit.class => YINSecurityDepositIncService.class,               //Prashant Kumbhar
             // TrgITargetAssignment.class=>TrgTargetAssignmentImpl.class,                   // Nikhil Dhoke
             // TrgITargetDistribution.class=>TrgTargetDistributionImpl.class,               // Nikhil Dhoke
             // TrgITargetSchedules.class=>TrgTargetSchedulesImpl.class,                     // Nikhil Dhoke
              YINIContentVersionCreator.Class=>YINContentVersionCreatorImp.Class,            //Kalpesh Chande
             // ICustomerOnboardingApplication.class =>ICustomerOnboardingService.class,     //Satish Tiware
             // IDocumentDataTable.class => DocumentDataTableImp.class,                      //Satish Tiware
-            YINIExternalApiServices.Class =>YINChannelCodeService.Class,                    //Kalpesh Chande
+           /*-- YINIExternalApiServices.Class =>YINChannelCodeService.Class,                  ////Kalpesh Chande
             YINIExternalApiServices.Class =>YINCountryService.Class,                        //Kalpesh Chande
             YINIExternalApiServices.Class =>YINStateService.Class,                          //Kalpesh Chande
             YINIExternalApiServices.Class =>YINDistrictService.Class,                       //Kalpesh Chande
@@ -96,21 +98,21 @@ public class YINApplication {
             YINIExternalApiServices.Class =>YINTerritoryService.Class,                      //Kalpesh Chande
             YINIExternalApiServices.Class =>YINPincodeService.Class,                        //Kalpesh Chande
             YINIExternalApiServices.Class =>YINLocationService.Class,                       //Kalpesh Chande
-            YINIExternalApiServices.Class =>YINDealerService.Class,                         //Kalpesh Chande
-            YINIiconUtils.Class =>YINIconUtilsImp.Class,                                    //Kalpesh Chande
-            YINIPicklistColumnUtils.Class =>YINPicklistColumnUtilsImp.Class,                //Kalpesh Chande
-            YINIRelatedList.Class =>YINRelatedListImp.Class,                                //Kalpesh Chande
+            YINIExternalApiServices.Class =>YINDealerService.Class,                         //Kalpesh Chande*/
+           //-- YINIiconUtils.Class =>YINIconUtilsImp.Class,                                    //Kalpesh Chande
+            //YINIPicklistColumnUtils.Class =>YINPicklistColumnUtilsImp.Class,                //Kalpesh Chande
+            //YINIRelatedList.Class =>YINRelatedListImp.Class,                                //Kalpesh Chande
             YINIChangeRequest.Class =>YINChangeRequestImpl.Class,                           //Amol Patil 
             // IPjpService.class => PJPServiceImpl.class,                                   //Saurabh Pandey
             YINIBalanceConfirmation.class => YINBalanceConfirmationImpl.class,              //Saurabh Pandey
             YINILockingProductFileUpload.class => YINLockingProductFileUploadImpl.class,    //Saurabh Pandey
-            YINIAttendanceModule.class => YINAttandanceModuleServiceImpl.class,             //Saurabh Pandey
+           //-- YINIAttendanceModule.class => YINAttandanceModuleServiceImpl.class,             //Saurabh Pandey
             YINICommunityConfiguration.class => YINCommnityConfigurationImpl.class,         //Saurabh Pandey
             YINIOrderManagement.class => YINOrderManagementImpl.class,                      // Sandeep Vishwakarma
-            YINIWarranty.class => YINWarrantyImpl.class,                                    // Nikhil Dhoke ...
+           //-- YINIWarranty.class => YINWarrantyImpl.class,                                    // Nikhil Dhoke ...
             YINIExternalApiService.class => YINExternalApiServiceImpl.class,                 //Kalpesh Chande
             YINIDocumentDataTable.class => YINDocumentDataTableImpl.class                    //Satish Tiware
-            
+           
          }
       );
    
@@ -128,7 +130,6 @@ public class YINApplication {
                 ContentDocument.sObjectType=>YINContentDocumentSelector.class,                   //Kalpesh Chande 
                 ContentVersion.sObjectType =>YINContentVersionSelector.class,                    //Kalpesh Chande 
                // KYC_Doc_Configuration__mdt.sObjectType => KycDocConfigSelector.class,          //Satish Tiware
-               // User.sObjectType =>UserSelector.class,                                         //Saurabh Pandey
                 YIN_Security_Deposit__c.sObjectType=>YINSecurityDepositSelector.class,           //Prashant Kumbhar
                 YIN_PriceBook_Entry__mdt.sObjectType =>YINPriceBookEngineSelector.class,         //Prashant Kumbhar
                 PricebookEntry.sObjectType =>YINPriceBookEntrySelector.class,                    //Prashant Kumbhar
@@ -149,11 +150,11 @@ public class YINApplication {
                CustomNotificationType.SObjectType => YINCustomNotificationSelector.class,        //Saurabh Pandey
                Document.SObjectType => YINDocumentSelector.class,                                //Saurabh Pandey
                YIN_Balance_Confirmation__c.SObjectType => YINBalanceConfirmationSelector.class,  //Saurabh Pandey
-               YIN_Atttandance__c.SObjectType => YINAttandanceSelector.class,                    //Saurabh Pandey
+              //--YIN_Atttandance__c.SObjectType => YINAttandanceSelector.class,                    //Saurabh Pandey
                YIN_Community_Configuration__c.SObjectType => YINCommunityConfigurationSelector.class, //Saurabh Pandey
               // RecordType.Schema.SObjectType=>RecordTypeSelector.class,                        //Kalpesh Chande 
-               RecordType.getSObjectType()=>YINRecordTypeSelector.class,                         //Kalpesh Chande 
-               CollaborationGroup.SObjectType=>YINCollaborationGroupSelector.Class,              //Kalpesh Chande*/
+               //RecordType.getSObjectType()=>YINRecordTypeSelector.class,                       //  //Kalpesh Chande 
+               CollaborationGroup.SObjectType=>YINCollaborationGroupSelector.Class,              //Kalpesh Chande
                YIN_Change_Request__c.SObjectType=>YINChangeRequestSelector.Class,                //Amol Patil
                YIN_Pincode__c.SObjectType=>YINPincodeSelector.Class,                             //Amol Patil
                EmailTemplate.SObjectType=>YINEmailTempSelector.Class,                            //Amol Patil
@@ -167,12 +168,15 @@ public class YINApplication {
                YIN_Variant__c.sObjectType => YINVariantSelector.class,
                // End Adding by Sandeep Vishwakarma  
                ContentDocumentLink.sObjectType =>YINContentDocumentLinkSelector.class,
-               Contract.sObjectType => YINContractSelector.class,                               // Nikhil Dhoke ...   
+              /*-- Contract.sObjectType => YINContractSelector.class,                               // Nikhil Dhoke ...   
                YIN_Vehicle_Detail__c.sObjectType => YINVehicleDetailSelector.class,             // Nikhil Dhoke ...
                Asset.sObjectType => YINAssetSelector.class,                                     // Nikhil Dhoke ...
                YIN_Channel_Code__c.sObjectType => YINChannelCodeSelector.class,                 // Nikhil Dhoke ...
-               YIN_Discount_Coupons__c.sObjectType => YINDiscountCouponsSelector.class,         // Nikhil Dhoke ...
-               YIN_Invoice__c.sObjectType =>YINInvoiceSelector.class                            //Kalpesh Chande
+               YIN_Discount_Coupons__c.sObjectType => YINDiscountCouponsSelector.class,         // Nikhil Dhoke ...--*/
+               YIN_Invoice__c.sObjectType =>YINInvoiceSelector.class,                            //Kalpesh Chande
+               YIN_Customer_Group__c.SObjectType => YINCustomerGroupSelector.class,          //kalpesh chande
+               YIN_Location__c.sObjectType =>YINLocationSelector.class,                           //kalpesh chande
+               Product2.SObjectType => YINProductSelector.class                                // Nikhil Dhoke
          }
       );
    
@@ -188,8 +192,8 @@ public class YINApplication {
            
             YIN_Price_List__c.sObjectType => YINPriceListDomain.class,              //Prashant Kumbhar
              YIN_Monitor_Log__c.sObjectType=>YINMonitorDomain.class,                 //Prashant Kumbhar
-			   Case.sObjectType=>YINAutoCasehandler.class,                            //Satish Tiware
-             YIN_Change_Request__c.sObjectType=>YINChangeRequestERPHandler.class     //Amol Patil
+			   Case.sObjectType=>YINAutoCasehandler.class                           //Satish Tiware
+            // YIN_Change_Request__c.sObjectType=>YINChangeRequestERPHandler.class     //Amol Patil
 
          }
       );

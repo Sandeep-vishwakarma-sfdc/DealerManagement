@@ -1,3 +1,10 @@
+/**
+ * @description       : This class is used to query on Product2 object.
+ * @author            : saurabh.pandey@skinternational.com
+ * @group             : SKI
+ * @last modified on  : 02-23-2024
+ * @last modified by  : saurabh.pandey@skinternational.com
+**/
 public with sharing class YINProductSelector extends LibSObjectSelector{
     public Schema.SObjectType getSObjectType() {
         return Product2.SObjectType;
@@ -19,9 +26,19 @@ public with sharing class YINProductSelector extends LibSObjectSelector{
         };
     }
 
+    /**
+     * @description: Retrieves Product2 records based on a set of record IDs.
+     * @param recordIds: Set of record IDs to filter the Product2 records.
+     * @return List<Product2>: List of Product2 records filtered by the provided record IDs.
+    */
     public List<Product2> selectById(Set<Id> recordIds){
         return (List<Product2>) selectSObjectsById(recordIds);
     }
+
+    /**
+     * @description: Retrieves Product2 records with specified fields where Product_Code__c is not null.
+     * @return List<Product2>: List of Product2 records filtered by the condition where Product_Code__c is not null.
+    */
      public List<Product2> getProductData() {
         return Database.query(
             newQueryFactory()
@@ -31,7 +48,13 @@ public with sharing class YINProductSelector extends LibSObjectSelector{
             .toSOQL()
         );
      }
-    public List<Product2> fetchProductData(List<String> productList) {
+
+
+    /**
+     * @description: Retrieves all Product2 records with specified fields.
+     * @return List<Product2>: List of all Product2 records with specified fields.
+    */
+    public List<Product2> fetchProductData() {
         return Database.query(
             newQueryFactory()
             .selectField('Id')
@@ -40,6 +63,20 @@ public with sharing class YINProductSelector extends LibSObjectSelector{
             .toSOQL()
         );
      }
-    
-    
+
+     /**
+     * @description: This method creates a query factory to retrieve Product2 records based on a set of product codes.
+     * @param productSet: Set of product codes to filter the Product2 records.
+     * @return fflib_QueryFactory: Query factory to retrieve Product2 records.
+     */
+    public List<Product2> getProductForSKU(Set<String> productSet) {
+        return Database.query(
+            newQueryFactory()
+            .selectField('Id')
+            .selectField('Name')
+            .selectField('Product_Code__c')
+            .setCondition('Product_Code__c IN :productSet')
+            .toSOQL()
+        );    
+    }    
 }
