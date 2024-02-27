@@ -81,10 +81,10 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
         YIN_Tax_Constants__mdt taxConstant = YIN_Tax_Constants__mdt.getInstance('Tax_Constant');
         Decimal vTCSPercentage = 0;
         Decimal vTDSPercentage = 0;
-        if (accounts[0].X1H_TCS__c == true) {
-            vTCSPercentage = accounts[0].PAN_Status__c == 'Valid' ? taxConstant.TCS__c : taxConstant.Invalid_PAN_TCS__c;
+        if (accounts[0].X1H_TCS__c == false) {
+            vTCSPercentage = String.isEmpty(accounts[0].PAN_Status__c) && !String.isEmpty(accounts[0].PAN_Number__c)  ? taxConstant.TCS__c : taxConstant.Invalid_PAN_TCS__c;
         } else {
-            vTDSPercentage = accounts[0].PAN_Status__c == 'Valid' ? taxConstant.TDS__c : taxConstant.Invalid_PAN_TDS__c;
+            vTDSPercentage = String.isEmpty(accounts[0].PAN_Status__c) && !String.isEmpty(accounts[0].PAN_Number__c) ? taxConstant.TDS__c : taxConstant.Invalid_PAN_TDS__c;
         }
 
         // 3. Create Wrapper to store all information at one place
@@ -101,8 +101,8 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
             productWrapper.lockingSKULocation = locationProductMappingByProduct.get(priceBookEntry.Product2Id+''+accounts[0].Location__c)?.Status__c;
             productWrapper.trendingSKU = locationProductsTrending.get(priceBookEntry.Product2Id+''+accounts[0].Location__c)?.Status__c;
             productWrapper.productOfTheMonth = locationProductsOfMonth.get(priceBookEntry.Product2Id+''+accounts[0].Location__c)?.Status__c;
-            productWrapper.unitPrice = priceBookEntry.Sales_Price__c;
-            productWrapper.netPrice = (1 * priceBookEntry.Sales_Price__c);
+            productWrapper.unitPrice = priceBookEntry.UnitPrice;
+            productWrapper.netPrice = (1 * priceBookEntry.UnitPrice);
             productWrapper.productName = priceBookEntry.Product2.Name;
             productWrapper.productSize = priceBookEntry.Product2.Size__c;
             productWrapper.productPattern = priceBookEntry.Product2.Tread_Pattern__c;

@@ -21,7 +21,9 @@ public with sharing class YINOrderItemSelector extends LibSObjectSelector{
             OrderItem.Variant__c,
             OrderItem.Discounted_Amount__c,
             OrderItem.TDS__c,
-            OrderItem.TDS_Amount__c
+            OrderItem.TDS_Amount__c,
+            OrderItem.TCS_Amount__c,
+            OrderItem.Discount_Type__c
         };
     }
 
@@ -42,6 +44,7 @@ public with sharing class YINOrderItemSelector extends LibSObjectSelector{
                             .selectField('Order.Status')
                             .selectField('Order.Account.PAN_Status__c')
                             .selectField('Order.Account.Location__r.Location_Code__c')
+                            .selectField('Order.Account.PAN_Number__c')
                             .selectField('Order.Account.X1H_TCS__c')
                             .setCondition('OrderId = :orderId')
                             .toSOQL();

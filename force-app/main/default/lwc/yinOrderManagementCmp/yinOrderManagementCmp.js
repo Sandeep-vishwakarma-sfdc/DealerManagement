@@ -211,20 +211,24 @@ export default class YinOrderManagementCmp extends LightningElement {
         this.totalOrderQuantity = 0;
         
         this.cartDetails.forEach(item=>{
-            console.log('item net ',item.netPrice);
-            console.log('item discount  ',(item.netPrice * item.discountPercentage/100));
-            item.totalAmount = ((item.netPrice) - (item.netPrice * item.discountPercentage/100)) + item.gstAmount;
-            console.log('totalAmount '+item.totalAmount);
+            let listPrice = isNaN(item.pricebookEntry?.UnitPrice * item.quantity)?0:item.pricebookEntry?.UnitPrice * item.quantity;
+            let discount = (listPrice * item.discountPercentage)/100;
+            item.netPrice = listPrice;
+            item.totalAmount = item.netPrice - discount + item.gstAmount;
+            console.log('netPrice '+item.netPrice);
+            console.log('discount '+discount);
+            console.log('item.gstAmount '+item.gstAmount);
             totalGSTAmount = totalGSTAmount+item.gstAmount;
             subTotal = subTotal + item.totalAmount;
-            totalDiscount = totalDiscount + (item.netPrice * item.discountPercentage/100);
             netValue = netValue + item.netPrice - (item.netPrice * item.discountPercentage/100);
-            totalTDS = totalTDS + (item.netPrice * item.tdsPercentage/100);
-            totalTCS = totalTCS + (item.netPrice * item.tcsPercentage/100);
+            totalTDS = totalTDS + ((item.netPrice - discount)  * item.tdsPercentage/100);
+            totalTCS = totalTCS + ((item.netPrice + item.gstAmount  - discount) * item.tcsPercentage/100);
             this.totalOrderQuantity = this.totalOrderQuantity + item.quantity;
 
             item.totalAmount = isNaN(item.totalAmount)?0:Number(item.totalAmount).toFixed(2);// Added to Fix decimal Issue
             // item.valueWithoutGST = netValue;
+            totalDiscount = totalDiscount + discount;
+            item.discountAmount = discount;
         });
         if(this.cartDetails.length > 0){
         this.netOrderValue = isNaN(netValue)?0:Number(netValue).toFixed(2);   

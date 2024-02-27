@@ -228,7 +228,11 @@ public with sharing class YINProductWrapper implements Comparable {
         // Sort frequently bought products first
         if (frequentlyBoughtProduct == false || frequentlyBoughtProduct == null) {
             return 1;
-        } else if (frequentlyBoughtProduct == true) {
+        }else if (trendingSKU == false) {
+            return 1;
+        } else if (productOfTheMonth == false) {
+            return 1;
+        }else if(frequentlyBoughtProduct==true || productOfTheMonth==true || trendingSKU==true){
             return -1;
         }
 

@@ -82,6 +82,7 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
         Account.Block__c,
         Account.Account_Type__c,
         Account.Customer_Discount_Price_Group__c,
+        Account.PAN_Number__c,
         // End Adding by Sandeep Vishwakarma
         
         // Start Added by Amol Patil
@@ -333,6 +334,7 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
         return Database.query(
             newQueryFactory()
             .selectField('Location__r.Location_Code__c')
+            .selectField('Location__r.Contact_Email_Id__c')
             .setCondition('Id IN:accIds')
             .toSOQL()
         );

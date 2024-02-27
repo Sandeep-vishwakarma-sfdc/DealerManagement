@@ -288,10 +288,12 @@
       <div if:false={isLoading} class="shopping-cart">
         <div class="column-labels">
           <label class="product-image label1">Item Image</label>
-          <label class="product-details label1">Item Name</label>
+          <label class="label1" style="width: 14%!important;float: left;">Item Name</label>
           <label class="product-price label1">Unit Price</label>
+          <!-- <label class="product-price label1">List Price</label> -->
           <label class="product-discount label1">Discount</label>
           <label class="product-finalqty label1">Quantity</label>
+          <label class="product-price label1">Discount Amount</label>
           <!-- <label class="product-price label1">Net Price</label> -->
           <label class="product-gst label1">GST</label>
           <label class="product-line-price label1">Sub Total</label>
@@ -302,7 +304,7 @@
             <div class="product-image">
               <img src={geolander} />
             </div>
-            <div class="product-details">
+            <div class="" style="width: 14%!important;float: left;">
               <div class="product-title">{cartDetail.pricebookEntry.Name}</div>
               <div class="product-description">
                 <div>Product Code: <strong>{cartDetail.pricebookEntry.Product2.Product_Code__c}</strong></div>
@@ -318,11 +320,13 @@
               </div>
             </div>
             <div class="product-price"> {cartDetail.pricebookEntry.Sales_Price__c}</div>
+            <!-- <div class="product-price"> {cartDetail.pricebookEntry.UnitPrice}</div> -->
             <div class="product-discount">{cartDetail.discountPercentage} %</div>
             <div class="product-finalqty">
               <input type="number" data-index={index} value={cartDetail.quantity} min="0" onfocus={copyOldQuanity}
                 onchange={changeCartQuantity}>
             </div>
+            <div class="product-price"> {cartDetail.discountAmount}</div>
             <!-- <div class="product-price"> {cartDetail.valueWithoutGST}</div> -->
             <!--<div class="product-removal">
           <button class="remove-product">

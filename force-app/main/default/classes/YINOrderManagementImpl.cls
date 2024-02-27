@@ -282,10 +282,10 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         YIN_Tax_Constants__mdt taxConstant = YIN_Tax_Constants__mdt.getInstance('Tax_Constant');
         Decimal vTCSPercentage = 0;
         Decimal vTDSPercentage = 0;
-        if(orderProducts[0].Order.Account.X1H_TCS__c==true){
-            vTCSPercentage = orderProducts[0].Order.Account.PAN_Status__c=='Valid'?taxConstant.TCS__c:taxConstant.Invalid_PAN_TCS__c;
+        if(orderProducts[0].Order.Account.X1H_TCS__c==false){
+            vTCSPercentage = String.isEmpty(orderProducts[0].Order.Account.PAN_Status__c) && !String.isEmpty(orderProducts[0].Order.Account.PAN_Number__c)?taxConstant.TCS__c:taxConstant.Invalid_PAN_TCS__c;
         }else{
-            vTDSPercentage = orderProducts[0].Order.Account.PAN_Status__c=='Valid'?taxConstant.TDS__c:taxConstant.Invalid_PAN_TDS__c;
+            vTDSPercentage = String.isEmpty(orderProducts[0].Order.Account.PAN_Status__c) && !String.isEmpty(orderProducts[0].Order.Account.PAN_Number__c)?taxConstant.TDS__c:taxConstant.Invalid_PAN_TDS__c;
         }
 
         Decimal totalPrice = 0;
@@ -305,7 +305,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
                 item.TDS__c = vTDSPercentage;
                 item.TCS__c = vTCSPercentage;
                 item.TDS_Amount__c = (netOrderValue * (vTDSPercentage/100));
-                item.TCS_Amount__c =  (netOrderValue * (vTCSPercentage/100)); 
+                item.TCS_Amount__c =  ((netOrderValue + item.GST_Amount__c) * (vTCSPercentage/100)); 
                 item.Total_Amount__c = netOrderValue + item.GST_Amount__c - item.TDS_Amount__c + item.TCS_Amount__c ;
                 unitofwork.registerDirty(item);
             }
@@ -548,9 +548,26 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
      */
     private static List<Order> processLogic(List<YINProductWrapper> productWrappers,WrapCommit docommit,Map<String,OrderItem> orderItemById){
         // 2. Get Inventory ,Variants and Order information
-        Map<String,YINStockinventoryWrap.YINData> normalProduct = YINStockInventory.withoutVariant(productWrappers);
-        Map<String,YINStockInventoryVarientWrap.YINData> discountProduct = YINStockInventory.withVariant(productWrappers);
-		System.debug('normalProduct '+normalProduct);
+        List<YINProductWrapper> normalWrapper = new List<YINProductWrapper>();
+        List<YINProductWrapper> discountWrapper = new List<YINProductWrapper>();
+        for(YINProductWrapper wrap:productWrappers){
+            System.debug('wrap.variantCode '+wrap.variantCode+' Id '+wrap.variantId);
+            if(String.isEmpty(wrap.variantCode)){
+                normalWrapper.add(wrap);
+            }else{
+                discountWrapper.add(wrap);
+            }
+        }
+        Map<String,YINStockinventoryWrap.YINData> normalProduct = new Map<String,YINStockinventoryWrap.YINData>();
+        Map<String,YINStockInventoryVarientWrap.YINData> discountProduct = new Map<String,YINStockInventoryVarientWrap.YINData>();
+        if(normalWrapper.size()>0){
+            normalProduct = YINStockInventory.withoutVariant(normalWrapper);
+        }
+        if(discountWrapper.size()>0){
+            discountProduct = YINStockInventory.withVariant(discountWrapper);
+        }
+		System.debug('normalProduct '+normalWrapper);
+        System.debug('discountProduct '+discountWrapper);
         for(YINProductWrapper wrapper:productWrappers){
             String pCode = wrapper.pricebookEntry.Product2.Product_Code__c;
             if(Test.isRunningTest()){
@@ -589,16 +606,18 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         
         List<Order> orders = new List<Order>();
         System.debug('docommit.doCommit '+docommit.doCommit);
-        if(docommit.doCommit==true && itemSubmitted.size()>0){
-            orders = commitTheProcess();
-        }else{
-            LibISobjectUnitOfWork unitofworkOpenOrder = YINApplication.unitofwork.newInstance(); 
-            openOrder = closedOrder;
-            openOrder.Order_Date__c = null;
-            openOrder.Status = 'Open';
-            orders = new List<Order>{openOrder};
-            unitofworkOpenOrder.registerDirty(openOrder);
-            unitofworkOpenOrder.commitWork();
+        if(docommit.doCommit==true){
+            if(itemSubmitted.size()>0){
+                orders = commitTheProcess();
+            }else{
+                LibISobjectUnitOfWork unitofworkOpenOrder = YINApplication.unitofwork.newInstance(); 
+                openOrder = closedOrder;
+                openOrder.Order_Date__c = null;
+                openOrder.Status = 'Open';
+                orders = new List<Order>{openOrder};
+                unitofworkOpenOrder.registerDirty(openOrder);
+                unitofworkOpenOrder.commitWork();
+            }
         }
         return orders;
     }
@@ -799,7 +818,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             
 
             // Calculate TCS
-            item.TCS_Amount__c =  (netOrderValue * (item.TCS__c/100)); 
+            item.TCS_Amount__c =  ((netOrderValue + item.GST_Amount__c) * (item.TCS__c/100)); 
             // Calculate Total Order value
             item.Total_Amount__c = netOrderValue + item.GST_Amount__c - item.TDS_Amount__c +  item.TCS_Amount__c;
         }
@@ -867,7 +886,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
     private static boolean checkBlockedAccount(String accountId){
         YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
         List<Account> accounts = accountSelector.getAccounts(new List<String>{accountId});
-        if(accounts[0].Block__c=='All' || accounts[0].Block__c=='Ship'){
+        if(accounts[0].Block__c=='All' || accounts[0].Block__c=='Ship' || accounts[0].Block__c=='Invoice'){
             return false; // Block if All is Selected
         }
         return true; 
@@ -1010,7 +1029,8 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
      */
     private static boolean addToCartLineItem(Order cartOrder,YINProductWrapper wrapperProduct,LibISobjectUnitOfWork unitofwork){
         //try {
-            Decimal netPrice = wrapperProduct.pricebookEntry.Sales_Price__c * wrapperProduct.quantity;
+            Decimal netPrice = wrapperProduct.pricebookEntry.UnitPrice * wrapperProduct.quantity;
+            Decimal listPrice = wrapperProduct.pricebookEntry.UnitPrice * wrapperProduct.quantity;
             Decimal netOrderValue = 0;
             Decimal totalOrderValue = 0;
 
@@ -1024,6 +1044,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             lineItem.ListPrice = wrapperProduct.pricebookEntry.UnitPrice;
             lineItem.Description = wrapperProduct.pricebookEntry.Product2.Description;
             lineItem.Variant__c = wrapperProduct.priceList.Variant__c;// For Discounted Products only
+            lineItem.Discount_Type__c = wrapperProduct.priceList?.Discount_Type__c;
             lineItem.PricebookEntryId =  wrapperProduct.pricebookEntry.Id;
 
             // Check for available discountes
@@ -1045,7 +1066,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
 
             // Calculate Discount
             lineItem.Discount_Percent__c =  discountPercentage;
-            lineItem.Discounted_Amount__c =  (netPrice * (discountPercentage / 100));
+            lineItem.Discounted_Amount__c =  (listPrice * (discountPercentage / 100));
 
             // Net Price
             lineItem.Net_Price__c = netPrice;
@@ -1064,7 +1085,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             // Calculate TCS
             
             lineItem.TCS__c =  wrapperProduct.tcsPercentage; // Need to Confirm 1% or 0.1% Condition
-            lineItem.TCS_Amount__c =  (netOrderValue * (lineItem.TCS__c/100)); 
+            lineItem.TCS_Amount__c =  ((netOrderValue + lineItem.GST_Amount__c) * (lineItem.TCS__c/100)); 
 
              // Calculate Total Order valu
              System.debug('cal netOrderValue: '+netOrderValue+' GST_Amount__c '+lineItem.GST_Amount__c+' TDS_Amount__c '+lineItem.TDS_Amount__c+' TCS_Amount__c '+lineItem.TCS_Amount__c);

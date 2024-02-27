@@ -94,7 +94,7 @@ public with sharing class YINStockInventory {
 
             return requestMsgNode.getText();
         } catch (Exception e) {
-            throw new YINOrderManagementException('Invaild Inventory response');
+            throw new YINOrderManagementException('Unable to process your request please try again after some time');
         }
         
     }
@@ -127,7 +127,7 @@ public with sharing class YINStockInventory {
             }
             String shipToCode = shipTo[0]?.ERP_Ship_To_Code__c;
             if(submittingOrder.AccountId==submittingOrder.Ship_To_Party__c){// if selected shipping address is billing address then use customer code instead of ship to code
-                shipToCode = customers[0]?.ERP_Customer_Code__c;
+                shipToCode = '';
             }
 
             System.debug('customers[0]?.ERP_Customer_Code__c '+customers[0]?.ERP_Customer_Code__c);
@@ -142,7 +142,7 @@ public with sharing class YINStockInventory {
             wrap.orderDate = orderedDate;	//25-01-2024
             wrap.externalDocumentNumber = '';	//
             wrap.status = 'Submitted';	//Submitted
-            wrap.erpShipToCode = shipTo[0].ERP_Ship_To_Code__c;	//'SHIP/0002'
+            wrap.erpShipToCode = shipToCode;	//'SHIP/0002'
             wrap.remark = '';	//
             wrap.OrderType = 'Normal'; //submittingOrder.orderNumber;// TODO : Order Type should be Dynamic : Logic While Creating Cart set Order Type as well
 
@@ -159,12 +159,19 @@ public with sharing class YINStockInventory {
                 line.discount = String.valueOf(item.Discount_Percent__c);	//4
                 line.discountAmount = String.valueOf(item.Discounted_Amount__c);	//
                 line.unitPrice = String.valueOf(item.UnitPrice);	//1000
-                line.tdstcsPercent=  String.valueOf(item.TDS__c);	//TODO : Check TDS or TCS before setting
-                line.tdstcsBaseAmount = '';	//
-                line.tdstcsAmount = String.valueOf(item.TDS_Amount__c);	//TODO : Check TDS or TCS before setting
+                if(customers[0].X1H_TCS__c==true){
+                    line.tdstcsPercent=  String.valueOf(item.TDS__c);
+                    line.tdstcsBaseAmount = '';	//
+                    line.tdstcsAmount = String.valueOf(item.TDS_Amount__c);	
+                }else{
+                    line.tdstcsPercent=  String.valueOf(item.TCS__c);
+                    line.tdstcsBaseAmount = '';	//
+                    line.tdstcsAmount = String.valueOf(item.TCS_Amount__c);
+                }
+                
                 line.type = 'Item';
                 line.docketNo = '';	//
-                line.discountType = '';	//Aged Discount
+                line.discountType = item.Discount_Type__c;	//Aged Discount
                 line.discountRemark = '';	//
                 line.gstPercent = String.valueOf(item.GST__c);	//28
                 line.gstAmount = String.valueOf(item.GST_Amount__c);	//
@@ -224,7 +231,7 @@ public with sharing class YINStockInventory {
             String jsonData = extractJsonData(body,xmlChildNodeByResourceName.get(resourceName));
             return jsonData;
         } catch (Exception e) {
-            throw new YINOrderManagementException('Invaild Inventory response');
+            throw new YINOrderManagementException('Unable to process your request please try again after some time');
         }
     }  
 
