@@ -427,6 +427,7 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
             .selectField('RecordTypeId')
             .selectField('RecordType.Name')
             .selectField('Contact_Person_Email__c')
+            .selectField('Channel_Code__c')
             .selectField('Channel_Code__r.name')
             .setCondition(recordTypeCondition)
             .toSOQL()

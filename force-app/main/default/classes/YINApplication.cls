@@ -63,6 +63,8 @@ public class YINApplication {
               YIN_Invoice__c.SObjectType,                      //Kalpesh Chande  
               YIN_Invoice_Item__c.SObjectType,                  //Kalpesh Chande 
               YIN_Inventory__c.SObjectType,                  // vinayak godhade
+              YIN_Customer_Group__c.SObjectType,            //Kalpesh chande
+              YIN_Inventory__c.SObjectType,                  // vinayak godhade
               YIN_Customer_Group__c.SObjectType              //Kalpesh chande
          }
       ); 
@@ -111,7 +113,9 @@ public class YINApplication {
             YINIOrderManagement.class => YINOrderManagementImpl.class,                      // Sandeep Vishwakarma
            //-- YINIWarranty.class => YINWarrantyImpl.class,                                    // Nikhil Dhoke ...
             YINIExternalApiService.class => YINExternalApiServiceImpl.class,                 //Kalpesh Chande
-            YINIDocumentDataTable.class => YINDocumentDataTableImpl.class                    //Satish Tiware
+            YINIDocumentDataTable.class => YINDocumentDataTableImpl.class ,          //Satish Tiware
+            YINICustomDealerNotification.class => YINCustomDealerNotificationsImpl.class,     //vinayak Godhade
+            YINIFrequentlyBroughtItem.class => YINFrequentlyBroughtItemImpl.class       //Kalpesh Chande
            
          }
       );
@@ -176,7 +180,10 @@ public class YINApplication {
                YIN_Invoice__c.sObjectType =>YINInvoiceSelector.class,                            //Kalpesh Chande
                YIN_Customer_Group__c.SObjectType => YINCustomerGroupSelector.class,          //kalpesh chande
                YIN_Location__c.sObjectType =>YINLocationSelector.class,                           //kalpesh chande
-               Product2.SObjectType => YINProductSelector.class                                // Nikhil Dhoke
+               Product2.SObjectType => YINProductSelector.class,                                // Nikhil Dhoke
+               YIN_Inventory__c.SObjectType =>YINInventorySelector.class,                         // vinayak godhade
+               YIN_Invoice_Item__c.SObjectType =>YINInvoiceItemSelector.class,              //kalpesh chande
+               YIN_Customer_Group__c.SObjectType => YINCustomerGroupSelector.class          //kalpesh chande
          }
       );
    

@@ -22,7 +22,12 @@ public with sharing class YINProductSelector extends LibSObjectSelector{
             Product2.Size__c, 
             Product2.Tread_Pattern__c, 
             Product2.StockKeepingUnit,
-            Product2.Item_Category_Code__c
+            Product2.Item_Category_Code__c,
+            Product2.Additional_Spec_Code__c,
+            Product2.Plant_Code__c,
+            Product2.Spec_Code__c,
+            Product2.Tire_Size__c,
+            Product2.Original_Groove_Depth__c
         };
     }
 
