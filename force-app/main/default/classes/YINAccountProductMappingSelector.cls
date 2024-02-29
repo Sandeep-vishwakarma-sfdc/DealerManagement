@@ -100,6 +100,7 @@ public with sharing class YINAccountProductMappingSelector extends LIBSObjectSel
     */
     public List<YIN_Account_product_Mapping__c> getAccProdDataByLocProd(String recType){
         String query = newQueryFactory()
+        .selectfield('Account__r.SFDC_Customer_Code__c')
         .selectfield('Product__r.Product_Code__c')
         .selectfield('Locations__r.Location_Code__c')
         .setCondition('Type__c=:recType')

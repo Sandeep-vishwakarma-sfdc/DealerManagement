@@ -5,7 +5,7 @@
  * @last modified on  : 02-14-2024
  * @last modified by  : saurabh.pandey@skinternational.com
 **/
-public with sharing class YINLedgerSelector extends LibSObjectSelector{
+public without sharing class YINLedgerSelector extends LibSObjectSelector{
     public Schema.SObjectType getSObjectType() {
         return YIN_Ledger__c.SObjectType;
     }
@@ -49,7 +49,7 @@ public with sharing class YINLedgerSelector extends LibSObjectSelector{
 
     public List<AggregateResult> getLedgerData(Set<Id> dealerCodes, Date postingDate , String ledgerRecordType) {
        
-        return Database.query('select dealer_code__c,dealer_code__r.ERP_Customer_code__c, sum(Remaining_Amount__c) from YIN_Ledger__c WHERE(recordtype.name =:ledgerRecordType OR recordtypeid = null) and open__c= true and dealer_code__c In :dealerCodes and Posting_Date__c <= :postingDate group by dealer_code__r.ERP_Customer_code__c,dealer_code__c');
+        return Database.query('select dealer_code__c,dealer_code__r.ERP_Customer_code__c, sum(Remaining_Amount__c) from YIN_Ledger__c WHERE (recordtype.name =:ledgerRecordType OR recordtypeid = null) and open__c= true and dealer_code__c In :dealerCodes and Posting_Date__c <= :postingDate group by dealer_code__r.ERP_Customer_code__c,dealer_code__c');
     }
 
 }

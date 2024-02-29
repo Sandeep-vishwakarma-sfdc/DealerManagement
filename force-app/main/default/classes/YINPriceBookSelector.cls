@@ -82,7 +82,7 @@ public without Sharing class  YINPriceBookSelector extends LIBSObjectSelector{
     public List<Pricebook2> priceBookbyCustomerComman(){
         String type='All Customer';
         LIBQueryFactory aQF = newQueryFactory()
-            .setCondition('IsActive =true and Customer_Group__c =null and Customer__c =null'+ ' And' +' '+ 'Type__c=\''+type+'\'');          
+            .setCondition('IsActive =true and IsDiscount__c=false and Customer_Group__c =null and Customer__c =null'+ ' And' +' '+ 'Type__c=\''+type+'\'');          
         System.debug('PriceBook Query in Application Group Comman'+aQF.toSOQL());    
         return Database.query( aQF.toSOQL());
     }
@@ -179,7 +179,7 @@ public without Sharing class  YINPriceBookSelector extends LIBSObjectSelector{
         String type = 'Customer';
         Boolean isActive = true;
         String query = newQueryFactory()
-        .setCondition('Customer__c=:accountId and Type__c=:type and IsActive=:isActive')
+        .setCondition('Customer__c=:accountId and Type__c=:type and IsActive=:isActive and IsDiscount__c=false')
         .toSOQL();
         return Database.query(query);
     }
@@ -188,7 +188,7 @@ public without Sharing class  YINPriceBookSelector extends LIBSObjectSelector{
         String type = 'Customer Price Group';
         Boolean isActive = true;
         String query = newQueryFactory()
-        .setCondition('Customer_Group__c IN:customerGroups and Type__c=:type and IsActive=:isActive')
+        .setCondition('Customer_Group__c IN:customerGroups and Type__c=:type and IsActive=:isActive and IsDiscount__c=false')
         .toSOQL();
         return Database.query(query);
     }

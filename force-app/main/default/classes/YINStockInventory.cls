@@ -132,7 +132,7 @@ public with sharing class YINStockInventory {
 
             System.debug('customers[0]?.ERP_Customer_Code__c '+customers[0]?.ERP_Customer_Code__c);
             System.debug('shipTo[0]?.ERP_Ship_To_Code__c '+shipTo[0]?.ERP_Ship_To_Code__c);
-            if(submittingOrder.orderNumber==null || customers[0]?.ERP_Customer_Code__c==null || shipToCode==null){
+            if(customers[0]?.ERP_Customer_Code__c==null || shipToCode==null){
                 throw new YINOrderManagementException('Please Check Customer Code And Ship To Party');
             }
 

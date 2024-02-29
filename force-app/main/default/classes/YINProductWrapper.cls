@@ -197,6 +197,9 @@ public with sharing class YINProductWrapper implements Comparable {
     @AuraEnabled
     public String combinationKey;
 
+    @AuraEnabled
+    public Integer priority;
+
     /**
      * DiscountTable - Inner class representing entries in the discount table.
      */
@@ -225,17 +228,16 @@ public with sharing class YINProductWrapper implements Comparable {
         YINProductWrapper wrapper = (YINProductWrapper) compareTo;
         Integer returnValue = 0;
 
-        // Sort frequently bought products first
-        if (frequentlyBoughtProduct == false || frequentlyBoughtProduct == null) {
-            return 1;
-        }else if (trendingSKU == false || trendingSKU == null) {
-            return 1;
-        } else if (productOfTheMonth == false || productOfTheMonth == null) {
-            return 1;
-        }else if(frequentlyBoughtProduct==true || productOfTheMonth==true || trendingSKU==true){
-            return -1;
-        }
+        return Integer.valueOf(priority - (wrapper.priority));
 
-        return returnValue;
+        // Sort frequently bought products first
+        /*
+        if (priority == false || frequentlyBoughtProduct == null) {
+            return 1;// back
+        }else if(frequentlyBoughtProduct==true || productOfTheMonth==true || trendingSKU==true){
+            return -1;// Front
+        }*/
+
+        //return returnValue;
     }
 }

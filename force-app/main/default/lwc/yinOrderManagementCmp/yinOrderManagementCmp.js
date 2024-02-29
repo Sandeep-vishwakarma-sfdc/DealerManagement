@@ -311,6 +311,9 @@ export default class YinOrderManagementCmp extends LightningElement {
         //     }
         // }
         // this.productswrapperVirtual = tempArray;
+
+        
+
         this.productswrapperVirtual = products;
         this.productswrapper = await this.getNextItems();
         console.log('Product ',products);

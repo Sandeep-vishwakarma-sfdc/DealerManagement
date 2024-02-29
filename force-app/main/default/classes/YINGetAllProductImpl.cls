@@ -114,6 +114,15 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
             productWrapper.applyTCS = accounts[0].X1H_TCS__c;
             productWrapper.locationCode = accounts[0].Location__r?.Location_Code__c;
             // Adding productWrapper to List
+            if(productWrapper.frequentlyBoughtProduct!=null && productWrapper.frequentlyBoughtProduct==true){
+                productWrapper.priority = 1;
+            }else if(productWrapper.productOfTheMonth!=null &&  productWrapper.productOfTheMonth==true){
+                productWrapper.priority = 2;
+            }else if(productWrapper.trendingSKU!=null &&  productWrapper.trendingSKU==true){
+                productWrapper.priority = 3;
+            }else{
+                productWrapper.priority = 4;
+            }
             productsWrapper.add(productWrapper);
         }
         productsWrapper.sort();

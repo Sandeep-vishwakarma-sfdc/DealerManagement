@@ -34,8 +34,8 @@ public without Sharing class YINPriceListSelector extends LIBSObjectSelector{
                 YIN_Price_List__c.Unit_Price__c, 
                 YIN_Price_List__c.Variant__c,
                 YIN_Price_List__c.Discount_Type__c,
-                YIN_Price_List__c.Minimum_Quantity__c
-                
+                YIN_Price_List__c.Minimum_Quantity__c,
+                YIN_Price_List__c.Type__c
               
                 };
             }
@@ -98,7 +98,7 @@ public without Sharing class YINPriceListSelector extends LIBSObjectSelector{
     * @return List<YIN_Price_List__c>
     */   
         public List<YIN_Price_List__c> selectByTriggerAll1(){
-        boolean strParameter=false;
+        boolean strParameter=true;
         String status='Open';
         string query;
         query = 'SELECT Id, Name,Customer__c, Customer__r.ERP_Customer_Code__c,Customer__r.Name,Customer__r.Account_Code__c,Customer_Group__c,Customer_Group__r.Name,Product__r.Product_Code__c,Customer_Group__r.Group_Code__c, Product__c,Product__r.ProductCode, Price__c, Start_Date__c, End_Date__c, Combination_Key__c, Latest_Update_Status__c,Discount_Price__c,CreatedDate,Unit_Price__c  FROM YIN_Price_List__c Where Latest_Update_Status__c=';

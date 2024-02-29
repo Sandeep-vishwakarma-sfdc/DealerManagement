@@ -8,6 +8,7 @@ public with sharing class YINOrderManagementDataFactoryTest {
     private static List<YIN_Price_List__c> testPriceListRecords = null;
     private static Order orderRecord = null;
     private static List<OrderItem> orderItemRecords = null;
+    private static List<YIN_Variant__c> variantsRecord = null;
     // Creating Standrad Object Records
     public static Account testAccount(){
         Account acc = new Account();
@@ -39,6 +40,8 @@ public with sharing class YINOrderManagementDataFactoryTest {
         acc.Orginal_Credit_Limit__c = 500000;
         acc.Additional_Credit_Limit__c = 2000;
         acc.Fixed_Additional_Credit_Amount__c = 0;
+        acc.ERP_Ship_To_Code__c = '1245678';
+        acc.ERP_Customer_Code__c = '1245678';
         //acc.Outstanding_Amount__c = 2000;
         if(accountRecord==null){
             accountRecord = acc;
@@ -76,7 +79,7 @@ public with sharing class YINOrderManagementDataFactoryTest {
             IsActive = true,
             Customer__c = testAccount().Id,
             Customer__r = testAccount(),
-            Type__c = 'Customer'
+            Type__c = 'All Customer'
         );
         if(priceBookCustome==null){
             priceBookCustome = customePricebook;
@@ -84,7 +87,7 @@ public with sharing class YINOrderManagementDataFactoryTest {
         return priceBookCustome;
     }
 
-    private static List<Product2> testProduct2(){
+    public static List<Product2> testProduct2(){
         List<Product2> products = new List<Product2>();
         for(Integer i=1;i<=10;i++){
             Product2 p = new Product2();
@@ -92,10 +95,11 @@ public with sharing class YINOrderManagementDataFactoryTest {
             p.Name = 'Test Product '+1;
             p.Description='Test Product Entry For Product';
             p.productCode = 'PC-00'+i;
+            p.product_Code__c = 'PC-00'+i;
             p.isActive = true;
             p.Tire_Size__c = '165/80R14 85T';
             p.Tread_Pattern__c = 'patter '+i;
-
+			p.Item_Category_Code__c = 'TIRE_I';
             products.add(p);
         }
         if(productsList==null){
@@ -187,6 +191,54 @@ public with sharing class YINOrderManagementDataFactoryTest {
         for(PricebookEntry priceBookEntry:entries){
             YINProductWrapper productWrapper = new YINProductWrapper();
             productWrapper.pricebookEntry = priceBookEntry;
+            
+            productWrapper.productId = priceBookEntry.Product2Id;
+            productWrapper.maximumOrderQuantity = 24;
+            productWrapper.minimumOrderQuantity = 1;
+            productWrapper.quantity = 1; // Default Quantity value when Order page loads
+            productWrapper.discountPercentage = 0;
+            productWrapper.frequentlyBoughtProduct = true;
+            productWrapper.lockingSKUAccount = false;
+            productWrapper.lockingSKULocation = false;
+            productWrapper.trendingSKU = true;
+            productWrapper.productOfTheMonth = true;
+            productWrapper.unitPrice = priceBookEntry.UnitPrice;
+            productWrapper.netPrice = (1 * priceBookEntry.UnitPrice);
+            productWrapper.productName = priceBookEntry.Product2.Name;
+            productWrapper.productSize = priceBookEntry.Product2.Size__c;
+            productWrapper.productPattern = priceBookEntry.Product2.Tread_Pattern__c;
+            productWrapper.combinationKey = priceBookEntry.Product2.ProductCode;
+            productWrapper.maximumCappingQuantity = 24;
+            productWrapper.GSTPercentage = 28;
+            productWrapper.tdsPercentage = 1;
+            productWrapper.tcsPercentage = 0;
+            //productWrapper.discountPercentage = 10;
+            productWrapper.applyTCS = false;
+            productWrapper.variantCode = '2021';
+            
+            productWrapper.locationCode = '00LC';
+            if(i<1){
+            productWrapper.orderItemId = orderItems[i].Id;
+            productWrapper.priceList = testPriceListData()[i];
+            }
+            // Adding productWrapper to List
+            productsWrapper.add(productWrapper);
+            i++;
+        }
+        return productsWrapper;
+    }
+    
+    public static List<YINProductWrapper> getProductWrapperDiscountTestData(){
+        List<PricebookEntry> entries = testPriceBookEntries();
+        List<OrderItem> orderItems = getOrderItemTest();
+        List<YINProductWrapper> productsWrapper= new List<YINProductWrapper>();
+        Integer i = 0;
+        for(PricebookEntry priceBookEntry:entries){
+            YINProductWrapper productWrapper = new YINProductWrapper();
+            productWrapper.pricebookEntry = priceBookEntry;
+            if(i==0){
+            	productWrapper.priceList = testPriceListData()[0];
+            }
             productWrapper.productId = priceBookEntry.Product2Id;
             productWrapper.maximumOrderQuantity = 24;
             productWrapper.minimumOrderQuantity = 1;
@@ -306,9 +358,7 @@ public with sharing class YINOrderManagementDataFactoryTest {
     private static List<YIN_Ledger__c> testLedger(){
         return new List<YIN_Ledger__c>();
     }
-    private static List<YIN_Price_List__c> testPriceList(){
-        return new List<YIN_Price_List__c>();
-    }
+    
     
 
     public static List<Order> getOrderTest(){
@@ -317,6 +367,7 @@ public with sharing class YINOrderManagementDataFactoryTest {
         o.AccountId = testAccount().Id;
         o.Account = testAccount();
         o.EffectiveDate = System.today();
+        o.Ship_To_Party__c = testAccount().Id;
         o.Status = 'Open';
         if(orderRecord==null){
             orderRecord = o;
@@ -332,6 +383,7 @@ public with sharing class YINOrderManagementDataFactoryTest {
             OrderItem item = new OrderItem();
             
             item.OrderId = orders[0].Id;
+            item.Variant__c = testVariants()[0].Id;
             item.Order = orders[0];
             item.PricebookEntry = testPriceBookEntries()[i];
             item.PricebookEntryId = testPriceBookEntries()[i].Id;
@@ -365,6 +417,20 @@ public with sharing class YINOrderManagementDataFactoryTest {
         variant.Variant_code__c = '2021';
         variant.Id = LibIDGenerator.generate(YIN_Variant__c.SObjectType);
         variants.add(variant);
-        return variants;
+        if(variantsRecord==null){
+            variantsRecord = variants;
+        }
+        
+        return variantsRecord;
+    }
+    
+    public static List<YIN_Ledger__c> testLeadger(){
+        List<YIN_Ledger__c> ledgers = new List<YIN_Ledger__c>();
+        YIN_Ledger__c ledger = new YIN_Ledger__c();
+        ledger.Id=LibIDGenerator.generate(YIN_Ledger__c.SObjectType);
+        ledger.Dealer_Code__r = testAccount();
+        ledger.Dealer_Code__c = testAccount().Id;
+        
+        return ledgers;
     }
 }

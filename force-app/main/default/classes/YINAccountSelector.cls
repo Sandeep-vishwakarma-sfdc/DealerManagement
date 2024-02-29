@@ -5,7 +5,7 @@
  * @last modified on  : 02-23-2024
  * @last modified by  : saurabh.pandey@skinternational.com
  **/
-public with sharing class YINAccountSelector extends LibSObjectSelector {
+public without sharing class YINAccountSelector extends LibSObjectSelector {
 
     /**
      * @Description - Constructor for the AccountSelector class.
@@ -378,6 +378,13 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
             .toSOQL()
         );
      }
+     public List<Account> selectAccountByParent(List<String> parentIds) {
+        return Database.query(
+            newQueryFactory()
+            .setCondition('ParentId IN:parentIds')
+            .toSOQL()
+        );
+     }
      /**
      * Added by:Kalpesh chande
      * @description - Get a list of Account for send email.
@@ -409,7 +416,7 @@ public with sharing class YINAccountSelector extends LibSObjectSelector {
                     .selectField('Country__r.Name')
                     .selectField('District__r.Name')
                     .selectField('Sub_District__r.Name')
-                    .setCondition('Contact_Person_Phone__c IN: mobileNos')
+                    .setCondition('Contact_Person_Phone__c IN: mobileNos AND RecordType.Name =\'Consumer\'')
                     .toSOQL()
         );
     }
