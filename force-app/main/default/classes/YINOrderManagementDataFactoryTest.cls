@@ -212,9 +212,9 @@ public with sharing class YINOrderManagementDataFactoryTest {
             productWrapper.GSTPercentage = 28;
             productWrapper.tdsPercentage = 1;
             productWrapper.tcsPercentage = 0;
-            //productWrapper.discountPercentage = 10;
+            productWrapper.discountPercentage = 10;
             productWrapper.applyTCS = false;
-            productWrapper.variantCode = '2021';
+            //productWrapper.variantCode = '2021';
             
             productWrapper.locationCode = '00LC';
             if(i<1){

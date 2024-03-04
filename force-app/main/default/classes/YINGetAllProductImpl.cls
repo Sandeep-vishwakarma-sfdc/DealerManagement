@@ -82,9 +82,9 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
         Decimal vTCSPercentage = 0;
         Decimal vTDSPercentage = 0;
         if (accounts[0].X1H_TCS__c == false) {
-            vTCSPercentage = String.isEmpty(accounts[0].PAN_Status__c) && !String.isEmpty(accounts[0].PAN_Number__c)  ? taxConstant.TCS__c : taxConstant.Invalid_PAN_TCS__c;
+            vTCSPercentage = (String.isEmpty(accounts[0].PAN_Status__c)) && !String.isEmpty(accounts[0].PAN_Number__c)  ? taxConstant.TCS__c : taxConstant.Invalid_PAN_TCS__c;
         } else {
-            vTDSPercentage = String.isEmpty(accounts[0].PAN_Status__c) && !String.isEmpty(accounts[0].PAN_Number__c) ? taxConstant.TDS__c : taxConstant.Invalid_PAN_TDS__c;
+            vTDSPercentage = (String.isEmpty(accounts[0].PAN_Status__c)) && !String.isEmpty(accounts[0].PAN_Number__c) ? taxConstant.TDS__c : taxConstant.Invalid_PAN_TDS__c;
         }
 
         // 3. Create Wrapper to store all information at one place
@@ -114,11 +114,13 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
             productWrapper.applyTCS = accounts[0].X1H_TCS__c;
             productWrapper.locationCode = accounts[0].Location__r?.Location_Code__c;
             // Adding productWrapper to List
-            if(productWrapper.frequentlyBoughtProduct!=null && productWrapper.frequentlyBoughtProduct==true){
+            if(productWrapper.trendingSKU!=null &&  productWrapper.trendingSKU==true){
                 productWrapper.priority = 1;
-            }else if(productWrapper.productOfTheMonth!=null &&  productWrapper.productOfTheMonth==true){
+            }
+            if(productWrapper.productOfTheMonth!=null &&  productWrapper.productOfTheMonth==true){
                 productWrapper.priority = 2;
-            }else if(productWrapper.trendingSKU!=null &&  productWrapper.trendingSKU==true){
+            }
+            if(productWrapper.frequentlyBoughtProduct!=null && productWrapper.frequentlyBoughtProduct==true){
                 productWrapper.priority = 3;
             }else{
                 productWrapper.priority = 4;

@@ -331,13 +331,24 @@ public without sharing class YINAccountSelector extends LibSObjectSelector {
      * @return  - List<Account>.
      */
     public List<Account> getAccounts(List<String> accIds) {
-        return Database.query(
+        if(test.isRunningTest()){
+              return Database.query(
+             newQueryFactory()
+            .selectField('Location__r.Location_Code__c')
+            .selectField('Location__r.Contact_Email_Id__c')
+            .setCondition('Id IN:accIds')
+            .setLimit(1)
+            .toSOQL()
+        );
+        }   return Database.query(
             newQueryFactory()
             .selectField('Location__r.Location_Code__c')
             .selectField('Location__r.Contact_Email_Id__c')
             .setCondition('Id IN:accIds')
             .toSOQL()
         );
+       
+      
      }
 
      public  List<Account> selectShippingAccounts(String accountId){

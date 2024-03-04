@@ -20,8 +20,4 @@ public with sharing class YINStockInventoryVarientWrap {
 		public String error;
 	}
 
-    public static YINStockInventoryVarientWrap parse(String json){
-		return (YINStockInventoryVarientWrap) System.JSON.deserialize(json, YINStockInventoryVarientWrap.class);
-	}
-
 }

@@ -283,9 +283,9 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         Decimal vTCSPercentage = 0;
         Decimal vTDSPercentage = 0;
         if(orderProducts[0].Order.Account.X1H_TCS__c==false){
-            vTCSPercentage = String.isEmpty(orderProducts[0].Order.Account.PAN_Status__c) && !String.isEmpty(orderProducts[0].Order.Account.PAN_Number__c)?taxConstant.TCS__c:taxConstant.Invalid_PAN_TCS__c;
+            vTCSPercentage = (String.isEmpty(orderProducts[0].Order.Account.PAN_Status__c)) && !String.isEmpty(orderProducts[0].Order.Account.PAN_Number__c)?taxConstant.TCS__c:taxConstant.Invalid_PAN_TCS__c;
         }else{
-            vTDSPercentage = String.isEmpty(orderProducts[0].Order.Account.PAN_Status__c) && !String.isEmpty(orderProducts[0].Order.Account.PAN_Number__c)?taxConstant.TDS__c:taxConstant.Invalid_PAN_TDS__c;
+            vTDSPercentage = (String.isEmpty(orderProducts[0].Order.Account.PAN_Status__c)) && !String.isEmpty(orderProducts[0].Order.Account.PAN_Number__c)?taxConstant.TDS__c:taxConstant.Invalid_PAN_TDS__c;
         }
 
         Decimal totalPrice = 0;
@@ -310,7 +310,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
                 unitofwork.registerDirty(item);
             }
 
-            wrapperProduct.discountPercentage = priceList?.Discount_Price__c!=null?priceList.Discount_Price__c:0;// TODO : Change Discount Price to Discount Percentage
+            wrapperProduct.discountPercentage = priceList?.Discount_Percentage__c!=null?priceList.Discount_Percentage__c:0;// TODO : Change Discount Price to Discount Percentage
             // wrapperProduct.discountPercentage = 0;
             wrapperProduct.orderItemId = item.Id;
             wrapperProduct.pricebookEntry = priceBookEntriesByProductId.get(item.Product2Id);
@@ -863,7 +863,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             Integer creditDays = accountLedgers[0].Dealer_Code__r.Credit_Days_Group_Dealer__c!=null?Integer.valueOf(accountLedgers[0].Dealer_Code__r.Credit_Days_Group_Dealer__c.removeEnd('D')):0;
             numberDaysDue = oldestOpenPostingDate.daysBetween(System.today());
             System.debug('creditDays '+creditDays +' numberDaysDue '+numberDaysDue);
-            return numberDaysDue <= creditDays;
+            return numberDaysDue < creditDays;
         }else{
             return true;// if no transcation found
         }
