@@ -128,4 +128,26 @@ public with sharing class YINUserSelector extends LibSObjectSelector {
         );
     }
 
+    /**
+     * @author - Nikhil Dhoke
+     * @Description - Retrieves a user's account details.
+     * @param String userid: user id.
+     * @return User : User record with account details.
+     */
+    public User getUserAccountDetails(String userId){
+        return Database.query(
+                newQueryFactory()
+                        .selectField('Contact')
+                        .selectField('Contact.AccountId')
+                        .selectField('Contact.Account.Name')
+                        .selectField('Contact.Account.Contact_Person_Phone__c')
+                        .selectField('Contact.Account.ERP_Customer_Code__c')
+                        .selectField('Contact.Account.City__r.Name')
+                        .selectField('Contact.Account.State__r.Name')
+                        .setCondition('Id =: userId')
+                        .setLimit(1)
+                        .toSOQL()
+        );
+    }
+
 }

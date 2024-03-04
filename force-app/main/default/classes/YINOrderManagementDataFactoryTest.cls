@@ -149,7 +149,7 @@ public with sharing class YINOrderManagementDataFactoryTest {
             pl.product__c = products[i].Id;
             pl.product__r = products[i];
             pl.Discount_type__c = 'Product Discount';
-            pl.Discount_Price__c = 1000;
+            pl.Discount_Percentage__c = 1000;
             pl.recordTypeId = Schema.SObjectType.YIN_Price_List__c.getRecordTypeInfosByName().get('Discount').getRecordTypeId();
             priceLists.add(pl);
         }

@@ -28,7 +28,7 @@ public without Sharing class YINPriceListSelector extends LIBSObjectSelector{
                 YIN_Price_List__c.Combination_Key__c,
                 YIN_Price_List__c.Latest_Update_Status__c,
                 YIN_Price_List__c.Customer__r.Name,
-                YIN_Price_List__c.Discount_Price__c,
+                YIN_Price_List__c.Discount_Percentage__c,
                 YIN_Price_List__c.OnDemand__c,
                 YIN_Price_List__c.CreatedDate,
                 YIN_Price_List__c.Unit_Price__c, 
@@ -48,7 +48,7 @@ public without Sharing class YINPriceListSelector extends LIBSObjectSelector{
     public Database.QueryLocator allPriceList(){
         String status='Open';
         string query;
-        query = 'SELECT Id, Name, Customer__c,Customer__r.Name,Customer__r.Account_Code__c,Customer_Group__c,Customer_Group__r.Name,Customer_Group__r.Group_Code__c, Product__c,Product__r.ProductCode,Product__r.Product_Code__c,Price__c, Start_Date__c, End_Date__c, Combination_Key__c, Latest_Update_Status__c,Discount_Price__c,CreatedDate,Unit_Price__c  FROM YIN_Price_List__c Where Latest_Update_Status__c=';
+        query = 'SELECT Id, Name, Customer__c,Customer__r.Name,Customer__r.Account_Code__c,Customer_Group__c,Customer_Group__r.Name,Customer_Group__r.Group_Code__c, Product__c,Product__r.ProductCode,Product__r.Product_Code__c,Price__c, Start_Date__c, End_Date__c, Combination_Key__c, Latest_Update_Status__c,Discount_Percentage__c,CreatedDate,Unit_Price__c  FROM YIN_Price_List__c Where Latest_Update_Status__c=';
         query=query+ '\''+status+'\'' +' '+'order by CreatedDate Asc';
         System.debug('Query is'+query);       
         return Database.getQueryLocator(query);
@@ -62,7 +62,7 @@ public without Sharing class YINPriceListSelector extends LIBSObjectSelector{
         boolean strParameter=true;
         String status='Open';
         string query;
-        query = 'SELECT Id, Name, Customer__c,Customer__r.Name,Customer__r.Account_Code__c, Customer_Group__c,Customer_Group__r.Name,Customer_Group__r.Group_Code__c, Product__c,Product__r.ProductCode,Product__r.Product_Code__c,Price__c, Start_Date__c, End_Date__c, Combination_Key__c, Latest_Update_Status__c,Discount_Price__c,CreatedDate,Unit_Price__c  FROM YIN_Price_List__c Where Latest_Update_Status__c=';
+        query = 'SELECT Id, Name, Customer__c,Customer__r.Name,Customer__r.Account_Code__c, Customer_Group__c,Customer_Group__r.Name,Customer_Group__r.Group_Code__c, Product__c,Product__r.ProductCode,Product__r.Product_Code__c,Price__c, Start_Date__c, End_Date__c, Combination_Key__c, Latest_Update_Status__c,Discount_Percentage__c,CreatedDate,Unit_Price__c  FROM YIN_Price_List__c Where Latest_Update_Status__c=';
         query=query+ '\''+status+'\''+' AND OnDemand__c='+strParameter +' '+'order by CreatedDate Asc';
         System.debug('Query Seond is'+query);       
         return Database.getQueryLocator(query);
@@ -101,7 +101,7 @@ public without Sharing class YINPriceListSelector extends LIBSObjectSelector{
         boolean strParameter=true;
         String status='Open';
         string query;
-        query = 'SELECT Id, Name,Customer__c, Customer__r.ERP_Customer_Code__c,Customer__r.Name,Customer__r.Account_Code__c,Customer_Group__c,Customer_Group__r.Name,Product__r.Product_Code__c,Customer_Group__r.Group_Code__c, Product__c,Product__r.ProductCode, Price__c, Start_Date__c, End_Date__c, Combination_Key__c, Latest_Update_Status__c,Discount_Price__c,CreatedDate,Unit_Price__c  FROM YIN_Price_List__c Where Latest_Update_Status__c=';
+        query = 'SELECT Id, Name,Customer__c, Customer__r.ERP_Customer_Code__c,Customer__r.Name,Customer__r.Account_Code__c,Customer_Group__c,Customer_Group__r.Name,Product__r.Product_Code__c,Customer_Group__r.Group_Code__c, Product__c,Product__r.ProductCode, Price__c, Start_Date__c, End_Date__c, Combination_Key__c, Latest_Update_Status__c,Discount_Percentage__c,CreatedDate,Unit_Price__c  FROM YIN_Price_List__c Where Latest_Update_Status__c=';
         query=query+ '\''+status+'\''+' AND OnDemand__c='+strParameter +' '+'order by CreatedDate Asc';
         System.debug('Query Seond is'+query);       
         return Database.query(query);
@@ -111,7 +111,7 @@ public without Sharing class YINPriceListSelector extends LIBSObjectSelector{
      public Database.QueryLocator allPriceList1(){
         String status='In progress';
         string query;
-        query = 'SELECT Id, Name, Customer__c,Customer__r.Name,Customer__r.Account_Code__c,Customer_Group__c,Customer_Group__r.Name,Customer_Group__r.Group_Code__c,Product__r.Product_Code__c, Product__c,Product__r.ProductCode,Price__c, Start_Date__c, End_Date__c, Combination_Key__c, Latest_Update_Status__c,Discount_Price__c,CreatedDate,Unit_Price__c  FROM YIN_Price_List__c Where Latest_Update_Status__c=';
+        query = 'SELECT Id, Name, Customer__c,Customer__r.Name,Customer__r.Account_Code__c,Customer_Group__c,Customer_Group__r.Name,Customer_Group__r.Group_Code__c,Product__r.Product_Code__c, Product__c,Product__r.ProductCode,Price__c, Start_Date__c, End_Date__c, Combination_Key__c, Latest_Update_Status__c,Discount_Percentage__c,CreatedDate,Unit_Price__c  FROM YIN_Price_List__c Where Latest_Update_Status__c=';
         query=query+ '\''+status+'\'' +' '+'order by CreatedDate Asc';
         System.debug('Query is'+query);       
         return Database.getQueryLocator(query);

@@ -82,7 +82,7 @@ public with sharing class YINGetDiscountProductImpl implements YINIGetProducts {
                     discountWrapper.unitPrice = originalWrapper.unitPrice;
 
                     // Copying discounted attributes from price list
-                    discountWrapper.discountPercentage = price.Discount_Price__c;// TODO : Add Discount Percentage insted of Dicount Price
+                    discountWrapper.discountPercentage = price.Discount_Percentage__c;// TODO : Add Discount Percentage insted of Dicount Price
                     discountWrapper.discountType = price.Discount_Type__c;
                     discountWrapper.priceList = price;
                     discountWrapper.productName = originalWrapper.productName;
@@ -109,7 +109,7 @@ public with sharing class YINGetDiscountProductImpl implements YINIGetProducts {
 
                     YINProductWrapper.DiscountTable table = new YINProductWrapper.DiscountTable();
                     table.minimumOrderQuantity = price.Minimum_Quantity__c;
-                    table.discountPercentage = price.Discount_Price__c;
+                    table.discountPercentage = price.Discount_Percentage__c;
                     discountProductWrappersByKey.get(price.Product__r.Product_Code__c + price.Variant__r.Variant_Code__c).add(table);
                 }
             }

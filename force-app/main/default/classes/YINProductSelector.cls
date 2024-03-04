@@ -27,6 +27,7 @@ public with sharing class YINProductSelector extends LibSObjectSelector{
             Product2.Plant_Code__c,
             Product2.Spec_Code__c,
             Product2.Tire_Size__c,
+            Product2.Size__c,
             Product2.Original_Groove_Depth__c
         };
     }
