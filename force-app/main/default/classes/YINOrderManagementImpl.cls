@@ -523,7 +523,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         openOrder = closedOrder.clone();
         openOrder.Status = 'Open';
         openOrder.Order_Date__c = null;
-        closedOrder.Status = 'Submitted';
+        closedOrder.Status = 'Accepted';// Edited by Sandeep Vishwakarma 6th March 2024 , since ERP is not able to change Status from Submitted to Accepted in live operational process
         unitofworkProcessOrder.registerNew(openOrder);
         unitofworkProcessOrder.registerDirty(closedOrder);
 
