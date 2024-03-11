@@ -1,8 +1,8 @@
 /**
  * @description       : This class show all Query of Price Book Entry Object.                                          
  * @author            : prashant.kumbhar@skinternational.com
- * @last modified on  : 10-11-2023
- * @last modified by  :  prashant.kumbhar@skinternational.com
+ * @last modified on  : 03-09-2024
+ * @last modified by  : saurabh.pandey@skinternational.com
 **/
 
 public without Sharing class YINPriceBookEntrySelector extends LIBSObjectSelector {
@@ -65,6 +65,37 @@ public without Sharing class YINPriceBookEntrySelector extends LIBSObjectSelecto
             query.setCondition('IsActive=true and Product2.IsActive=true and Product2.Item_Category_Code__c=:categoryCode and Pricebook2Id IN:priceBookIds and Start_Date__c <=TODAY and End_Date__c >=TODAY');
             query.addOrdering(Order.LastModifiedDate, LIBQueryFactory.SortOrder.DESCENDING);
             return Database.query(query.toSOQL());
+        }
+
+        /**
+         * @author:Nikhil Dhoke
+         * @description - get unit price based on product code.
+         * @param List<String> : product codes.
+         * @return  - List<PricebookEntry>.
+         */
+        public List<PricebookEntry> getUnitPriceByProductCode(List<String> productCodes){
+            return Database.query(
+                newQueryFactory()
+                        .selectField('Product2.Product_Code__c')
+                        .setCondition('Pricebook2.Type__c = \'All Customer\' AND Start_Date__c <= TODAY AND End_Date__c >= TODAY AND Pricebook2.IsDiscount__c = false AND Product2.Product_Code__c IN: productCodes')
+                        .toSOQL()
+            );
+        }
+
+         /**
+         * @author:Saurabh Pandey
+         * @description - 
+         * @param .
+         * @return  - List<PricebookEntry>.
+         */
+
+        public List<PricebookEntry> getPriceBookEntryId(String productId){
+            return Database.query(
+                newQueryFactory()
+                        .selectField('Product2.Product_Code__c')
+                        .setCondition('Product2.Id =: productId')
+                        .toSOQL()
+            );
         }
     
     }

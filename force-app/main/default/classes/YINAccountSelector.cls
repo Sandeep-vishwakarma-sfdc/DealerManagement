@@ -344,6 +344,7 @@ public without sharing class YINAccountSelector extends LibSObjectSelector {
             newQueryFactory()
             .selectField('Location__r.Location_Code__c')
             .selectField('Location__r.Contact_Email_Id__c')
+            .selectField('Territory__r.Service_Engineer__c')
             .setCondition('Id IN:accIds')
             .toSOQL()
         );
@@ -384,7 +385,9 @@ public without sharing class YINAccountSelector extends LibSObjectSelector {
     public List<Account> shiptoPartyByAccount(List<String> accIds) {
         return Database.query(
             newQueryFactory()
-            .selectField('Account_Type__c')
+            .selectField('Combined_Address__c')
+            .selectField('City__r.Name')
+            .selectField('State__r.Name')
             .setCondition('Account_Type__c = \'Ship To Party\' AND ParentId IN:accIds')
             .toSOQL()
         );
@@ -451,4 +454,30 @@ public without sharing class YINAccountSelector extends LibSObjectSelector {
             .toSOQL()
         );
      }
+
+     /**
+     * @author : Nikhil Dhoke
+     * @Description - Get a list of dealers by service engineer.
+     * @param List : user id list.
+     * @return  - List<Account>.
+     */
+    public List<Account> getDelerListByServiceEngineer(List<String> userIds) { 
+        return Database.query(
+            newQueryFactory()
+                    .selectField('Territory__c')
+                    .selectField('Territory__r.Service_Engineer__c')
+                    .selectField('Territory__r.Service_Engineer__r.Name')
+                    .selectField('City__r.Name')
+                    .selectField('State__r.Name')
+                    .setCondition('Territory__r.Service_Engineer__c IN: userIds AND Account_Type__c = \'Sold To Party\' ')
+                    .toSOQL()
+        );
+    }
+    public List<Account> getPartnerAccount(String accId){
+         return Database.query(
+            newQueryFactory()
+            .setCondition('Id =:accId')
+            .toSOQL()
+        );
+    }
 }

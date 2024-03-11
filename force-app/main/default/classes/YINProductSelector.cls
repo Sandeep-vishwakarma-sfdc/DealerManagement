@@ -2,7 +2,7 @@
  * @description       : This class is used to query on Product2 object.
  * @author            : saurabh.pandey@skinternational.com
  * @group             : SKI
- * @last modified on  : 02-23-2024
+ * @last modified on  : 03-09-2024
  * @last modified by  : saurabh.pandey@skinternational.com
 **/
 public with sharing class YINProductSelector extends LibSObjectSelector{
@@ -84,5 +84,21 @@ public with sharing class YINProductSelector extends LibSObjectSelector{
             .setCondition('Product_Code__c IN :productSet')
             .toSOQL()
         );    
-    }    
+    } 
+    
+    /**
+     * @description: This method creates a query factory to retrieve Product2 records based on a set of product codes.
+     * @param productSet: Set of product codes to filter the Product2 records.
+     * @return fflib_QueryFactory: Query factory to retrieve Product2 records.
+     */
+    public List<Product2> getProductForOrderItem() {
+        return Database.query(
+            newQueryFactory()
+            .selectField('Id')
+            .selectField('Name')
+            .selectField('Product_Code__c')
+            .setCondition('Id IN (SELECT Product2Id FROM PriceBookEntry WHERE PriceBook2.Name = \'Promotional Activity\')')
+            .toSOQL()
+        );    
+    }   
 }

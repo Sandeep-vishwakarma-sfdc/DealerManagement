@@ -1,3 +1,10 @@
+/**
+ * @description       : This is Selector class for querying on Order Object.
+ * @author            : saurabh.pandey@skinternational.com
+ * @group             : SKI
+ * @last modified on  : 03-11-2024
+ * @last modified by  : saurabh.pandey@skinternational.com
+**/
 public with sharing class YINOrderSelector extends LibSObjectSelector {
     public Schema.SObjectType getSObjectType() {
         return Order.SObjectType;
@@ -53,5 +60,16 @@ public with sharing class YINOrderSelector extends LibSObjectSelector {
                     .setCondition('ERP_Order_Number__c!=null')
                     .toSOQL()
         );
+    }
+ 
+    // Added by Saurabh Pandey
+    public List<Order> getRecentOrderForPromotionalActivity(String recType){
+        List<Order> orders = new List<Order>();
+        String query =  newQueryFactory()
+        .setCondition('RecordType.Name =: recType')
+        .addOrdering(Order.CreatedDate, LibQueryFactory.SortOrder.DESCENDING)
+        .setLimit(1)
+        .toSOQL();  
+        return (List<Order>) Database.query(query);
     }
 }

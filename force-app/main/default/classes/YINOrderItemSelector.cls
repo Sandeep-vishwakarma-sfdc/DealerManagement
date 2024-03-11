@@ -1,3 +1,10 @@
+/**
+ * @description       : 
+ * @author            : saurabh.pandey@skinternational.com
+ * @group             : 
+ * @last modified on  : 03-11-2024
+ * @last modified by  : saurabh.pandey@skinternational.com
+**/
 public with sharing class YINOrderItemSelector extends LibSObjectSelector{
     public Schema.SObjectType getSObjectType() {
         return OrderItem.SObjectType;
@@ -72,6 +79,23 @@ public with sharing class YINOrderItemSelector extends LibSObjectSelector{
               .toSOQL();
             return (List<OrderItem>) Database.query(query);
             }
+
+     // Added by Saurabh Pandey
+     public List<OrderItem> getRecentOrderItemForPromotionalActivity(String recType){
+        List<OrderItem> orders = new List<OrderItem>();
+        String query =  newQueryFactory()
+        .selectField('Order.AccountId')
+        .selectField('Order.Status')
+        .selectField('Order.Description')
+        .selectField('Order.Remarks__c')
+        .selectField('Order.Allocated_Amount__c')
+        .selectField('Product2.Name')
+        .setCondition('Order.RecordType.Name =: recType')
+        .addOrdering(Order.CreatedDate, LibQueryFactory.SortOrder.DESCENDING)
+        .setLimit(1)
+        .toSOQL();  
+        return (List<OrderItem>) Database.query(query);
+    }
 
     
 }
