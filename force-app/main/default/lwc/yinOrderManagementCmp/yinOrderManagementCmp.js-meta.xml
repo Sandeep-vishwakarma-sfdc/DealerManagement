@@ -7,4 +7,9 @@
         <target>lightningCommunity__Page</target>
         <target>lightningCommunity__Default</target>
     </targets>
+    <targetConfigs>
+        <targetConfig targets="lightningCommunity__Default">
+            <property name="orderModuleType" type="String" label="order Module Type" description="The value should be Normal . Promotional." />
+        </targetConfig>
+    </targetConfigs>
 </LightningComponentBundle>

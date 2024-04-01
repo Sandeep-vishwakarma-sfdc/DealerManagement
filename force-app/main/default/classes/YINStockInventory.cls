@@ -1,4 +1,6 @@
+@SuppressWarnings('PMD.FieldNamingConventions')
 public with sharing class YINStockInventory {
+    public static List<YINMonitorLogWrap> logs = new List<YINMonitorLogWrap>();
     
     public static Map<String,YINStockinventoryWrap.YINData> withoutVariant(List<YINProductWrapper> productWrappers){
         //1. Preparing payload
@@ -101,9 +103,6 @@ public with sharing class YINStockInventory {
 
     public static String sendOrder(List<Order> orders,List<OrderItem> items,Map<String,YIN_Variant__c> variantByVariantId){
         // Prepare JSON from Orders
-
-        
-
         YINSalesOrderWrap reqBody = new YINSalesOrderWrap(); 
         if(orders.size()>0){
             Order submittingOrder = orders[0];
@@ -152,8 +151,8 @@ public with sharing class YINStockInventory {
                 System.debug('item.Variant__r.Variant_Code__c '+variantByVariantId.get(item.Variant__c).Variant_Code__c);
                 itemCount = itemCount + 10;
                 YINSalesOrderWrap.YINLines line = new YINSalesOrderWrap.YINLines();
-                line.itemNumber = String.valueOf(itemCount);//item.Id;	//10
-                line.itemCode = item.Product2.Product_Code__c;	//FG-R1249
+                line.itemNumber = String.valueOf(itemCount);
+                line.itemCode = item.Product2.Product_Code__c;
                 line.variant = variantByVariantId.get(item.Variant__c).Variant_Code__c;//item.Variant__r.Variant_Code__c;	//2023
                 line.quantity = String.valueOf(item.Quantity);	//4
                 line.discount = String.valueOf(item.Discount_Percent__c);	//4
@@ -190,16 +189,26 @@ public with sharing class YINStockInventory {
         return response;
     }
 
+    public static PromotionalOrderResponse sendPromotionalOrder(String payload){
+        payload = removeNullValues(payload);
+        String startXml = '<Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"><Body><PromotionalOrder xmlns="urn:microsoft-dynamics-schemas/codeunit/SFDCIntegration"><requestMsg>';
+        String endXml = '</requestMsg></PromotionalOrder></Body></Envelope>';
+        payload = startXml+payload+endXml;
+        String response = executeCallout('GET','/promotionalorder',payload);
+        PromotionalOrderResponse promotionalOrderRes = (PromotionalOrderResponse)JSON.deserialize(response,PromotionalOrderResponse.class);
+        return promotionalOrderRes;
+    }
 
 
     private static String executeCallout (String method, String resourceName, String requestBody) {
+        HttpRequest request = new HttpRequest();
+        HttpResponse response = null;
         try {
             Map<String,String> xmlChildNodeByResourceName = new Map<String,String>();
             xmlChildNodeByResourceName.put('/stockinventory','GetInventoryNormalOrder_Result');
             xmlChildNodeByResourceName.put('/stockinventoryvariant','GetInventory_Result');
             xmlChildNodeByResourceName.put('/salesorder','GetOrderDetails_Result');
-
-            HttpRequest request = new HttpRequest();
+            xmlChildNodeByResourceName.put('/promotionalorder','PromotionalOrder_Result');
             request.setMethod(method);
             request.setEndpoint('callout:YINErpServiceEx');
             // request.setHeader('Accept', 'application/json');
@@ -219,10 +228,11 @@ public with sharing class YINStockInventory {
             Boolean fakeResponse = false;
             //Execute the callout
             if(!Test.isRunningTest() && fakeResponse==false){
-            HttpResponse response = new Http().send(request);
-            system.debug('### Xero Response Status: ' + response.getStatusCode() + ': ' + response.getStatus());
+             response = new Http().send(request);
+             system.debug('### Xero Response Status: ' + response.getStatusCode() + ': ' + response.getStatus());
              body = response.getBody();
-             setLog(request,response);
+             /* Setting Monitor Log*/
+             setMonitorLog(request,response);
             }else{
             	body = generateFakeResponse(resourceName);
             }
@@ -231,24 +241,33 @@ public with sharing class YINStockInventory {
             String jsonData = extractJsonData(body,xmlChildNodeByResourceName.get(resourceName));
             return jsonData;
         } catch (Exception e) {
+            setMonitorLog(request,response);
             throw new YINOrderManagementException('Unable to process your request please try again after some time');
         }
     }  
-
-    private static void setLog(HttpRequest request,HttpResponse response){
+    
+    private static void setMonitorLog(HttpRequest request,HttpResponse response){
         YINMonitorLogWrap log = new YINMonitorLogWrap();
-        log.apexClass = 'YINStockInventory';                                         
-        log.request = request.getBody();
-        log.response = response.getBody();
-        log.statusCode = response.getStatus();
-        log.module = 'Sales Order';
-        log.userId = UserInfo.getuserId();
-        log.typeOfIntegration = '';
-        log.method = request.getMethod();
-        log.requestURL = request.getEndpoint();
+            log.apexClass = 'YINStockInventory';                                         
+            log.request = request.getBody();
+            log.response = response!=null?response.getBody():'';
+            log.statusCode = response!=null?response.getStatus():'';
+            log.module = 'Sales Order';
+            log.userId = UserInfo.getuserId();
+            log.typeOfIntegration = '';
+            log.method = request.getMethod();
+            log.requestURL = request.getEndpoint();
+            logs.add(log);
+            //setLog(JSON.serialize(logs));
+    }
 
-        YINMonitorService monitorLog = new YINMonitorService();
-        //monitorLog.requestResponseLog(log);
+    
+    public static void setLog(String logs){
+        List<YINMonitorLogWrap> mlogs = (List<YINMonitorLogWrap>)JSON.deserialize(logs,List<YINMonitorLogWrap>.class);
+        for(YINMonitorLogWrap mlog:mlogs){
+            YINMonitorService monitorLog = new YINMonitorService();
+            monitorLog.requestResponseLog(mlog);
+        }
     }
 
     private static String generateFakeResponse(String resourceName){
@@ -373,6 +392,23 @@ public with sharing class YINStockInventory {
             payload = startXml+jsonWrap+endXml;
             return payload;
         }
+        if(resourceName=='/promotionalorder'){
+
+            String startXml = '<Soap:Envelope xmlns:Soap="http://schemas.xmlsoap.org/soap/envelope/"><Soap:Body><PromotionalOrder_Result xmlns="urn:microsoft-dynamics-schemas/codeunit/SFDCIntegration"><requestMsg>';
+            String endXml = '</requestMsg></PromotionalOrder_Result></Soap:Body></Soap:Envelope>';
+            String jsonWrap = '';
+            String payload = '';
+
+            PromotionalOrderResponse promotionalResponse = new PromotionalOrderResponse();
+            promotionalResponse.success = 'true';
+            promotionalResponse.ERPPRNumber = 'PROM-0004';
+            promotionalResponse.status = 'Accepted';
+            promotionalResponse.totalLines = '1';
+
+            jsonWrap = JSON.serialize(promotionalResponse);
+            payload = startXml+jsonWrap+endXml;
+            return payload;
+        }
         return null;
     }
 
@@ -408,5 +444,12 @@ public with sharing class YINStockInventory {
         return resultMap;
     }
 
+    public class PromotionalOrderResponse{
+        @AuraEnabled public String success;
+        @AuraEnabled public String ERPPRNumber;
+        @AuraEnabled public String status;
+        @AuraEnabled public String totalLines;
+        @AuraEnabled public String error;
+    }
    
 }

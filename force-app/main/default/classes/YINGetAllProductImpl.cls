@@ -19,7 +19,7 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
      * @return List<YINProductWrapper> - List of YINProductWrapper instances containing product details.
      * @throws YINOrderManagementException - Custom exception thrown in case of errors during the execution.
      */
-    public List<YINProductWrapper> getProducts(String accountId) {
+    public List<YINProductWrapper> getProducts(String accountId,Boolean isPromotional) {
         
         // Declaring variables
         List<YINProductWrapper> productsWrapper = new List<YINProductWrapper>();
@@ -43,7 +43,7 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
         }
 
         System.debug('priceBookIds ' + priceBookIds);
-        List<PricebookEntry> pricebookEntries = getPriceBookEntries(priceBookIds);
+        List<PricebookEntry> pricebookEntries = getPriceBookEntries(priceBookIds,isPromotional);
         System.debug('pricebookEntries ' + pricebookEntries);
 
         // 2. Creating Product configuration Mapping like Maximum order Quantity, Minimum Order Quantity, Trending Product, etc.
@@ -82,11 +82,27 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
         Decimal vTCSPercentage = 0;
         Decimal vTDSPercentage = 0;
         if (accounts[0].X1H_TCS__c == false) {
-            vTCSPercentage = (String.isEmpty(accounts[0].PAN_Status__c)) && !String.isEmpty(accounts[0].PAN_Number__c)  ? taxConstant.TCS__c : taxConstant.Invalid_PAN_TCS__c;
+            
+            String recordTypeName = 'TCS Ledger';
+
+            FiscalYear years = calculateFiscalYears();
+            Integer fiscalStartYear = years.fiscalStartYear;
+            Integer fiscalEndYear = years.fiscalEndYear;
+            String accId = accounts[0].Id;
+
+            List<AggregateResult> aggregateResults = Database.query('SELECT SUM(TCS_Amount__c) amount FROM YIN_Ledger__c WHERE (CALENDAR_YEAR(Posting_Date__c) =:fiscalStartYear  OR CALENDAR_YEAR(Posting_Date__c) =:fiscalEndYear) AND Dealer_Code__c=:accId and recordType.Name=:recordTypeName');
+            Decimal thresholdAmount = 0;
+            if (!aggregateResults.isEmpty()) {
+                thresholdAmount = (Decimal)aggregateResults[0].get('amount');
+            }
+            if(thresholdAmount > taxConstant.TCS_Threshold__c){
+                vTCSPercentage = (String.isEmpty(accounts[0].PAN_Status__c)) && !String.isEmpty(accounts[0].PAN_Number__c)  ? taxConstant.TCS__c : taxConstant.Invalid_PAN_TCS__c;
+            }
         } else {
             vTDSPercentage = (String.isEmpty(accounts[0].PAN_Status__c)) && !String.isEmpty(accounts[0].PAN_Number__c) ? taxConstant.TDS__c : taxConstant.Invalid_PAN_TDS__c;
         }
 
+        Decimal gstPercentage = 0;
         // 3. Create Wrapper to store all information at one place
         for (PricebookEntry priceBookEntry : pricebookEntries) {
             YINProductWrapper productWrapper = new YINProductWrapper();
@@ -96,11 +112,11 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
             productWrapper.minimumOrderQuantity = accountProductMappingByProduct.get(priceBookEntry.Product2Id+''+accounts[0].Id)?.Minimum_Order_Quantity__c;
             productWrapper.quantity = 1; // Default Quantity value when Order page loads
             productWrapper.discountPercentage = 0;
-            productWrapper.frequentlyBoughtProduct = accountFrequentlyByProduct.get(priceBookEntry.Product2Id+''+accounts[0].Id)?.Status__c;
-            productWrapper.lockingSKUAccount = accountProductMappingByProduct.get(priceBookEntry.Product2Id+''+accounts[0].Id)?.Status__c;
-            productWrapper.lockingSKULocation = locationProductMappingByProduct.get(priceBookEntry.Product2Id+''+accounts[0].Location__c)?.Status__c;
-            productWrapper.trendingSKU = locationProductsTrending.get(priceBookEntry.Product2Id+''+accounts[0].Location__c)?.Status__c;
-            productWrapper.productOfTheMonth = locationProductsOfMonth.get(priceBookEntry.Product2Id+''+accounts[0].Location__c)?.Status__c;
+            productWrapper.frequentlyBoughtProduct = isPromotional==true?false:accountFrequentlyByProduct.get(priceBookEntry.Product2Id+''+accounts[0].Id)?.Status__c;
+            productWrapper.lockingSKUAccount = isPromotional==true?false:accountProductMappingByProduct.get(priceBookEntry.Product2Id+''+accounts[0].Id)?.Status__c;
+            productWrapper.lockingSKULocation = isPromotional==true?false:locationProductMappingByProduct.get(priceBookEntry.Product2Id+''+accounts[0].Location__c)?.Status__c;
+            productWrapper.trendingSKU = isPromotional==true?false:locationProductsTrending.get(priceBookEntry.Product2Id+''+accounts[0].Location__c)?.Status__c;
+            productWrapper.productOfTheMonth = isPromotional==true?false:locationProductsOfMonth.get(priceBookEntry.Product2Id+''+accounts[0].Location__c)?.Status__c;
             productWrapper.unitPrice = priceBookEntry.UnitPrice;
             productWrapper.netPrice = (1 * priceBookEntry.UnitPrice);
             productWrapper.productName = priceBookEntry.Product2.Name;
@@ -108,11 +124,12 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
             productWrapper.productPattern = priceBookEntry.Product2.Tread_Pattern__c;
             productWrapper.combinationKey = priceBookEntry.Product2.Product_Code__c;
             productWrapper.maximumCappingQuantity = productCappingBySize.get(priceBookEntry.Product2.Size__c)!=null?Integer.valueOf(productCappingBySize.get(priceBookEntry.Product2.Size__c).Maximum_Order_Capping__c):0;
-            productWrapper.GSTPercentage = taxConstant.GST__c;
-            productWrapper.tdsPercentage = vTDSPercentage;
-            productWrapper.tcsPercentage = vTCSPercentage;
+            productWrapper.GSTPercentage = priceBookEntry.Product2.GST__c!=null?priceBookEntry.Product2.GST__c:0;
+            productWrapper.tdsPercentage = isPromotional==true?0:vTDSPercentage;
+            productWrapper.tcsPercentage = isPromotional==true?0:vTCSPercentage;
             productWrapper.applyTCS = accounts[0].X1H_TCS__c;
             productWrapper.locationCode = accounts[0].Location__r?.Location_Code__c;
+            productWrapper.isPromotional = isPromotional;
             // Adding productWrapper to List
             if(productWrapper.trendingSKU!=null &&  productWrapper.trendingSKU==true){
                 productWrapper.priority = 1;
@@ -233,12 +250,12 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
      * @return List<PricebookEntry> - List of PricebookEntry instances associated with the specified PriceBook IDs.
      * @throws YINOrderManagementException - Custom exception thrown in case of errors during the execution.
      */
-    public static List<PricebookEntry> getPriceBookEntries(List<Id> priceBookIds) {
+    public static List<PricebookEntry> getPriceBookEntries(List<Id> priceBookIds,Boolean isPromotional) {
         try {
             YINPriceBookEntrySelector priceBookEntrySelector = (YINPriceBookEntrySelector) YINApplication.selector.newInstance(PricebookEntry.SObjectType);
             List<PricebookEntry> pricebookEntriesWithUpdatePrice = new List<PricebookEntry>();
             // 1. Get pricebookEntries from All price book (Common,Group,Customer)
-            List<PricebookEntry> pricebookEntries = priceBookEntrySelector.selectPriceBookEntriesByPricebook(priceBookIds);
+            List<PricebookEntry> pricebookEntries = priceBookEntrySelector.selectPriceBookEntriesByPricebook(priceBookIds,isPromotional);
             System.debug('All pricebookEntries '+pricebookEntries);
             Map<String,List<PricebookEntry>> entriesOfPriceBook = new Map<String,List<PricebookEntry>>();
             Map<String,PricebookEntry> groupEntriesOfPriceBook = new Map<String,PricebookEntry>();
@@ -290,5 +307,36 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
         } catch (Exception e) {
             throw new YINOrderManagementException(e.getMessage()+' '+e.getLineNumber());
         }
+    }
+
+    public static FiscalYear calculateFiscalYears() {
+        // Get current date
+        Date currentDate = Date.today();
+        
+        // Get current month and year
+        Integer currentMonth = currentDate.month();
+        Integer currentYear = currentDate.year();
+        
+        // Initialize fiscalStartYear and fiscalEndYear variables
+        Integer fiscalStartYear;
+        Integer fiscalEndYear;
+        
+        // Check if current month is from April to December
+        if (currentMonth >= 4 && currentMonth <= 12) {
+            fiscalStartYear = currentYear;
+            fiscalEndYear = currentYear + 1;
+        } else {
+            fiscalStartYear = currentYear - 1;
+            fiscalEndYear = currentYear;
+        }
+        FiscalYear years = new FiscalYear();
+        years.fiscalStartYear = fiscalStartYear;
+        years.fiscalEndYear = fiscalEndYear;
+        return years;
+    }
+
+    public class FiscalYear{
+        public Integer fiscalStartYear;
+        public Integer fiscalEndYear;
     }
 }

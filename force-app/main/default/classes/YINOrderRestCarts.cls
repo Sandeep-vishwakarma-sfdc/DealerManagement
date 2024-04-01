@@ -2,19 +2,28 @@
 global with sharing class YINOrderRestCarts {
     @HttpGet
     global static String getCartDetails(){
-        Map<String,String> params = RestContext.request.params;
-        String accountId = params.get('accountId');
-        String openOrderId = params.get('openOrderId');
-        YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
-        String response = JSON.serialize(orderService.getCartDetails(accountId,openOrderId));
-        return response;
+        try{
+            Map<String,String> params = RestContext.request.params;
+            String accountId = params.get('accountId');
+            String openOrderId = params.get('openOrderId');
+            String orderModuleType = params.get('orderModuleType');
+            YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
+            String response = JSON.serialize(orderService.getCartDetails(accountId,openOrderId,orderModuleType));
+            return response;
+        }catch(Exception e){
+            return e.getMessage();
+        }
     }
 
     @HttpPost
     global static String addToCart(String productWrapper,String accountId,String openOrderId){
-        YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
-        String response = JSON.serialize(orderService.addToCart(productWrapper,accountId,openOrderId));
-        return response;
+        try{
+            YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
+            String response = JSON.serialize(orderService.addToCart(productWrapper,accountId,openOrderId));
+            return response;
+        }catch(Exception e){
+            return e.getMessage();
+        }
     }
            
     

@@ -34,7 +34,7 @@
 
                 <input type="text" lwc:ref="searchinput" class="form-control"
                   style="text-align: left !important;padding-left: 10px !important;" name="x"
-                  placeholder="Search By Product Name, Size or Pattern" autocomplete="off" />
+                  placeholder="Search By Product Name, Size or Pattern" autocomplete="off" onkeypress={handleEnter} />
                 <span class="input-group-btn">
                   <button class="btn btn-default" type="button" onclick={handleSearch}><i
                       class="fa fa-search"></i></button>
@@ -128,17 +128,20 @@
                       <div lwc:if={productWrap.frequentlyBoughtProduct} class="label-right shadow-sm" style="background-color: blueviolet; margin-right: 2px;">Frequently</div>
                       <div lwc:else style="background-color: white;box-shadow: none!important;"
                           class="label-top shadow-sm">.</div>  
-                      <img src={geolander} />
+                      <img src={productWrap.pricebookEntry.Product2.Image_Url__c} />
+                      <!-- <img src={geolander} /> -->
                     </section>
 
                     <div class="product__details">
                       <section class="product__name slds-truncate" title={productWrap.pricebookEntry.Product2.Name}>{productWrap.pricebookEntry.Product2.Name}</section>
-                      <section class="product__short-description">
+                      <section class="product__short-description slds-truncate" title={productWrap.pricebookEntry.Product2.Product_Code__c}>
                         <!-- Tyre Size: 145/80R13 75S | Tread Pattern: E400 | FG-F8669 -->
-                        Tyre Size: <span lwc:if={productWrap.productSize}>{productWrap.productSize}</span><span lwc:else>N/A</span> inches | Tread Pattern:
+                        <div if:false={isPromotional}>
+                        Rim Size: <span lwc:if={productWrap.productSize}>{productWrap.productSize}</span><span lwc:else>N/A</span> inches | Pattern:
                         {productWrap.pricebookEntry.Product2.Tread_Pattern__c} | <span
                           lwc:if={productWrap.variantCode}>Variant: {productWrap.variantCode}</span> |
                         {productWrap.pricebookEntry.Product2.Product_Code__c}
+                        </div>
                         <!-- {productWrap.pricebookEntry.Product2.Description} -->
                         <div class="wcf-left"><span class="qty">Quantity: </span></div>
                         <div class="wcf-right">
@@ -150,8 +153,8 @@
                                   <span class="glyphicon glyphicon-minus"></span>
                                 </button>
                               </span>
-                              <input type="text" class="form-control input-number" value={productWrap.quantity}
-                                data-index={index} data-type="change" onkeyup={changeQuantity}>
+                              <input type="number" class="form-control input-number" value={productWrap.quantity}
+                                data-index={index} data-type="change" step="1" onchange={changeQuantity}>
                               <span class="input-group-btn">
                                 <button type="button" class="btn btn-default btn-number" data-index={index}
                                   data-type="plus" onclick={changeQuantity}>
@@ -177,7 +180,7 @@
                           </template>
                         </template>
                         <template lwc:else>
-                          <div class="wcf-left"><span class="price">Unit Price: ₹
+                          <div class="wcf-left"><span class="price">Unit Price: Rs.
                               {productWrap.pricebookEntry.Sales_Price__c}</span>
                           </div>
                         </template>
@@ -198,6 +201,35 @@
 
       </div><!-- /wrapper -->
 
+      <template if:true={canNotBeProcess}>
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+          aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+          <div class="slds-modal__container">
+            <header class="slds-modal__header">
+              <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close"
+                onclick={handleRedirectHome}>
+                <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse"
+                  size="small"></lightning-icon>
+                <span class="slds-assistive-text">Close</span>
+              </button>
+              <h2 id="modal-heading-02" class="slds-text-heading_medium slds-hyphenate">Blocked</h2>
+            </header>
+            <!-- Modal/Popup Box LWC body starts here -->
+            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-2">
+              <!-- <h2>Submitted Order</h2> -->
+              <div class="col-md-12 col-xs-6">
+                Only Open And Cart Orders Are Editable 
+              </div>
+            </div>
+            <!-- Modal/Popup Box LWC footer starts here -->
+            <footer class="slds-modal__footer">
+              <button class="slds-button slds-button_brand" data-confirm="true" onclick={handleRedirectHome}
+                title="Close" style="color: white;">Close</button>
+            </footer>
+          </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+      </template>
     </div>
 
     <div if:true={isLoading} style="height: 200px; position:relative">
@@ -211,7 +243,7 @@
       <div class="container-fuild">
         <div class="row" style="margin:1px">
 
-          <div class="col-md-10 col-xs-6">
+          <div class="col-md-11 col-xs-6">
             <div class="slds-section__title-action"
               style="background:#262626; color:#fff; font-weight:600; border-top-left-radius:4px; border-bottom-left-radius:4px; border-top-right-radius:4px; border-bottom-right-radius:4px; font-size:18px; padding:5px;">
               <lightning-icon label="" icon-name="utility:cart" style="color:#fff!important;"></lightning-icon>
@@ -219,9 +251,8 @@
             </div>
           </div>
 
-          <div class="col-md-2 col-xs-6 slds-section__title-action"
-            style="background:#262626; color:#fff; font-weight:600; border-top-left-radius:4px; border-bottom-left-radius:4px; border-top-right-radius:4px; border-bottom-right-radius:4px; font-size:18px; padding:5px;">
-            <lightning-button label="Search Product" title="Search Product" icon-name="utility:search"
+          <div class="col-md-1 col-xs-6" >
+            <lightning-button  icon-name="utility:search" variant="brand" style="margin-top: 5px;"
               class="slds-m-left_x-small" onclick={handleHideCart}></lightning-button>
           </div>
         </div>
@@ -229,15 +260,26 @@
 
       <div class="container-fuild">
         <div class="row" style="margin:1px">
-          <div class="col-md-3 col-xs-6 credit"><i class="fa fa-credit-card"></i> Total Credit Limit <br /><span
-              class="amt">₹
-              {accountDetails.Total_Credit_Limit__c}</span></div>
+          <div lwc:if={isPromotional}>
+            <div class="col-md-3 col-xs-6 credit"><i class="fa fa-credit-card"></i> Total Promotional Budget <br /><span
+              class="amt">Rs. {bugetInfo.totalBudget}</span>
+            </div>
+            <div class="col-md-3 col-xs-6 credit"><i class="fa fa-credit-card"></i> Available Promotional Budget <br /><span
+                class="amt">Rs. {bugetInfo.availableBudget}</span>
+            </div>
+          </div>
+          <div lwc:else>
+            <div class="col-md-3 col-xs-6 credit"><i class="fa fa-credit-card"></i> Total Credit Limit <br /><span
+              class="amt">Rs. {accountDetails.Total_Credit_Limit__c}</span>
+          </div>
           <div class="col-md-3 col-xs-6 credit"><i class="fa fa-credit-card"></i> Available Credit Limit <br /><span
-              class="amt">₹ {accountDetails.Available_Credit_Limit__c}</span></div>
+              class="amt">Rs. {accountDetails.Available_Credit_Limit__c}</span>
+          </div>
+          </div>
           <div class="col-md-3 col-xs-6 credit"><i class="fas fa-boxes"></i> Total Order Quantity <br /><span
               class="amt">{totalOrderQuantity}</span></div>
           <div class="col-md-3 col-xs-6 credit"><i class="fa fa-credit-card"></i> Grand Total Price <br /><span
-              class="amt">₹ {grandTotal}</span></div>
+              class="amt">Rs. {grandTotal}</span></div>
         </div>
       </div>
 
@@ -288,12 +330,12 @@
       <div if:false={isLoading} class="shopping-cart">
         <div class="column-labels">
           <label class="product-image label1">Item Image</label>
-          <label class="label1" style="width: 14%!important;float: left;">Item Name</label>
+          <label class="label1" style={cartWidth}>Item Name</label>
           <label class="product-price label1">Unit Price</label>
           <!-- <label class="product-price label1">List Price</label> -->
-          <label class="product-discount label1">Discount</label>
+          <label if:false={isPromotional} class="product-discount label1">Discount</label>
           <label class="product-finalqty label1">Quantity</label>
-          <label class="product-price label1">Discount Amount</label>
+          <label if:false={isPromotional} class="product-price label1">Discount Amount</label>
           <!-- <label class="product-price label1">Net Price</label> -->
           <label class="product-gst label1">GST</label>
           <label class="product-line-price label1">Sub Total</label>
@@ -302,14 +344,14 @@
         <template for:each={cartDetails} for:item="cartDetail" for:index="index">
           <div key={cartDetail.combinationKey} class="product">
             <div class="product-image">
-              <img src={geolander} />
+              <img src={cartDetail.pricebookEntry.Product2.Image_Url__c} />
             </div>
-            <div class="" style="width: 14%!important;float: left;">
+            <div class="" style={cartWidth}>
               <div class="product-title">{cartDetail.pricebookEntry.Name}</div>
               <div class="product-description">
                 <div>Product Code: <strong>{cartDetail.pricebookEntry.Product2.Product_Code__c}</strong></div>
-                <div>Tyre Size: {cartDetail.pricebookEntry.Product2.Size__c} inch</div>
-                <div>Tread Pattern: {cartDetail.pricebookEntry.Product2.Tread_Pattern__c}</div>
+                <div>Rim Size: {cartDetail.pricebookEntry.Product2.Size__c} inch</div>
+                <div>Pattern: {cartDetail.pricebookEntry.Product2.Tread_Pattern__c}</div>
                 <div lwc:if={cartDetail.variantCode}>Variant Code: {cartDetail.variantCode}</div>
                 <!-- <div>Item Number: {cartDetail.pricebookEntry.Product2.Product_Code__c}</div> -->
                 <div class="product-removal">
@@ -321,12 +363,12 @@
             </div>
             <div class="product-price"> {cartDetail.pricebookEntry.Sales_Price__c}</div>
             <!-- <div class="product-price"> {cartDetail.pricebookEntry.UnitPrice}</div> -->
-            <div class="product-discount">{cartDetail.discountPercentage} %</div>
+            <div if:false={isPromotional} class="product-discount">{cartDetail.discountPercentage} %</div>
             <div class="product-finalqty">
               <input type="number" data-index={index} value={cartDetail.quantity} min="0" onfocus={copyOldQuanity}
                 onchange={changeCartQuantity}>
             </div>
-            <div class="product-price"> {cartDetail.discountAmount}</div>
+            <div if:false={isPromotional} class="product-price"> {cartDetail.discountAmount}</div>
             <!-- <div class="product-price"> {cartDetail.valueWithoutGST}</div> -->
             <!--<div class="product-removal">
           <button class="remove-product">
@@ -348,18 +390,20 @@
         </div>
 
           <div class="totals-item">
-            <label style="color:#333; background:#fff;">GST @{gstPercentage} %</label>
+            <label style="color:#333; background:#fff;">GST <span if:false={isPromotional}>@{gstPercentage} %</span></label>
             <div class="totals-value" id="cart-tax"> {totalGSTAmount} </div>
           </div>
 
-          <div class="totals-item">
-            <label style="color:#333; background:#fff;">TDS @{tdsPercentage} %</label>
-            <div class="totals-value" id="cart-tds"> - {totalTDS} </div>
-          </div>
+          <div if:false={isPromotional}>
+            <div class="totals-item">
+              <label style="color:#333; background:#fff;">TDS @{tdsPercentage} %</label>
+              <div class="totals-value" id="cart-tds"> - {totalTDS} </div>
+            </div>
 
-          <div class="totals-item">
-            <label style="color:#333; background:#fff;">TCS @{tcsPercentage} %</label>
-            <div class="totals-value" id="cart-tcs"> {totalTCS} </div>
+            <div class="totals-item">
+              <label style="color:#333; background:#fff;">TCS @{tcsPercentage} %</label>
+              <div class="totals-value" id="cart-tcs"> {totalTCS} </div>
+            </div>
           </div>
           <!--    <div class="totals-item">
           <label>Shipping Total Price</label>
@@ -472,13 +516,13 @@
             <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close"
               onclick={closeModalCheckout}>
               <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse"
-                size="small"></lightning-icon>
+                size="small"  onclick={handleRedirectListView}></lightning-icon></lightning-icon>
               <span class="slds-assistive-text">Close</span>
             </button>
-            <h2 id="modal-heading-02" class="slds-text-heading_medium slds-hyphenate">Order Summary</h2>
+            <h2 id="modal-heading-03" class="slds-text-heading_medium slds-hyphenate">Order Summary</h2>
           </header>
           <!-- Modal/Popup Box LWC body starts here -->
-          <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-2">
+          <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-3">
             <!-- <h2>Submitted Order</h2> -->
             <div class="col-md-12 col-xs-6">
               <!-- <div class="slds-section__title-action"
@@ -506,7 +550,7 @@
           </div>
           <!-- Modal/Popup Box LWC footer starts here -->
           <footer class="slds-modal__footer">
-            <button class="slds-button slds-button_brand" data-confirm="true" onclick={handleCheckoutRedirect}
+            <button class="slds-button slds-button_brand" data-confirm="true" onclick={handleRedirectListView}
               title="Close" style="color: white;">Close</button>
           </footer>
         </div>

@@ -53,13 +53,13 @@
   
   .green .product__image img {
     display: block;
-    height: auto;
+    height: 170px;
     max-width: 100%;
   }
   
   /* Product Name */
   .green .product__name {
-    font-size: 18px;
+    font-size: 13px;
     font-weight: 700;
     margin-top:15px;
     margin-bottom: 5px;
@@ -135,7 +135,7 @@
   
   .blue .product__image img {
     display: block!important;
-    height: auto!important;
+    height: 170px!important;
     max-width: 100%!important;
   }
   

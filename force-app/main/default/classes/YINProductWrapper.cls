@@ -200,6 +200,9 @@ public with sharing class YINProductWrapper implements Comparable {
     @AuraEnabled
     public Integer priority;
 
+    @AuraEnabled
+    public Boolean isPromotional;
+
     /**
      * DiscountTable - Inner class representing entries in the discount table.
      */

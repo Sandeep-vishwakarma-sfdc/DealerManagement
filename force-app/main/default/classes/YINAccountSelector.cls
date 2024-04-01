@@ -94,7 +94,8 @@ public without sharing class YINAccountSelector extends LibSObjectSelector {
         Account.City__c,
         Account.District__c,
         Account.Sub_District__c,
-        Account.OwnerId
+        Account.OwnerId,
+        Account.Zone__c
     // End Adding by Amol Patil
         };
     }
@@ -343,7 +344,8 @@ public without sharing class YINAccountSelector extends LibSObjectSelector {
         }   return Database.query(
             newQueryFactory()
             .selectField('Location__r.Location_Code__c')
-            .selectField('Location__r.Contact_Email_Id__c')
+            .selectField('Location__r.Location_Code__c')
+            .selectField('Zone__r.Branded_Retail_Manager__c')
             .selectField('Territory__r.Service_Engineer__c')
             .setCondition('Id IN:accIds')
             .toSOQL()

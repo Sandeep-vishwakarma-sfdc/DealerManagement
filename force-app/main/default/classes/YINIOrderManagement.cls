@@ -4,10 +4,15 @@ public interface YINIOrderManagement {
     List<YINProductWrapper> getProducts(String accountId,String orderType,String orderModuleType);
     Boolean addToCart(String productWrapper,String accountId,String openOrderId);
     String deleteCartItem(String productWrapper,String accountId,String openOrderId);
-    List<YINProductWrapper> getCartDetails(String accountId,String openOrderId);
+    List<YINProductWrapper> getCartDetails(String accountId,String openOrderId,String orderModuleType);
     String createOrder(String productWrapper,String wrapCommit);
     List<Order> getOrderDetails(String recordId);
 
+    // for Promotional Order
+    YINPromotionalOrderUtils.LedgerBudgetInfo getCurrentYearQuaterledger(String accountId,String recordType);
+    void createPromotionalOrder(List<String> orderId);
+    String promotionalOrderSendForApproval(String productWrapper);
+    
     // some user information methods
     List<String> getExperienceUserProfiles();
     User getCurrentUser();

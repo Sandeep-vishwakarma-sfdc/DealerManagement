@@ -9,6 +9,9 @@ public with sharing class YINOrderManagementDataFactoryTest {
     private static Order orderRecord = null;
     private static List<OrderItem> orderItemRecords = null;
     private static List<YIN_Variant__c> variantsRecord = null;
+    
+    private static List<YIN_Ledger__c> ledgerRecord = null;
+    private static YIN_Payment__c paymentRecord = null;
     // Creating Standrad Object Records
     public static Account testAccount(){
         Account acc = new Account();
@@ -49,6 +52,103 @@ public with sharing class YINOrderManagementDataFactoryTest {
         return accountRecord;
 
     }
+    
+    public static List<YIN_Ledger__c> testLedgers(){
+        List<YIN_Ledger__c> ledgers = new List<YIN_Ledger__c>();
+        YIN_Ledger__c ledgerLedger = new YIN_Ledger__c();
+        ledgerLedger.Id = LibIDGenerator.generate(YIN_Ledger__c.SObjectType);
+        ledgerLedger.Dealer_Code__r = testAccount();
+        ledgerLedger.RecordTypeId = Schema.SObjectType.YIN_Ledger__c.getRecordTypeInfosByName().get('Ledger').getRecordTypeId();
+        ledgerLedger.Posting_Date__c = Date.today() - 1;
+        ledgerLedger.Cheque_Clearance_Date__c = Date.today() - 10;
+        ledgerLedger.Amount__c = 5000;
+        ledgerLedger.Cheque_Date__c = Date.today() - 10;
+        ledgerLedger.Cheque_Number__c = '12345678';
+        ledgerLedger.Applies_To_Type__c = 'to Type';
+        ledgerLedger.Applies_To_Document__c = 'Apply';
+        ledgerLedger.Another_Bank_Account_Number__c = 'BANK4321';
+        ledgerLedger.AmountLCY__c= 50;
+        ledgerLedger.Debit_LCY__c = 50;
+        ledgerLedger.Document_Date__c = Date.today() - 10;
+        ledgerLedger.Document_Number__c = '123456';
+        ledgerLedger.Document_Type__c = 'Invoice';
+        ledgerLedger.Credit_LCY__c = 50;
+        ledgerLedger.Credit_Amount__c = 50;
+        ledgerLedger.Debit_Amount__c = 20;
+        ledgerLedger.External_Document_Number__c = 'T1234';
+        ledgerLedger.Due_Date__c = Date.today() + 1;
+        ledgerLedger.Closed_Entry_No__c = 'C123';
+        ledgerLedger.Payment_Method__c = 'UPI';
+        ledgerLedger.Bank_Account_Number__c = 'BANK1234';
+		ledgerLedger.Transaction_Number__c = 'T1234';
+        ledgerLedger.Remaining_Amount__c = 1000;
+        ledgerLedger.Remaining_Amount_LCY__c = 10000;
+        ledgerLedger.Reversed__c = true;
+        ledgerLedger.Open__c = true;
+        ledgerLedger.Entry_Number__c = 'E123';
+        ledgerLedger.Ledger_Type__c = 'Invoice';
+        ledgerLedger.Closed_Amount__c = 45;
+        ledgerLedger.Location__c = null;
+        ledgerLedger.Payment__r = testPayment();
+        ledgerLedger.GST_Jurisdiction_Type__c = 'GST123';
+        ledgerLedger.Closed_Date__c = Date.today() + 1;
+        
+        
+        YIN_Ledger__c ledgersSecurityDeposit = new YIN_Ledger__c();
+        ledgersSecurityDeposit.Id = LibIDGenerator.generate(YIN_Ledger__c.SObjectType);
+        ledgersSecurityDeposit.Dealer_Code__r = testAccount();
+        ledgersSecurityDeposit.RecordTypeId = Schema.SObjectType.YIN_Ledger__c.getRecordTypeInfosByName().get('Security Deposit').getRecordTypeId();
+        ledgersSecurityDeposit.Posting_Date__c = Date.today() - 1;
+        ledgersSecurityDeposit.Document_Number__c = '1234';
+        ledgersSecurityDeposit.Credit_Amount__c = 5000;
+        ledgersSecurityDeposit.Amount__c = 5000;
+        ledgersSecurityDeposit.Cheque_Number__c = '12345';
+        ledgersSecurityDeposit.Cheque_Date__c = Date.today() - 10;
+        
+        
+        YIN_Ledger__c ledgersTCSLedger = new YIN_Ledger__c();
+        ledgersTCSLedger.Id = LibIDGenerator.generate(YIN_Ledger__c.SObjectType);
+        ledgersTCSLedger.Dealer_Code__r = testAccount();
+        ledgersTCSLedger.RecordTypeId = Schema.SObjectType.YIN_Ledger__c.getRecordTypeInfosByName().get('TCS Ledger').getRecordTypeId();
+        ledgersTCSLedger.Posting_Date__c = Date.today() - 1;
+        ledgersTCSLedger.Assessee_Code__c = 'E123';
+        ledgersTCSLedger.TCS_Nature_of_Collection__c = 'TCS123';
+        ledgersTCSLedger.TCS_Percent__c = 111;
+        ledgersTCSLedger.TCS_Amount__c = 111;
+        ledgersTCSLedger.TCS_Base_Amount__c = 123;
+        ledgersTCSLedger.Custome_PAN__c = 'PAN12345';
+        ledgersTCSLedger.ERP_Code__c = 'TCS12323';
+        ledgersTCSLedger.Year__c = '2024';
+        ledgersTCSLedger.Quarter__c = 'Q1';
+        
+        
+        
+        YIN_Ledger__c ledgersPromotionalBudget = new YIN_Ledger__c();
+        ledgersPromotionalBudget.Id = LibIDGenerator.generate(YIN_Ledger__c.SObjectType);
+        ledgersPromotionalBudget.Dealer_Code__r = testAccount();
+        ledgersPromotionalBudget.RecordTypeId = Schema.SObjectType.YIN_Ledger__c.getRecordTypeInfosByName().get('Promotional_Budget').getRecordTypeId();
+        ledgersPromotionalBudget.Posting_Date__c = Date.today() - 1;
+        
+        ledgers.add(ledgerLedger);
+        ledgers.add(ledgersSecurityDeposit);
+        ledgers.add(ledgersTCSLedger);
+        ledgers.add(ledgersPromotionalBudget);
+        if(ledgerRecord==null){
+            ledgerRecord = ledgers;
+        }
+        return ledgerRecord;
+    }
+    
+    public static YIN_Payment__c testPayment(){
+        YIN_Payment__c payment = new YIN_Payment__c();
+        payment.Amount__c = 100;
+        payment.Customer_Number__r = testAccount();
+        if(paymentRecord==null){
+            paymentRecord = payment;
+        }
+        return paymentRecord;
+    }
+    
     public static Contact testContact(){
         Account acc = testAccount();
         Contact con = new Contact();

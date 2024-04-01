@@ -17,10 +17,10 @@ public with sharing class YINGetDiscountProductImpl implements YINIGetProducts {
      * @param accountId - Id of the account for which discounted products need to be retrieved.
      * @return List<YINProductWrapper> - List of YINProductWrapper instances containing discounted product details.
      */
-    public List<YINProductWrapper> getProducts(String accountId) {
+    public List<YINProductWrapper> getProducts(String accountId,Boolean isPromotional) {
 
         // 1. Bring all Normal Products in a wrapper (let's say productWrappers)
-        List<YINProductWrapper> productWrappers = new YINGetAllProductImpl().getProducts(accountId);
+        List<YINProductWrapper> productWrappers = new YINGetAllProductImpl().getProducts(accountId,isPromotional);
 
         // 2. Bring all Discounted Products in a wrapper (let's say discountedPriceList)
         List<YIN_Price_List__c> discountedPriceList = getDiscountedPriceList(accountId);

@@ -11,11 +11,14 @@ import getObjectApiName from '@salesforce/apex/YINOrderManagementController.getO
 import getOrderDetails from '@salesforce/apex/YINOrderManagementController.getOrderDetails';
 import getShippingAccounts from '@salesforce/apex/YINOrderManagementController.getShippingAccounts';
 import createOrder from '@salesforce/apex/YINOrderManagementController.createOrder';
+import getCurrentYearQuaterledger from '@salesforce/apex/YINOrderManagementController.getCurrentYearQuaterledger';
+import promotionalOrderSendForApproval from '@salesforce/apex/YINOrderManagementController.promotionalOrderSendForApproval';
 import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
 import customcss from '@salesforce/resourceUrl/resourceOrderMangmt';
 import LightningAlert from 'lightning/alert';
-
+import { NavigationMixin } from 'lightning/navigation';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import LightningConfirm from 'lightning/confirm';
 
 /**
  * Order Management LWC Components.
@@ -26,7 +29,7 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
  * @example
  * <c-order-management></c-order-management>
  */
-export default class YinOrderManagementCmp extends LightningElement {
+export default class YinOrderManagementCmp extends NavigationMixin(LightningElement){
     /**
    * TRUE when loggedIn user profile is Sales Representatives profile;
    * @type {Boolean}
@@ -69,7 +72,7 @@ export default class YinOrderManagementCmp extends LightningElement {
     tdsPercentage = 0;
     tcsPercentage = 0;
     grandTotal = 0;
-
+    canNotBeProcess = false;
     isGridView = true;
         
     selectedOrderType ={
@@ -77,12 +80,22 @@ export default class YinOrderManagementCmp extends LightningElement {
         discount:false
     }
 
+    bugetInfo = {
+    }
+
     varientOptions = {}
     varientValue = '';
+    get cartWidth(){
+        if(this.isPromotional){
+            return 'width: 35%!important;float: left';
+        }
+        return 'width: 14%!important;float: left';
+    }
 
 
      /* Add Design code */
     geolander = customcss + '/resource/images/geolander.jpg';
+    // geolander = 'https://yokohama-india--dev--c.sandbox.vf.force.com/resource/Earth_1';
     geolander1 = customcss + '/resource/images/geolander1.jpg';
     geolander2 = customcss + '/resource/images/geolander2.jpg';
     geolander3 = customcss + '/resource/images/geolander3.jpg';
@@ -95,17 +108,27 @@ export default class YinOrderManagementCmp extends LightningElement {
     isModalOpen = false;
     orderPreview = [];
     isModalOrder = false;
-    orderModuleType = 'Normal';
+    @api orderModuleType = '';
+
+    get isPromotional(){
+        return this.orderModuleType=='Promotional';
+    }
 
     get isDisableBtn(){
         return this.isLoading;
     }
     
     get options() {
-        return [
-            { label: 'All Products', value: 'All' },
-            { label: 'Discounted Products', value: 'Discount' },
-        ];
+        if(this.isPromotional){
+            return [
+                { label: 'All Products', value: 'All' }
+            ];
+        }else{
+            return [
+                { label: 'All Products', value: 'All' },
+                { label: 'Discounted Products', value: 'Discount' },
+            ]; 
+        }
     }
     displayToggle = false;
 
@@ -114,6 +137,16 @@ export default class YinOrderManagementCmp extends LightningElement {
     async connectedCallback(){
         try {
         this.isLoading = true;
+        let urlString = location.href;
+        let url = new URL(urlString);
+        console.log('orderModuleType ',this.orderModuleType);
+        if(!this.orderModuleType){
+            if(url.searchParams.get('c__module')){
+                this.orderModuleType = url.searchParams.get('c__module');
+            }
+        }
+
+        
 
         // check whether current user is Sales Representative OR Digital Experience User
         this.experienceUserProfiles = await getExperienceUserProfiles();
@@ -123,10 +156,15 @@ export default class YinOrderManagementCmp extends LightningElement {
 
         
         if(!this.isSalesRepUser){// For Experience User
-            let urlString = location.href;
-            let url = new URL(urlString);
             if(url.searchParams.get('orderId')){
                 this.openOrderId = url.searchParams.get('orderId');
+                let orderDetails = await getOrderDetails({recordId:this.openOrderId});
+                console.log('orderDetails ',orderDetails);
+                if(orderDetails[0].Status=='Cart' || orderDetails[0].Status=='Open'){
+                    this.canNotBeProcess = false;
+                }else{
+                    this.canNotBeProcess = true;
+                }
             }
             this.accountId = await getExperienceUserAccount();
             
@@ -143,6 +181,16 @@ export default class YinOrderManagementCmp extends LightningElement {
             // this.accountId = '0010T00000fYTVBQA4';
         }
         console.log('Account Id ',this.accountId);
+
+        if(this.isPromotional){
+            this.bugetInfo = await getCurrentYearQuaterledger({accountId:this.accountId,recordType:'Promotional_Budget'});
+            let totalBudget = Number(this.bugetInfo.totalBudget).toFixed(2);
+            let availableBudget = Number(this.bugetInfo.availableBudget).toFixed(2);
+            this.bugetInfo = {
+                totalBudget:Number(totalBudget),
+                availableBudget:Number(availableBudget)
+            }
+       }
         
         // Loading All Products from Normal price book
         this.loadProducts('All');// by default load all product, TODO : Edit All string from metadata configuration
@@ -151,7 +199,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         this.accountDetails = await getAccount({accountId:this.accountId});
 
         // Loading existing cart order details
-        this.cartDetails = await getCartDetails({accountId:this.accountId,openOrderId:this.openOrderId});
+        this.cartDetails = await getCartDetails({accountId:this.accountId,openOrderId:this.openOrderId,orderModuleType:this.orderModuleType});
         console.log('Cart Detail ',this.cartDetails);
         console.log('Cart Detail str',JSON.stringify(this.cartDetails));
         this.CartDetailLength = this.cartDetails.length;
@@ -228,7 +276,7 @@ export default class YinOrderManagementCmp extends LightningElement {
             item.totalAmount = isNaN(item.totalAmount)?0:Number(item.totalAmount).toFixed(2);// Added to Fix decimal Issue
             // item.valueWithoutGST = netValue;
             totalDiscount = totalDiscount + discount;
-            item.discountAmount = discount;
+            item.discountAmount = Number(discount).toFixed(2);
         });
         if(this.cartDetails.length > 0){
         this.netOrderValue = isNaN(netValue)?0:Number(netValue).toFixed(2);   
@@ -375,7 +423,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         }
         let cartIndex = undefined;
         if(this.selectedOrderType.all){ // Form Normal Product , No Need to check Variants
-            cartIndex = this.cartDetails.findIndex(ele=>ele.productId==productWrap.productId);
+            cartIndex = this.cartDetails.findIndex(ele=>ele.productId==productWrap.productId && !ele.variantId);
         }else{ // Form Discount Product , Need to check Variants
             cartIndex = this.cartDetails.findIndex(ele=>ele.productId==productWrap.productId && ele.variantId==productWrap.priceList.Variant__c);
         }
@@ -383,7 +431,7 @@ export default class YinOrderManagementCmp extends LightningElement {
             // Adding sub-total for cart line-item
             console.log('Account ',this.accountDetails);
             let productWrap = this.productswrapper[index];
-            if(this.accountDetails.Is_Locking_Enable__c){
+            if(this.accountDetails.Is_Locking_Enable__c && this.isPromotional==false){
                 if(productWrap.lockingSKUAccount){
                     this.showAlert(`Product ${productWrap.productName} is locked for the customer.`,'warning','Warning'); 
                     this.isLoading = false;
@@ -399,7 +447,7 @@ export default class YinOrderManagementCmp extends LightningElement {
                 // this.isLoading = false;
                 // return; 
             }
-            if(this.accountDetails.Is_Capping_Enable__c){
+            if(this.accountDetails.Is_Capping_Enable__c && this.isPromotional==false){
                 if(productWrap.maximumCappingQuantity < productWrap.quantity){
                     productWrap.quantity = 1;
                     this.showAlert(`You can add only ${productWrap.maximumCappingQuantity} quantity for Product ${productWrap.productName}.`,'warning','Warning'); 
@@ -417,7 +465,7 @@ export default class YinOrderManagementCmp extends LightningElement {
             let isAddedToCart = await addToCart({productWrapper:JSON.stringify(productWrap),accountId:this.accountId,openOrderId:this.openOrderId});
             this.cartDetails.push(productWrap);
             //  Refresh Carts
-            this.cartDetails = await getCartDetails({accountId:this.accountId,openOrderId:this.openOrderId});
+            this.cartDetails = await getCartDetails({accountId:this.accountId,openOrderId:this.openOrderId,orderModuleType:this.orderModuleType});
             this.CartDetailLength = this.cartDetails.length;
             this.cartCalculation();
             this.showToast('Success ','Product Added To Cart','success','dismissable');
@@ -441,6 +489,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         let cartIndex = this.cartDetails.findIndex(ele=>ele.productId==this.cartDetails[index].productId);
         if(cartIndex!=-1){
             let productWrap = this.cartDetails[cartIndex];
+            productWrap.isPromotional = this.isPromotional;
             console.log(' productWrap ',JSON.stringify(productWrap));
             let response = await deleteCartItem({productWrapper:JSON.stringify(productWrap),accountId:this.accountId,openOrderId:this.openOrderId});
             console.log('resp ',response);
@@ -559,6 +608,13 @@ export default class YinOrderManagementCmp extends LightningElement {
         
     }
 
+    async handleEnter(event){
+        console.log('handle Enter ',event.key);
+        if(event.key==='Enter'){
+            await this.handleSearch(event);
+        }
+    }
+
     // search bar button action
     async handleSearch(event){
         console.log('search ',this.refs.searchinput.value);
@@ -604,54 +660,88 @@ export default class YinOrderManagementCmp extends LightningElement {
 
     async handleCheckout(event){
         this.isLoading = true;
-        let commitCheckOut = event.target.dataset.confirm;
-        commitCheckOut = commitCheckOut=='true';
-        console.log('commit ',commitCheckOut);
-        // Check for valid Shipping Address
-        if(this.shippingAddress && this.shippingAccountValue){
+        console.log('cartDetails ',JSON.stringify(this.cartDetails));
+        if(!this.isPromotional){
+            let commitCheckOut = event.target.dataset.confirm;
+            commitCheckOut = commitCheckOut=='true';
+            console.log('commit ',commitCheckOut);
+            // Check for valid Shipping Address
+            if(this.shippingAddress && this.shippingAccountValue){
+                try {
+                    let param = {doCommit:commitCheckOut,grandTotal:Number(this.grandTotal),accountId:this.accountId,shippingAccountCode:this.shippingAccountValue};
+                    let response = await createOrder({productWrapper:JSON.stringify(this.cartDetails),wrapCommit:JSON.stringify(param)});
+                    console.log('response str',response);
+                    response = JSON.parse(response);
+                    let resSubmitted = JSON.parse(response.Submitted);
+                    let resOpen = JSON.parse(response.Open);
+                    let resOrder = JSON.parse(response.Orders);
+                    let tempId = 0;
+                    let submitted = resSubmitted.map(item=>{
+                        tempId++;
+                        return {tempId:tempId,VariantCode: item?.Variant_Code__c,status:'Submitted',...item}
+                    });
+                    tempId = 0;
+                    let open = resOpen.map(item=>{
+                        tempId++;
+                        return {tempId:tempId,VariantCode: item?.Variant_Code__c,status:'Open',...item}
+                    });
+                    
+                    this.orderPreview = {Submitted:submitted,Open:open,Orders:resOrder};
+                    
+                    console.log('Boolean(commitCheckOut)==false ',commitCheckOut);
+                    console.log('resOrder ',JSON.stringify(resOrder));
+                    if(commitCheckOut==false){
+                        this.isModalOpen = true;
+                        this.isModalOrder = false;
+                    }else{
+                        this.isModalOpen = false;
+                        this.isModalOrder = true;
+                        this.showToast('SUCCESS','Order Submitted Succesfully','success');
+                        //this.handleListViewNavigation();
+                    }
+                } catch (error) {
+                    console.log('error ',error);
+                    if(error.body.message!='Credit Days Expired'){
+                        this.showAlert(error.body.message,'error','Error');
+                    }else{
+                        this.showPrompt(error.body.message+" \n Redirect to payment screen ?",'error','Error');
+                    }
+                    console.log('error ',error.message);
+                }
+                
+            }else{
+                this.showAlert('Please Select Shipping Address','error','Error');
+            }
+        }else{
             try {
-                let param = {doCommit:commitCheckOut,grandTotal:Number(this.grandTotal),accountId:this.accountId,shippingAccountCode:this.shippingAccountValue};
-                let response = await createOrder({productWrapper:JSON.stringify(this.cartDetails),wrapCommit:JSON.stringify(param)});
-                console.log('response str',response);
-                response = JSON.parse(response);
-                let resSubmitted = JSON.parse(response.Submitted);
-                let resOpen = JSON.parse(response.Open);
-                let resOrder = JSON.parse(response.Orders);
-                let tempId = 0;
-                let submitted = resSubmitted.map(item=>{
-                    tempId++;
-                    return {tempId:tempId,VariantCode: item?.Variant_Code__c,status:'Submitted',...item}
-                });
-                tempId = 0;
-                let open = resOpen.map(item=>{
-                    tempId++;
-                    return {tempId:tempId,VariantCode: item?.Variant_Code__c,status:'Open',...item}
-                });
-                
-                this.orderPreview = {Submitted:submitted,Open:open,Orders:resOrder};
-                
-                console.log('Boolean(commitCheckOut)==false ',commitCheckOut);
-                console.log('resOrder ',JSON.stringify(resOrder));
-                if(commitCheckOut==false){
-                    this.isModalOpen = true;
-                    this.isModalOrder = false;
+                if(this.shippingAddress && this.shippingAccountValue){
+                if(this.bugetInfo.availableBudget < this.grandTotal){
+                    this.showAlert('Promotional Available Budget Exceed','error','Error');
+                    this.isLoading = false;
+                    return;
+                }
+                let response = await promotionalOrderSendForApproval({productWrapper:JSON.stringify(this.cartDetails)});
+                console.log('respose json ',response);
+                if(response=='success'){
+                    this.showToast('SUCCESS','Promotional Order Sent For Approval','success');
+                    this.handleListViewNavigation();
+                }
                 }else{
-                    this.isModalOpen = false;
-                    this.isModalOrder = true;
-                    this.showToast('SUCCESS','Order Submitted Succesfully','success');
+                    this.showAlert('Please Select Shipping Address','error','Error');
+                    
                 }
             } catch (error) {
                 console.log('error ',error);
-                this.showAlert(error.body.message,'error','Error');
                 console.log('error ',error.message);
+                this.showAlert(error.body.message,'error','Error');
             }
             
-        }else{
-            this.showAlert('Please Select Shipping Address','error','Error');
         }
         this.isLoading = false;
     }
-
+    handleRedirectListView(){
+        this.handleListViewNavigation();
+    }
     oldQty = 1;
     copyOldQuanity(event){
         console.log('on Focus');
@@ -673,7 +763,7 @@ export default class YinOrderManagementCmp extends LightningElement {
             item.discountTable = this.discountedProductsVirtual[discountIndex].discountTable;
         }
 
-        item.quantity = quantity;
+        item.quantity = isNaN(quantity)?0:Number(parseInt(quantity));
         console.log('cart ',item);
         if(quantity==0){
             this.showAlert('Quantity must be greater then "0" ','warning','Warning'); 
@@ -681,7 +771,7 @@ export default class YinOrderManagementCmp extends LightningElement {
             return;
         }
 
-        if(this.accountDetails.Is_Capping_Enable__c){
+        if(this.accountDetails.Is_Capping_Enable__c && this.isPromotional==false){
             if(item.maximumCappingQuantity < item.quantity){
                 item.quantity = this.oldQty;
                 this.showAlert(`You can add only ${item.maximumCappingQuantity} quantity for Product ${item.pricebookEntry.Product2.Name}.`,'warning','Warning '); 
@@ -695,7 +785,7 @@ export default class YinOrderManagementCmp extends LightningElement {
         }
 
         let isAddedToCart = await addToCart({productWrapper:JSON.stringify(item),accountId:this.accountId,openOrderId:this.openOrderId});
-        this.cartDetails = await getCartDetails({accountId:this.accountId,openOrderId:this.openOrderId});
+        this.cartDetails = await getCartDetails({accountId:this.accountId,openOrderId:this.openOrderId,orderModuleType:this.orderModuleType});
         this.CartDetailLength = this.cartDetails.length;
         this.cartCalculation();
         this.isLoading = false;
@@ -706,10 +796,18 @@ export default class YinOrderManagementCmp extends LightningElement {
         }
     }
 
+    
+    handleRedirectHome(){
+        window.close();
+    }
+
+   
+
     changeQuantity(event){
         let type = event.currentTarget.dataset.type;
         let index = event.currentTarget.dataset.index;
         let value = event.target.value;
+        console.log('change Qunatity');
         if(type=='minus' && this.productswrapper[index].quantity > 1){
             this.productswrapper[index].quantity = this.productswrapper[index].quantity - 1;
         }
@@ -717,8 +815,9 @@ export default class YinOrderManagementCmp extends LightningElement {
             this.productswrapper[index].quantity = this.productswrapper[index].quantity + 1
         }
         if(type=='change'){
-            this.productswrapper[index].quantity = isNaN(value)?0:Number(value);
+            this.productswrapper[index].quantity = isNaN(value)?0:Number(parseInt(value));
         }
+        this.productswrapper[index] = JSON.parse(JSON.stringify(this.productswrapper[index]));
         console.log(' this.productswrapper[index].quantity '+this.productswrapper[index].quantity);
 
         //this.productswrapperVirtual = this.productswrapper;
@@ -742,6 +841,28 @@ export default class YinOrderManagementCmp extends LightningElement {
         });
     }
 
+    async showPrompt(message,theme,label){
+        const result = await LightningConfirm.open({
+            message: message,
+            theme: theme, 
+            label: label, 
+        });
+
+        if(result){// When click OK
+            console.log('Ok Clicked');
+            try {
+                this.handleMakePaymentNavigation();
+            } catch (error) {
+                console.log('error ',error);
+                console.log('error ',error.message);
+            }
+            
+
+        }else {
+            console.log('Cancel Clicked');
+        }
+    }
+
     closeModalCheckout(){
         this.isModalOpen = false;
         this.isModalOrder = false;
@@ -751,11 +872,11 @@ export default class YinOrderManagementCmp extends LightningElement {
         this.isModalOpen = false;
         this.isModalOrder = false;
         this.handleHideCart();
-        this.cartDetails = await getCartDetails({accountId:this.accountId,openOrderId:this.openOrderId});
+        this.cartDetails = await getCartDetails({accountId:this.accountId,openOrderId:this.openOrderId,orderModuleType:this.orderModuleType});
         this.CartDetailLength = this.cartDetails.length;
         this.cartCalculation();
         this.selectedShippingAccount = {name:'',accountCode:'',phone:'',email:'',address:''};
-        
+        this.handleListView();
     }
     async handleReset(){
         if(this.displayToggle){
@@ -765,5 +886,22 @@ export default class YinOrderManagementCmp extends LightningElement {
         this.refs.searchinput.value = '';
         this.counter = 0;
         this.productswrapper = await this.getNextItems();
+    }
+
+    handleListViewNavigation() {
+        this[NavigationMixin.Navigate]({
+            type: 'standard__objectPage',
+            attributes: {
+                objectApiName: 'Order',
+                actionName: 'list'
+            },
+            state: {
+                filterName: 'Recent' 
+            }
+        });
+    }
+
+    handleMakePaymentNavigation() {
+        location.replace('/smartconnect/s/make-payment');
     }
 }

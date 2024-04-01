@@ -1,6 +1,7 @@
 <aura:component implements="force:appHostable,lightning:isUrlAddressable,force:hasRecordId,forceCommunity:availableForAllPageTypes,forceCommunity:layout,force:lightningQuickActionWithoutHeader,lightning:actionOverride" >
     <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="module" type="String"/>
     <aura:handler name="init" value="this" action="{!c.init}"/>
     <aura:handler name="change" value="{!v.pageReference}" action="{!c.onPageReferenceChanged}" />
-    <c:yinOrderManagementCmp recordId="{!v.recordId}"/>
+    <c:yinOrderManagementCmp recordId="{!v.recordId}" orderModuleType="{!v.module}"/>
 </aura:component>

@@ -25,7 +25,9 @@ public without sharing class YINLedgerSelector extends LibSObjectSelector{
             YIN_Ledger__c.Cheque_Date__c,
             YIN_Ledger__c.Cheque_Number__c,
             YIN_Ledger__c.Amount__c,
-            YIN_Ledger__c.Remaining_Amount_LCY__c
+            YIN_Ledger__c.Remaining_Amount_LCY__c,
+            YIN_Ledger__c.External_Document_Number__c,
+            YIN_Ledger__c.Description__c
         };
     }
 
@@ -65,6 +67,7 @@ public without sharing class YINLedgerSelector extends LibSObjectSelector{
         LIBQueryFactory query = newQueryFactory();
         query.selectField('Dealer_Code__r.Id');
         query.selectfield('RecordType.Name');
+        query.selectfield('Dealer_Code__r.Name');
         query.setCondition('Dealer_Code__c = : dealerId AND RecordTypeId =: recordTypeId AND Posting_Date__c >= :dateStr1 AND Posting_Date__c <= :dateStr2');
         System.debug('Query is'+query.toSOQL());
         return Database.query( query.toSOQL());     
@@ -74,6 +77,7 @@ public without sharing class YINLedgerSelector extends LibSObjectSelector{
         LIBQueryFactory query = newQueryFactory();
         query.selectField('Dealer_Code__r.Id');
         query.selectfield('RecordType.Name');
+        query.selectfield('Dealer_Code__r.Name');
         query.setCondition('Dealer_Code__c = : dealerId AND RecordTypeId =: recordTypeId AND Posting_Date__c >= :dateStr1 AND Posting_Date__c <= :dateStr2');
         System.debug('Query is'+query.toSOQL());
         return Database.query( query.toSOQL());     
@@ -83,6 +87,7 @@ public without sharing class YINLedgerSelector extends LibSObjectSelector{
         LIBQueryFactory query = newQueryFactory();
         query.selectField('Dealer_Code__r.Id');
         query.selectfield('RecordType.Name');
+         query.selectfield('Dealer_Code__r.Name');
         query.setCondition('Dealer_Code__c = : dealerId AND RecordTypeId =: recordTypeId');
         System.debug('Query is'+query.toSOQL());
         return Database.query( query.toSOQL());     
@@ -92,6 +97,7 @@ public without sharing class YINLedgerSelector extends LibSObjectSelector{
         LIBQueryFactory query = newQueryFactory();
         query.selectField('Dealer_Code__r.Id');
         query.selectfield('RecordType.Name');
+         query.selectfield('Dealer_Code__r.Name');
         query.setCondition('Dealer_Code__c = : dealerId AND RecordTypeId =: recordTypeId');
         System.debug('Query is'+query.toSOQL());
         return Database.query( query.toSOQL());     
@@ -112,5 +118,11 @@ public without sharing class YINLedgerSelector extends LibSObjectSelector{
             .toSOQL();
         return Database.query(query);
     }
+    
+    public List<AggregateResult> getOpeningSumAmt(String dealerId,Id recordTypeId,Date datestr1, Date datestr2){
+        return Database.query('SELECT Dealer_Code__c, sum(Amount__c) amt FROM YIN_Ledger__c  WHERE Dealer_Code__c = : dealerId AND RecordTypeId =: recordTypeId AND Posting_Date__c >= :datestr1 AND Posting_Date__c < :datestr2 group by Dealer_Code__c');
+    }
+    
+    
 
 }

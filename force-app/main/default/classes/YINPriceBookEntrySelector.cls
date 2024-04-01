@@ -55,8 +55,11 @@ public without Sharing class YINPriceBookEntrySelector extends LIBSObjectSelecto
         }
     
         
-        public List<PricebookEntry> selectPriceBookEntriesByPricebook(List<Id> priceBookIds){
+        public List<PricebookEntry> selectPriceBookEntriesByPricebook(List<Id> priceBookIds,Boolean isPromotional){
             String categoryCode = 'TIRE_I';
+            if(isPromotional){
+                categoryCode = 'NON_TRADIN';
+            }
             LIBQueryFactory query = newQueryFactory();
             LIBSObjectSelector productSelector =  new YINProductSelector();
             LIBSObjectSelector priceBookSelector =  new YINPriceBookSelector();
@@ -84,9 +87,9 @@ public without Sharing class YINPriceBookEntrySelector extends LIBSObjectSelecto
 
          /**
          * @author:Saurabh Pandey
-         * @description - 
-         * @param .
-         * @return  - List<PricebookEntry>.
+         * @description : Retrieves a list of PricebookEntry records based on the specified Product Id. 
+         * @param productId The Id of the Product2 record..
+         * @return - List<PricebookEntry> A list of PricebookEntry records associated with the specified Product Id..
          */
 
         public List<PricebookEntry> getPriceBookEntryId(String productId){

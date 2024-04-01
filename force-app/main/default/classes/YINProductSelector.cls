@@ -2,7 +2,7 @@
  * @description       : This class is used to query on Product2 object.
  * @author            : saurabh.pandey@skinternational.com
  * @group             : SKI
- * @last modified on  : 03-09-2024
+ * @last modified on  : 03-12-2024
  * @last modified by  : saurabh.pandey@skinternational.com
 **/
 public with sharing class YINProductSelector extends LibSObjectSelector{
@@ -28,7 +28,11 @@ public with sharing class YINProductSelector extends LibSObjectSelector{
             Product2.Spec_Code__c,
             Product2.Tire_Size__c,
             Product2.Size__c,
-            Product2.Original_Groove_Depth__c
+            Product2.Original_Groove_Depth__c,
+            Product2.GST_Group__c,
+            Product2.GST__c,
+            Product2.Description_2__c,
+            Product2.Image_Url__c
         };
     }
 
@@ -87,9 +91,9 @@ public with sharing class YINProductSelector extends LibSObjectSelector{
     } 
     
     /**
-     * @description: This method creates a query factory to retrieve Product2 records based on a set of product codes.
-     * @param productSet: Set of product codes to filter the Product2 records.
-     * @return fflib_QueryFactory: Query factory to retrieve Product2 records.
+     * @description This method creates a query factory to retrieve Product2 records based on a set of product codes.
+     * @param productSet Set of product codes to filter the Product2 records.
+     * @return List<Product2> A list of Product2 records filtered by the specified product codes.
      */
     public List<Product2> getProductForOrderItem() {
         return Database.query(

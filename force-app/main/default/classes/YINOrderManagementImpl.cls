@@ -17,6 +17,9 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
      * @throws YINOrderManagementException - Throws an exception if there is an issue in the process.
      */
     public static List<YINProductWrapper> getProducts(String accountId,String orderType,String orderModuleType){ 
+        Boolean isPromotional = orderModuleType=='Promotional'?true:false;
+        System.debug('orderType '+orderType);
+        System.debug('orderModuleType '+orderModuleType);
         try {
             // 1. Get Configured Class Name based on Order type and module type 
             YIN_PriceBookImplByType__mdt metaDataConfig = Database.query('Select Id,Class_Name__c,ModuleType__c,Order_Type__c from YIN_PriceBookImplByType__mdt where Order_Type__c=:orderType and ModuleType__c=:orderModuleType');
@@ -27,7 +30,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
                 if (classInstance != null) {
 
                     // 3. Calling GetProduct implementations
-                    List<YINProductWrapper> productsWrapper = classInstance.getProducts(accountId);
+                    List<YINProductWrapper> productsWrapper = classInstance.getProducts(accountId,isPromotional);
                     return productsWrapper;
                 } else {
                     System.debug('Failed to create an instance of the class.');
@@ -39,12 +42,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             }
         } catch (Exception e) {
             // 4. Log the Exception
-            YINMonitorLogWrap log = new YINMonitorLogWrap();
-            log.exObj = e;
-            log.module = 'Sales Order';
-            log.apexClass = 'YINOrderManagementImpl';
-            YINMonitorService monitorLog = new YINMonitorService();
-            monitorLog.exceptionHandler(log);
+            logException(e);
             throw new YINOrderManagementException('Meta data is not configured '+e.getMessage()+' Line Number '+e.getLineNumber());
         }
     }
@@ -63,12 +61,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             objectApiName = objectType.getDescribe().getName();
         } catch(Exception e) {
             // Log the Exception
-            YINMonitorLogWrap log = new YINMonitorLogWrap();
-            log.exObj = e;
-            log.module = 'Sales Order';
-            log.apexClass = 'YINOrderManagementImpl';
-            YINMonitorService monitorLog = new YINMonitorService();
-            monitorLog.exceptionHandler(log);
+            logException(e);
             System.debug('Error retrieving object API name: ' + e.getMessage());
         }
         return objectApiName;
@@ -100,24 +93,33 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             List<Order> cartOrders = new List<Order>();
             // 1. Get Draft Cart of Current Account
             YINOrderSelector orderSelector = (YINOrderSelector)YINApplication.selector.newInstance(Order.SObjectType);
+
+            // 2. convert JSON to Apex class
+            YINProductWrapper wrapperProduct = (YINProductWrapper)JSON.deserialize(productWrapper,YINProductWrapper.class);
+
+            String recordType = 'Cart';
+            if(wrapperProduct.isPromotional==true){
+                recordType = 'Promotional Cart';
+            }
+
             if(String.isEmpty(openOrderId)){
-                cartOrders = orderSelector.selectRecentOrderOfAccountByStatus(accountId,'Cart');
+                cartOrders = orderSelector.selectRecentOrderOfAccountByStatus(accountId,'Cart',recordType);
             }else{
                 List<Order> orders = orderSelector.selectById(new Set<Id>{openOrderId});
-                if(orders[0].Status=='Open'){
+                if(orders[0].Status=='Open' || orders[0].Status=='Cart'){
                 cartOrders = new List<Order>{new Order(Id=openOrderId)};
                 }else{
                     throw new YINOrderManagementException('Can not add Product to '+orders[0].Status+' Order');
                 }
             }
             System.debug('String productWrapper '+JSON.serialize(productWrapper));
-            // 2. convert JSON to Apex class
-            YINProductWrapper wrapperProduct = (YINProductWrapper)JSON.deserialize(productWrapper,YINProductWrapper.class);
+            
             if(cartOrders.size()>0){
                 
                 // 3. Add Product Wrapper to Cart Line Item and Create Cart Line Item
                 return addToCartLineItem(cartOrders[0],wrapperProduct,unitofwork);
             }else{
+
 
                 // Getting Account Details to store information like Addresses in Cart Order
                 Account accountDetails = getAccount(accountId); 
@@ -125,7 +127,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
                 // 3. Create a New Cart for Current Account
                 Order cartOrder = new Order();
                 cartOrder.AccountId = accountId;
-                cartOrder.recordTypeId = Schema.SObjectType.Order.getRecordTypeInfosByName().get('Cart').getRecordTypeId();
+                cartOrder.recordTypeId = Schema.SObjectType.Order.getRecordTypeInfosByName().get(recordType).getRecordTypeId();
                 cartOrder.Status = 'Cart';
                 cartOrder.EffectiveDate = System.today();// Default Start Date
                 // Setting Billing Address
@@ -141,6 +143,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
                 cartOrder.ShippingState = accountDetails.ShippingState;
                 cartOrder.ShippingPostalCode= accountDetails.ShippingPostalCode;
                 cartOrder.ShippingCountry = accountDetails.ShippingCountry;
+                cartOrder.Branded_Retail_Manager__c = accountDetails.Zone__r.Branded_Retail_Manager__c;
 
                 cartOrder.Pricebook2Id = wrapperProduct.pricebookEntry.Pricebook2Id;
                 // cartOrder.Type__c = 'Normal';
@@ -154,12 +157,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             }
         } catch (Exception e) {
             // Log the Exception
-            YINMonitorLogWrap log = new YINMonitorLogWrap();
-            log.exObj = e;
-            log.module = 'Sales Order';
-            log.apexClass = 'YINOrderManagementImpl';
-            YINMonitorService monitorLog = new YINMonitorService();
-            monitorLog.exceptionHandler(log);
+            logException(e);
             System.debug('Message '+e.getMessage() +' LineNumber '+e.getLineNumber());
             throw new YINOrderManagementException(''+e.getMessage());
         }
@@ -172,13 +170,16 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
      * @param openOrderId - The unique identifier for the open order.
      * @return List<YINProductWrapper> - A list of product wrappers containing cart details.
      */
-    public static List<YINProductWrapper> getCartDetails(String accountId,String openOrderId){
-        
+    public static List<YINProductWrapper> getCartDetails(String accountId,String openOrderId,String orderModuleType){
+            String recordType = 'Cart';
+            if(orderModuleType=='Promotional'){
+                recordType = 'Promotional Cart';
+            }
             // 1. Get Draft Cart of Current Account
             List<Order> cartOrders = new List<Order>();
             if(String.isEmpty(openOrderId)){
                 YINOrderSelector orderSelector = (YINOrderSelector)YINApplication.selector.newInstance(Order.SObjectType);
-                cartOrders = orderSelector.selectRecentOrderOfAccountByStatus(accountId,'Cart');
+                cartOrders = orderSelector.selectRecentOrderOfAccountByStatus(accountId,'Cart',recordType);
             }else{
                 cartOrders = new List<Order>{new Order(Id=openOrderId)};
             }
@@ -207,6 +208,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
      */
     private static List<YINProductWrapper> getCartItems(List<OrderItem> orderProducts,String accountId){
         if(orderProducts.size()>0){
+            Boolean isPromotional = orderProducts[0].order.recordType.Name=='Promotional Cart'?true:false;
             List<Id> priceBookIds = new List<Id>();
             List<PriceBook2> priceBooks = YINGetAllProductImpl.getPriceBook(accountId);
 
@@ -214,7 +216,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
                 priceBookIds.add(pricebook.Id);
             }
 
-            List<PricebookEntry> pricebookentries = YINGetAllProductImpl.getPriceBookEntries(priceBookIds);
+            List<PricebookEntry> pricebookentries = YINGetAllProductImpl.getPriceBookEntries(priceBookIds,isPromotional);
 
             List<YIN_Price_List__c> priceLists =  YINGetDiscountProductImpl.getDiscountedPriceList(accountId);
 
@@ -258,6 +260,9 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
      * @return List<YINProductWrapper> - A list of product wrappers with updated details.
      */
     private static List<YINProductWrapper> setOrderItem(List<OrderItem> orderProducts,Map<String,List<YIN_Price_List__c>> priceListByKey,Map<Id,PricebookEntry> priceBookEntriesByProductId){
+        
+        Boolean isPromotional = orderProducts[0].order.recordType.Name=='Promotional Cart'?true:false;
+
         // Declaring Variables
         List<YINProductWrapper>  wrapperProducts = new List<YINProductWrapper>();
         LibISobjectUnitOfWork unitofwork = YINApplication.unitofwork.newInstance();
@@ -283,7 +288,22 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         Decimal vTCSPercentage = 0;
         Decimal vTDSPercentage = 0;
         if(orderProducts[0].Order.Account.X1H_TCS__c==false){
+
+            YINGetAllProductImpl.FiscalYear years = YINGetAllProductImpl.calculateFiscalYears();
+            Integer fiscalStartYear = years.fiscalStartYear;
+            Integer fiscalEndYear = years.fiscalEndYear;
+            String recordTypeName = 'TCS Ledger';
+            String accId = orderProducts[0].Order.Account.Id;
+
+            List<AggregateResult> aggregateResults = Database.query('SELECT SUM(TCS_Amount__c) amount FROM YIN_Ledger__c WHERE (CALENDAR_YEAR(Posting_Date__c) =:fiscalStartYear  OR CALENDAR_YEAR(Posting_Date__c) =:fiscalEndYear) AND Dealer_Code__c=:accId and recordType.Name=:recordTypeName');
+            Decimal thresholdAmount = 0;
+            if (!aggregateResults.isEmpty()) {
+                thresholdAmount = (Decimal)aggregateResults[0].get('amount');
+            }
+            if(thresholdAmount > taxConstant.TCS_Threshold__c){
             vTCSPercentage = (String.isEmpty(orderProducts[0].Order.Account.PAN_Status__c)) && !String.isEmpty(orderProducts[0].Order.Account.PAN_Number__c)?taxConstant.TCS__c:taxConstant.Invalid_PAN_TCS__c;
+            }
+
         }else{
             vTDSPercentage = (String.isEmpty(orderProducts[0].Order.Account.PAN_Status__c)) && !String.isEmpty(orderProducts[0].Order.Account.PAN_Number__c)?taxConstant.TDS__c:taxConstant.Invalid_PAN_TDS__c;
         }
@@ -323,7 +343,9 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             if(Test.isRunningTest()){
                 size = '14';
             }
-            wrapperProduct.maximumCappingQuantity = Integer.valueOf(productCappingBySize.get(size).Maximum_Order_Capping__c);
+            if(productCappingBySize.get(size)!=null){
+                wrapperProduct.maximumCappingQuantity = Integer.valueOf(productCappingBySize.get(size).Maximum_Order_Capping__c);
+            }
             wrapperProduct.maximumOrderQuantity = accountProductMappingByProduct.get(item.Product2Id)?.Maximum_Order_Quantity__c;
             wrapperProduct.minimumOrderQuantity = accountProductMappingByProduct.get(item.Product2Id)?.Minimum_Order_Quantity__c;
             wrapperProduct.quantity = item.Quantity;
@@ -332,8 +354,8 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             wrapperProduct.gstAmount = item.GST_Amount__c;
             wrapperProduct.gstPercentage = item.GST__c;
             wrapperProduct.totalAmount = item.Total_Amount__c;
-            wrapperProduct.tcsPercentage = item.TCS__c;
-            wrapperProduct.tdsPercentage = item.TDS__c;
+            wrapperProduct.tcsPercentage = isPromotional==true?0:item.TCS__c;
+            wrapperProduct.tdsPercentage = isPromotional==true?0:item.TDS__c;
             wrapperProduct.variantId = item.Variant__c;
             wrapperProduct.variantCode = item.Variant__r.Variant_Code__c;
             wrapperProduct.combinationKey = item.Product2.Product_Code__c;
@@ -376,9 +398,15 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             YINOrderItemSelector orderItemSelector = (YINOrderItemSelector)YINApplication.selector.newInstance(OrderItem.SObjectType);
             LibISobjectUnitOfWork unitofwork = YINApplication.unitofwork.newInstance();
             List<Order> cartOrders = new List<Order>();
+
+            String recordType = 'Cart';
+            if(wrapperProduct.isPromotional==true){
+                recordType = 'Promotional Cart';
+            }
+
             if(String.isEmpty(openOrderId)){
                 YINOrderSelector orderSelector = (YINOrderSelector)YINApplication.selector.newInstance(Order.SObjectType);
-                cartOrders = orderSelector.selectRecentOrderOfAccountByStatus(accountId,'Cart');
+                cartOrders = orderSelector.selectRecentOrderOfAccountByStatus(accountId,'Cart',recordType);
             }else{
                 cartOrders = new List<Order>{new Order(Id=openOrderId)};
             }
@@ -389,14 +417,18 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             }
             return 'success';
         } catch (Exception e) {
-            YINMonitorLogWrap log = new YINMonitorLogWrap();
-            log.exObj = e;
-            log.module = 'Sales Order';
-            log.apexClass = 'YINOrderManagementImpl';
-            YINMonitorService monitorLog = new YINMonitorService();
-            monitorLog.exceptionHandler(log);
+            logException(e);
             throw new YINOrderManagementException(e.getMessage());
         }
+    }
+
+    private static void logException(Exception e){
+        YINMonitorLogWrap log = new YINMonitorLogWrap();
+        log.exObj = e;
+        log.module = 'Sales Order';
+        log.apexClass = 'YINOrderManagementImpl';
+        YINMonitorService monitorLog = new YINMonitorService();
+        monitorLog.exceptionHandler(log);
     }
 
     
@@ -409,6 +441,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
      * @throws YINOrderManagementException - Throws an exception if there is an issue in the process.
      */
     public static string createOrder(String productWrapper,String wrapCommit){
+        try{
         System.debug('body 1 '+JSON.serialize(productWrapper));
         System.debug('body 2 '+JSON.serialize(wrapCommit));
         WrapCommit docommit = (WrapCommit)JSON.deserialize(wrapCommit,WrapCommit.class);
@@ -433,15 +466,22 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
 
         inMaintenance();
 
-
-
         List<YINProductWrapper> productWrappers = (List<YINProductWrapper>)JSON.deserialize(productWrapper,List<YINProductWrapper>.class);
         if(productWrappers.size()>0){
             response = processOrder(productWrappers,docommit);
         }
 
-
         return response;
+        }catch(Exception e){
+            throw new YINOrderManagementException(e.getMessage());
+        }finally{
+            // Need to Disccuss
+            //https://salesforce.stackexchange.com/questions/335852/prevent-a-rollback-of-an-inserted-record-due-to-an-exception
+            String logs = JSON.serialize(YINStockInventory.logs);
+            System.debug('Exception Logs : '+logs);
+            YINStockInventory.setLog(logs);
+            System.debug('Exception Logs end : ');
+        }
     }
 
    
@@ -800,7 +840,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
     private static List<OrderItem> reCalculate(List<OrderItem> items){
         for(OrderItem item:items){
             System.debug('OrderId '+item.OrderId+'  item Id '+item.Product2Id);
-            Decimal netPrice = item.UnitPrice * item.Quantity;
+            Decimal netPrice = item.ListPrice * item.Quantity;
             Decimal netOrderValue = 0;
 
             // Calculate Discount
@@ -988,12 +1028,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             }
             return accountId;
         } catch (Exception e) {
-            YINMonitorLogWrap log = new YINMonitorLogWrap();
-            log.exObj = e;
-            log.module = 'Sales Order';
-            log.apexClass = 'YINOrderManagementImpl';
-            YINMonitorService monitorLog = new YINMonitorService();
-            monitorLog.exceptionHandler(log);
+            logException(e);
             throw new YINOrderManagementException(e.getMessage());
         }
     }
@@ -1016,12 +1051,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             }
             return account;
         } catch (Exception e) {
-            YINMonitorLogWrap log = new YINMonitorLogWrap();
-            log.exObj = e;
-            log.module = 'Sales Order';
-            log.apexClass = 'YINOrderManagementImpl';
-            YINMonitorService monitorLog = new YINMonitorService();
-            monitorLog.exceptionHandler(log);
+            logException(e);
             throw new YINOrderManagementException(e.getMessage());
         }
     }
@@ -1130,14 +1160,48 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
        // }
     } 
 
-  
+    public static YINPromotionalOrderUtils.LedgerBudgetInfo getCurrentYearQuaterledger(String accountId,String recordType){
+        return YINPromotionalOrderUtils.getCurrentYearQuaterledger(accountId,recordType);
+    }
 
+    public static String promotionalOrderSendForApproval(String productWrapper){
+        
+        List<YINProductWrapper> productWrappers = (List<YINProductWrapper>)JSON.deserialize(productWrapper,List<YINProductWrapper>.class);
+        if(productWrappers.size()>0){
+            LibISobjectUnitOfWork unitofwork = YINApplication.unitofwork.newInstance();
+            YINOrderItemSelector orderItemSelector = (YINOrderItemSelector)YINApplication.selector.newInstance(OrderItem.SObjectType);
+            List<OrderItem> orderItems = orderItemSelector.selectById(new Set<Id>{productWrappers[0].orderItemId});
+            
+            Order promotionalOrder = new Order();
+            promotionalOrder.Id = orderItems[0].OrderId;
+            promotionalOrder.Status = 'Submitted';
+            promotionalOrder.recordTypeId = Schema.SObjectType.Order.getRecordTypeInfosByName().get('Promotional Order').getRecordTypeId();
+            promotionalOrder.Order_Date__c = Date.today();
+            unitofwork.registerDirty(promotionalOrder);
+            unitofwork.commitWork();
+            return 'success';
+        }else{
+             throw new YINOrderManagementException('Product is not in Cart');
+             
+        }
+    }
+
+    @InvocableMethod(label='create Promotional Order' description='create Promotional Order or Activity in ERP' category='Order' callout=true)
+    public static void createPromotionalOrder(List<String> orderId){
+        YINPromotionalOrderUtils.createPromotionalOrder(orderId[0]);
+    }
+
+    
     
     public class WrapCommit{
         @AuraEnabled public Boolean doCommit;
         @AuraEnabled public Decimal grandTotal;
         @AuraEnabled public String accountId;
         @AuraEnabled public String shippingAccountCode;
+        @AuraEnabled public String promotionalType;
+        @AuraEnabled public String status;
     }
+
+    
     
 }

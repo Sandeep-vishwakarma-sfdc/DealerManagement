@@ -1,11 +1,11 @@
 /**
- * @description       : 
+ * @description       : This is selector class for querying on OrderItem Object.
  * @author            : saurabh.pandey@skinternational.com
- * @group             : 
- * @last modified on  : 03-11-2024
+ * @group             : SKI
+ * @last modified on  : 03-15-2024
  * @last modified by  : saurabh.pandey@skinternational.com
 **/
-public with sharing class YINOrderItemSelector extends LibSObjectSelector{
+public without sharing class YINOrderItemSelector extends LibSObjectSelector{
     public Schema.SObjectType getSObjectType() {
         return OrderItem.SObjectType;
     }
@@ -30,7 +30,8 @@ public with sharing class YINOrderItemSelector extends LibSObjectSelector{
             OrderItem.TDS__c,
             OrderItem.TDS_Amount__c,
             OrderItem.TCS_Amount__c,
-            OrderItem.Discount_Type__c
+            OrderItem.Discount_Type__c,
+            OrderItem.ListPrice
         };
     }
 
@@ -45,7 +46,10 @@ public with sharing class YINOrderItemSelector extends LibSObjectSelector{
                             .selectField('Product2.Product_Code__c')
                             .selectField('Product2.Name')
                             .selectField('Product2.Description')
+                            .selectField('Product2.Description_2__c')
                             .selectField('Product2.Size__c')
+                            .selectField('Product2.GST_Group__c')
+                            .selectField('Product2.HSNSAC__c')
                             .selectField('Variant__r.Variant_Code__c')
                             .selectField('Order.AccountId')
                             .selectField('Order.Status')
@@ -53,6 +57,8 @@ public with sharing class YINOrderItemSelector extends LibSObjectSelector{
                             .selectField('Order.Account.Location__r.Location_Code__c')
                             .selectField('Order.Account.PAN_Number__c')
                             .selectField('Order.Account.X1H_TCS__c')
+                            .selectField('Order.Description')
+                            .selectField('order.recordType.Name')
                             .setCondition('OrderId = :orderId')
                             .toSOQL();
         return (List<OrderItem>) Database.query(query);
@@ -80,20 +86,20 @@ public with sharing class YINOrderItemSelector extends LibSObjectSelector{
             return (List<OrderItem>) Database.query(query);
             }
 
-     // Added by Saurabh Pandey
-     public List<OrderItem> getRecentOrderItemForPromotionalActivity(String recType){
+    // Added by Saurabh Pandey
+    /**
+      * @Description -  * Retrieves the most recent Order Item records associated with a specific Record Type.
+      * @param recType The name of the Record Type.
+      * @return List<OrderItem> A list of Order Item records filtered by the specified Record Type.
+    */
+
+    public override String getOrderBy() {
+        return '';
+    }
+
+    public List<OrderItem> getRecentOrderItemForPromotionalActivity(String recType,String recordId){
         List<OrderItem> orders = new List<OrderItem>();
-        String query =  newQueryFactory()
-        .selectField('Order.AccountId')
-        .selectField('Order.Status')
-        .selectField('Order.Description')
-        .selectField('Order.Remarks__c')
-        .selectField('Order.Allocated_Amount__c')
-        .selectField('Product2.Name')
-        .setCondition('Order.RecordType.Name =: recType')
-        .addOrdering(Order.CreatedDate, LibQueryFactory.SortOrder.DESCENDING)
-        .setLimit(1)
-        .toSOQL();  
+        String query =  'SELECT Description, Discount_Percent__c, Discount_Type__c, Discounted_Amount__c, GST_Amount__c, GST__c, Id, Order.AccountId, Order.Account.Name,Order.Sub_Status__c,Order.TotalAmount, Order.Allocated_Amount__c, Order.Description, Order.Remarks__c, Order.Status, OrderId, PricebookEntryId, Product2.Name, Product2Id, Quantity, TCS_Amount__c, TCS__c, TDS_Amount__c, TDS__c, TotalPrice, Total_Amount__c, UnitPrice, Variant__c FROM OrderItem WHERE Order.RecordType.Name =: recType and Order.Id =: recordId';
         return (List<OrderItem>) Database.query(query);
     }
 

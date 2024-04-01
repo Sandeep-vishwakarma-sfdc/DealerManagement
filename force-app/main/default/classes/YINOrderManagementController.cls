@@ -122,8 +122,8 @@ public without sharing class YINOrderManagementController {
      * @return List<YINProductWrapper> - List of YINProductWrapper objects representing the cart details.
      */
     @AuraEnabled
-    public static List<YINProductWrapper> getCartDetails(String accountId, String openOrderId) {
-        return orderService.getCartDetails(accountId, openOrderId);
+    public static List<YINProductWrapper> getCartDetails(String accountId, String openOrderId,String orderModuleType) {
+        return orderService.getCartDetails(accountId, openOrderId,orderModuleType);
     }
 
     /**
@@ -160,5 +160,22 @@ public without sharing class YINOrderManagementController {
     @AuraEnabled
     public static String createOrder(String productWrapper, String wrapCommit) {
         return orderService.createOrder(productWrapper, wrapCommit);
+    }
+
+    @AuraEnabled
+    public static YINPromotionalOrderUtils.LedgerBudgetInfo getCurrentYearQuaterledger(String accountId,String recordType) {
+        return orderService.getCurrentYearQuaterledger(accountId,recordType);
+    }
+
+    
+
+    @AuraEnabled
+    public static string promotionalOrderSendForApproval(String productWrapper){
+        try {
+            return YINOrderManagementImpl.promotionalOrderSendForApproval(productWrapper);
+             
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
     }
 }
