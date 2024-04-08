@@ -106,7 +106,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
                 cartOrders = orderSelector.selectRecentOrderOfAccountByStatus(accountId,'Cart',recordType);
             }else{
                 List<Order> orders = orderSelector.selectById(new Set<Id>{openOrderId});
-                if(orders[0].Status=='Open' || orders[0].Status=='Cart'){
+                if(orders[0].Status=='Open' || orders[0].Status=='Cart' || orders[0].Status=='Rejected'){
                 cartOrders = new List<Order>{new Order(Id=openOrderId)};
                 }else{
                     throw new YINOrderManagementException('Can not add Product to '+orders[0].Status+' Order');
@@ -208,7 +208,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
      */
     private static List<YINProductWrapper> getCartItems(List<OrderItem> orderProducts,String accountId){
         if(orderProducts.size()>0){
-            Boolean isPromotional = orderProducts[0].order.recordType.Name=='Promotional Cart'?true:false;
+            Boolean isPromotional = orderProducts[0].order.recordType.Name=='Promotional Cart' || orderProducts[0].order.recordType.Name=='Promotional Order'?true:false;
             List<Id> priceBookIds = new List<Id>();
             List<PriceBook2> priceBooks = YINGetAllProductImpl.getPriceBook(accountId);
 
@@ -315,6 +315,15 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             YIN_Price_List__c priceList = getActivePriceList(item,priceLists1);
 
             item.UnitPrice = priceBookEntriesByProductId.get(item.Product2Id)?.Sales_Price__c;
+            System.debug('item.Product2Id '+item.Product2Id);
+            System.debug('priceBookEntriesByProductId '+priceBookEntriesByProductId);
+            System.debug('item.TotalPrice '+item.TotalPrice);
+            System.debug('item.UnitPrice '+item.UnitPrice);
+            System.debug('item.Quantity '+item.Quantity);
+            System.debug('vTDSPercentage '+vTDSPercentage);
+            System.debug('item.TDS__c '+item.TDS__c);
+            System.debug('vTCSPercentage '+vTCSPercentage);
+            System.debug('item.TCS__c '+item.TCS__c);
             if(item.TotalPrice!=(item.UnitPrice * item.Quantity) || vTDSPercentage!=item.TDS__c || vTCSPercentage!=item.TCS__c){
                 
                 
@@ -1164,8 +1173,9 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         return YINPromotionalOrderUtils.getCurrentYearQuaterledger(accountId,recordType);
     }
 
-    public static String promotionalOrderSendForApproval(String productWrapper){
-        
+    public static String promotionalOrderSendForApproval(String productWrapper,String shipToCode){
+        YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
+        List<Account> accounts = accountSelector.selectByERPShipToAndSoldToPartyCode(new List<String>{shipToCode});
         List<YINProductWrapper> productWrappers = (List<YINProductWrapper>)JSON.deserialize(productWrapper,List<YINProductWrapper>.class);
         if(productWrappers.size()>0){
             LibISobjectUnitOfWork unitofwork = YINApplication.unitofwork.newInstance();
@@ -1177,6 +1187,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             promotionalOrder.Status = 'Submitted';
             promotionalOrder.recordTypeId = Schema.SObjectType.Order.getRecordTypeInfosByName().get('Promotional Order').getRecordTypeId();
             promotionalOrder.Order_Date__c = Date.today();
+            promotionalOrder.Ship_To_Party__c = accounts[0].Id;
             unitofwork.registerDirty(promotionalOrder);
             unitofwork.commitWork();
             return 'success';
@@ -1189,6 +1200,17 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
     @InvocableMethod(label='create Promotional Order' description='create Promotional Order or Activity in ERP' category='Order' callout=true)
     public static void createPromotionalOrder(List<String> orderId){
         YINPromotionalOrderUtils.createPromotionalOrder(orderId[0]);
+    }
+
+   public static Decimal getAccountOverDueAmount(String accountId){
+     /*  YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
+        List<Account> accounts = accountSelector.getAccounts(new List<String>{accountId});
+        Decimal amount = 0;
+        List<AggregateResult> aggregateResults = Database.query('SELECT SUM(Remaining_amount__c) FROM YIN_Ledger__c AND Account =:  AND RecordType.name  = 'Ledger' AND Open = True AND Posting Date < :'Dynamic Variable'');
+        if (!aggregateResults.isEmpty()) {
+            thresholdAmount = (Decimal)aggregateResults[0].get('amount');
+        } */
+        return 0;
     }
 
     

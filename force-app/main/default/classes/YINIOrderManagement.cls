@@ -11,7 +11,7 @@ public interface YINIOrderManagement {
     // for Promotional Order
     YINPromotionalOrderUtils.LedgerBudgetInfo getCurrentYearQuaterledger(String accountId,String recordType);
     void createPromotionalOrder(List<String> orderId);
-    String promotionalOrderSendForApproval(String productWrapper);
+    String promotionalOrderSendForApproval(String productWrapper,String shipToCode);
     
     // some user information methods
     List<String> getExperienceUserProfiles();

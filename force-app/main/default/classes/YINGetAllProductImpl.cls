@@ -124,7 +124,12 @@ public with sharing class YINGetAllProductImpl implements YINIGetProducts {
             productWrapper.productPattern = priceBookEntry.Product2.Tread_Pattern__c;
             productWrapper.combinationKey = priceBookEntry.Product2.Product_Code__c;
             productWrapper.maximumCappingQuantity = productCappingBySize.get(priceBookEntry.Product2.Size__c)!=null?Integer.valueOf(productCappingBySize.get(priceBookEntry.Product2.Size__c).Maximum_Order_Capping__c):0;
-            productWrapper.GSTPercentage = priceBookEntry.Product2.GST__c!=null?priceBookEntry.Product2.GST__c:0;
+            if(isPromotional){
+                productWrapper.GSTPercentage = 0;
+            }else{
+                productWrapper.GSTPercentage = priceBookEntry.Product2.GST__c!=null?priceBookEntry.Product2.GST__c:0;
+            }
+            
             productWrapper.tdsPercentage = isPromotional==true?0:vTDSPercentage;
             productWrapper.tcsPercentage = isPromotional==true?0:vTCSPercentage;
             productWrapper.applyTCS = accounts[0].X1H_TCS__c;

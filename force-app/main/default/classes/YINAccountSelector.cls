@@ -95,8 +95,12 @@ public without sharing class YINAccountSelector extends LibSObjectSelector {
         Account.District__c,
         Account.Sub_District__c,
         Account.OwnerId,
-        Account.Zone__c
+        Account.Zone__c,
+        Account.Payment_Term__c,
     // End Adding by Amol Patil
+    //Added by kalpesh chande
+    Account.Security_Deposit_Rollup__c,
+    Account.SD_Amount__c
         };
     }
     
@@ -332,20 +336,12 @@ public without sharing class YINAccountSelector extends LibSObjectSelector {
      * @return  - List<Account>.
      */
     public List<Account> getAccounts(List<String> accIds) {
-        if(test.isRunningTest()){
-              return Database.query(
-             newQueryFactory()
-            .selectField('Location__r.Location_Code__c')
-            .selectField('Location__r.Contact_Email_Id__c')
-            .setCondition('Id IN:accIds')
-            .setLimit(1)
-            .toSOQL()
-        );
-        }   return Database.query(
+        return Database.query(
             newQueryFactory()
             .selectField('Location__r.Location_Code__c')
-            .selectField('Location__r.Location_Code__c')
+            .selectField('Location__r.Contact_Email_Id__c')
             .selectField('Zone__r.Branded_Retail_Manager__c')
+            .selectField('Zone__r.Zonal_Manager__c')
             .selectField('Territory__r.Service_Engineer__c')
             .setCondition('Id IN:accIds')
             .toSOQL()
@@ -432,7 +428,7 @@ public without sharing class YINAccountSelector extends LibSObjectSelector {
                     .selectField('Country__r.Name')
                     .selectField('District__r.Name')
                     .selectField('Sub_District__r.Name')
-                    .setCondition('Contact_Person_Phone__c IN: mobileNos AND RecordType.Name =\'Consumer\'')
+                    .setCondition('Contact_Person_Phone__c IN: mobileNos')
                     .toSOQL()
         );
     }

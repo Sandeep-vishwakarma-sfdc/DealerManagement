@@ -87,7 +87,7 @@ export default class YinOrderManagementCmp extends NavigationMixin(LightningElem
     varientValue = '';
     get cartWidth(){
         if(this.isPromotional){
-            return 'width: 35%!important;float: left';
+            return 'width: 47%!important;float: left';
         }
         return 'width: 14%!important;float: left';
     }
@@ -157,16 +157,27 @@ export default class YinOrderManagementCmp extends NavigationMixin(LightningElem
         
         if(!this.isSalesRepUser){// For Experience User
             if(url.searchParams.get('orderId')){
+                try {
+                console.log('search Param ',url.searchParams.get('recordTypeName'));
+                if(url.searchParams.get('recordTypeName')=='Promotional Order'){
+                    this.orderModuleType='Promotional';
+                }
                 this.openOrderId = url.searchParams.get('orderId');
                 let orderDetails = await getOrderDetails({recordId:this.openOrderId});
-                console.log('orderDetails ',orderDetails);
-                if(orderDetails[0].Status=='Cart' || orderDetails[0].Status=='Open'){
+                console.log('orderDetails ',orderDetails,' promotional ',this.isPromotional);
+                if((orderDetails[0].Status=='Cart' || orderDetails[0].Status=='Open') || (this.isPromotional && orderDetails[0].Status=='Rejected')){
                     this.canNotBeProcess = false;
                 }else{
                     this.canNotBeProcess = true;
                 }
+            } catch (error) {
+                 console.log('error :: ',error);
+                 console.log('error :: ',error.message);
+                 console.log('error :: ',JSON.stringify(error));
+
             }
-            this.accountId = await getExperienceUserAccount();
+            }
+            this.accountId = await getExperienceUserAccount();  
             
         }else{// For Salesforce User
             let objectApiName = await getObjectApiName({recordId:this.recordId});
@@ -199,6 +210,9 @@ export default class YinOrderManagementCmp extends NavigationMixin(LightningElem
         this.accountDetails = await getAccount({accountId:this.accountId});
 
         // Loading existing cart order details
+        console.log('accountId '+this.accountId);
+        console.log('openOrderId '+this.openOrderId);
+        console.log('orderModuleType '+this.orderModuleType);
         this.cartDetails = await getCartDetails({accountId:this.accountId,openOrderId:this.openOrderId,orderModuleType:this.orderModuleType});
         console.log('Cart Detail ',this.cartDetails);
         console.log('Cart Detail str',JSON.stringify(this.cartDetails));
@@ -633,7 +647,8 @@ export default class YinOrderManagementCmp extends NavigationMixin(LightningElem
         }
         console.log('field Name ',fieldName);
         if(searchValue){
-            this.productswrapper = this.productswrapperVirtual.filter(ele=>(ele['productSize']?.toLowerCase().includes(searchValue.toLowerCase())) || (ele['productPattern']?.toLowerCase().includes(searchValue.toLowerCase())) || (ele['productName']?.toLowerCase().includes(searchValue.toLowerCase())));
+            let searchVal = searchValue.toLowerCase().replaceAll(' ','');
+            this.productswrapper = this.productswrapperVirtual.filter(ele=>(ele['productSize']?.toLowerCase().replaceAll(' ','').includes(searchVal)) || (ele['productPattern']?.toLowerCase().replaceAll(' ','').includes(searchVal)) || (ele['productName']?.toLowerCase().replaceAll(' ','').includes(searchVal)));
             if(this.displayToggle){
                 this.refs.trendingSKU.checked = false;
                 this.refs.productOfTheMonth.checked = false;
@@ -720,7 +735,7 @@ export default class YinOrderManagementCmp extends NavigationMixin(LightningElem
                     this.isLoading = false;
                     return;
                 }
-                let response = await promotionalOrderSendForApproval({productWrapper:JSON.stringify(this.cartDetails)});
+                let response = await promotionalOrderSendForApproval({productWrapper:JSON.stringify(this.cartDetails),shipToCode:this.shippingAccountValue});
                 console.log('respose json ',response);
                 if(response=='success'){
                     this.showToast('SUCCESS','Promotional Order Sent For Approval','success');

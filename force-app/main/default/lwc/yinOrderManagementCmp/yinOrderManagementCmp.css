@@ -55,6 +55,7 @@
     display: block;
     height: 170px;
     max-width: 100%;
+    margin: 0 auto!important;
   }
   
   /* Product Name */
@@ -135,15 +136,15 @@
   
   .blue .product__image img {
     display: block!important;
-    height: 170px!important;
+    height: 150px!important;
     max-width: 100%!important;
+    margin: 0 auto;
   }
   
   /* Product Name */
   .blue .product__name {
-    font-size: 18px!important;
+    font-size: 13px!important;
     font-weight: 700!important;
-    margin-top:15px!important;
     margin-bottom: 5px!important;
     color:#e21e31!important;
   }

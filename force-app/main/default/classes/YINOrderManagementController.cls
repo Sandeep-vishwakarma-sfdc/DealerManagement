@@ -170,9 +170,9 @@ public without sharing class YINOrderManagementController {
     
 
     @AuraEnabled
-    public static string promotionalOrderSendForApproval(String productWrapper){
+    public static string promotionalOrderSendForApproval(String productWrapper,String shipToCode){
         try {
-            return YINOrderManagementImpl.promotionalOrderSendForApproval(productWrapper);
+            return YINOrderManagementImpl.promotionalOrderSendForApproval(productWrapper,shipToCode);
              
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());

@@ -123,16 +123,40 @@ public with sharing class YINOrderManagementDataFactoryTest {
         
         
         
-        YIN_Ledger__c ledgersPromotionalBudget = new YIN_Ledger__c();
-        ledgersPromotionalBudget.Id = LibIDGenerator.generate(YIN_Ledger__c.SObjectType);
-        ledgersPromotionalBudget.Dealer_Code__r = testAccount();
-        ledgersPromotionalBudget.RecordTypeId = Schema.SObjectType.YIN_Ledger__c.getRecordTypeInfosByName().get('Promotional_Budget').getRecordTypeId();
-        ledgersPromotionalBudget.Posting_Date__c = Date.today() - 1;
+        YIN_Ledger__c ledgersPromotionalBudget0 = new YIN_Ledger__c(); // Q3-2023
+        ledgersPromotionalBudget0.Id = LibIDGenerator.generate(YIN_Ledger__c.SObjectType);
+        ledgersPromotionalBudget0.Dealer_Code__r = testAccount();
+        ledgersPromotionalBudget0.RecordTypeId = Schema.SObjectType.YIN_Ledger__c.getRecordTypeInfosByName().get('Promotional_Budget').getRecordTypeId();
+        ledgersPromotionalBudget0.Posting_Date__c = Date.today() - 1;
+        ledgersPromotionalBudget0.ERP_Code__c = '0';
+        ledgersPromotionalBudget0.Year__c = '2023';
+        ledgersPromotionalBudget0.Quarter__c = 'Q3';
+        ledgersPromotionalBudget0.Lapsed_Budget_Amount__c = 1212;
+        ledgersPromotionalBudget0.Budget_Amount__c = 6000;
+
+        YIN_Ledger__c ledgersPromotionalBudget1 = new YIN_Ledger__c(); // Q3-2023
+        ledgersPromotionalBudget1.Id = LibIDGenerator.generate(YIN_Ledger__c.SObjectType);
+        ledgersPromotionalBudget1.Dealer_Code__r = testAccount();
+        ledgersPromotionalBudget1.RecordTypeId = Schema.SObjectType.YIN_Ledger__c.getRecordTypeInfosByName().get('Promotional_Budget').getRecordTypeId();
+        ledgersPromotionalBudget1.Posting_Date__c = Date.today() - 1;
+        ledgersPromotionalBudget1.ERP_Code__c = '0'
+        ledgersPromotionalBudget1.Year__c = '2023';
+        ledgersPromotionalBudget1.Quarter__c = 'Q3';
+        ledgersPromotionalBudget1.Lapsed_Budget_Amount__c = 1212;
+        ledgersPromotionalBudget1.Budget_Amount__c = 6000;
+
+
+        
+        
+        
         
         ledgers.add(ledgerLedger);
         ledgers.add(ledgersSecurityDeposit);
         ledgers.add(ledgersTCSLedger);
         ledgers.add(ledgersPromotionalBudget);
+
+
+
         if(ledgerRecord==null){
             ledgerRecord = ledgers;
         }
@@ -455,9 +479,7 @@ public with sharing class YINOrderManagementDataFactoryTest {
 
         return mappings;
     }
-    private static List<YIN_Ledger__c> testLedger(){
-        return new List<YIN_Ledger__c>();
-    }
+    
     
     
 

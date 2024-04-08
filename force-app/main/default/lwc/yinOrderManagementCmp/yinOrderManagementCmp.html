@@ -10,7 +10,7 @@
       </div> -->
 
       <div class="wrapper">
-        <header class="header">
+        <header>
           <!--Search -->
           <div class="row">
             <div class="col-md-3" align="left" style="margin-bottom:5px;">
@@ -48,13 +48,13 @@
               <div class="cart" onclick={handleShowCart} style="cursor: pointer;">
                 <!-- <a href="cartdetails.html" target="_blank"> -->
                 <span class="count">{CartDetailLength}</span><i class="fa fa-shopping-cart material-icons"></i>
-                </a>
+                
               </div>
             </div>
 
             <!-- Search Ends -->
 
-            <div class="col-md-2 col-xs-12 gridlist">
+            <div class="col-md-2 col-xs-12 gridlist" style="text-align: right !important;">
 
               <lightning-icon icon-name="utility:apps" alternative-text="Grid" title="Grid" size="medium"
                 data-id="Green_Button" label="Grid" onclick={handleGridView}></lightning-icon> &nbsp;
@@ -64,6 +64,7 @@
           </div>
         </header>
 
+        
         <section class="products grid group">
           <div style="clear:both;"></div>
           <div lwc:if={displayToggle}>
@@ -119,6 +120,7 @@
                 <article key={productWrap.Id} class={productCSSClass}>
                   <div class="product__inner">
                     <section class="product__image">
+                      <div style="width: 100%!important;height: 40px!important;">
                       <div lwc:if={productWrap.trendingSKU} class="label-top shadow-sm">Trending</div>
                       <div lwc:else class="label-top shadow-sm"
                         style="background-color: white;box-shadow: none!important;">.</div>
@@ -126,8 +128,10 @@
                       <div lwc:else style="background-color: white;box-shadow: none!important;"
                         class="label-top shadow-sm">.</div>
                       <div lwc:if={productWrap.frequentlyBoughtProduct} class="label-right shadow-sm" style="background-color: blueviolet; margin-right: 2px;">Frequently</div>
+                     
                       <div lwc:else style="background-color: white;box-shadow: none!important;"
-                          class="label-top shadow-sm">.</div>  
+                          class="label-top shadow-sm">.</div> 
+                      </div> 
                       <img src={productWrap.pricebookEntry.Product2.Image_Url__c} />
                       <!-- <img src={geolander} /> -->
                     </section>
@@ -181,7 +185,7 @@
                         </template>
                         <template lwc:else>
                           <div class="wcf-left"><span class="price">Unit Price: Rs.
-                              {productWrap.pricebookEntry.Sales_Price__c}</span>
+                              {productWrap.pricebookEntry.Sales_Price__c}</span> <span style="padding-left: 5px; color: red;" lwc:if={isPromotional}>( GST Included )</span>
                           </div>
                         </template>
                         <div class="wcf-right" title="Add to Cart"><a data-index={index} onfocus={copyOldQuanity}
@@ -197,6 +201,7 @@
           </div>
 
         </section>
+        
         <!-- /products -->
 
       </div><!-- /wrapper -->
@@ -241,11 +246,11 @@
     <div class="slds-box slds-theme_default" style="background:#fff;">
 
       <div class="container-fuild">
-        <div class="row" style="margin:1px">
+        <div class="row">
 
           <div class="col-md-11 col-xs-6">
             <div class="slds-section__title-action"
-              style="background:#262626; color:#fff; font-weight:600; border-top-left-radius:4px; border-bottom-left-radius:4px; border-top-right-radius:4px; border-bottom-right-radius:4px; font-size:18px; padding:5px;">
+              style="background: #262626 !important; color:#fff; font-weight:600; border-top-left-radius:4px; border-bottom-left-radius:4px; border-top-right-radius:4px; border-bottom-right-radius:4px; font-size:18px; padding:5px;">
               <lightning-icon label="" icon-name="utility:cart" style="color:#fff!important;"></lightning-icon>
               <span style="margin-left:10px; font-size: 16px; font-weight: 500;">Cart Details</span>
             </div>
@@ -337,7 +342,7 @@
           <label class="product-finalqty label1">Quantity</label>
           <label if:false={isPromotional} class="product-price label1">Discount Amount</label>
           <!-- <label class="product-price label1">Net Price</label> -->
-          <label class="product-gst label1">GST</label>
+          <label if:false={isPromotional} class="product-gst label1">GST</label>
           <label class="product-line-price label1">Sub Total</label>
         </div>
 
@@ -375,7 +380,7 @@
             Remove
           </button>
         </div>-->
-            <div class="product-gst"> {cartDetail.gstPercentage} %</div>
+            <div if:false={isPromotional} class="product-gst"> {cartDetail.gstPercentage} %</div>
             <div class="product-line-price"> {cartDetail.totalAmount}</div>
           </div>
         </template>
@@ -384,12 +389,12 @@
           <label>Sub Total Price</label>
           <div class="totals-value" id="cart-subtotal">71.97</div>
         </div>-->
-        <div class="totals-item">
+        <div if:false={isPromotional} class="totals-item">
           <label style="color:#333; background:#fff;">Order value without GST</label>
           <div class="totals-value" id="cart-netOrderValue"> {netOrderValue} </div>
         </div>
 
-          <div class="totals-item">
+          <div if:false={isPromotional} class="totals-item">
             <label style="color:#333; background:#fff;">GST <span if:false={isPromotional}>@{gstPercentage} %</span></label>
             <div class="totals-value" id="cart-tax"> {totalGSTAmount} </div>
           </div>

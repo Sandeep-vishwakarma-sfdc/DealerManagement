@@ -35,6 +35,8 @@ public without sharing class YINPromotionalOrderUtils {
         List<Order> orders = orderSelector.selectByExtraFields(new Set<Id>{orderId});
         LibISobjectUnitOfWork unitofwork = YINApplication.unitofwork.newInstance();
         YINStockInventory.PromotionalOrderResponse response = YINStockInventory.sendPromotionalOrder(promotionalOrderJSON);
+        usedBudgets = getBudgets(orders[0].AccountId,orders[0].Order_Total__c,orders[0].recordType.Name);
+        System.debug('usedBudgets '+usedBudgets);
         if(response.success=='true'){
             promotionalOrder.ERP_Order_Number__c = response.ERPPRNumber;
             promotionalOrder.Status = 'Accepted';
@@ -152,35 +154,37 @@ public without sharing class YINPromotionalOrderUtils {
             if(daysInCurrentQuarter < graceDay){ // between greace days
                 
                 Decimal budget = getBudgetValue(totalOrderValue,previousToPreviousQuarterBudget);
-
+                if(budget > 0){
                 totalOrderValue = totalOrderValue - previousToPreviousQuarterBudget;
-                
-                
+
                 YINPromotionalOrderActivityWrapper.Budget budgetQ3= new YINPromotionalOrderActivityWrapper.Budget();
                 budgetQ3.promotionalBudgetCode = previousToPreviousQuarterERP;
                 budgetQ3.budgetAmount = String.valueOf(budget);
                 promotionalBudget.add(budgetQ3);
+                }
         
                 if(totalOrderValue > 0){
                     
                     budget = getBudgetValue(totalOrderValue,previousQuarterBudget);
-
+                    if(budget > 0){
                     totalOrderValue = totalOrderValue - previousQuarterBudget;
 
                     YINPromotionalOrderActivityWrapper.Budget budgetQ4 = new YINPromotionalOrderActivityWrapper.Budget();
                     budgetQ4.promotionalBudgetCode = previousQuarterERP;
                     budgetQ4.budgetAmount = String.valueOf(budget);
                     promotionalBudget.add(budgetQ4);
+                    }
                 }
                 
                 if(totalOrderValue > 0){
                     budget = getBudgetValue(totalOrderValue,promotionalOrderBudget);
-
+                    if(budget > 0){
                     totalOrderValue = totalOrderValue - promotionalOrderBudget;
                     YINPromotionalOrderActivityWrapper.Budget budgetQ1 = new YINPromotionalOrderActivityWrapper.Budget();
                     budgetQ1.promotionalBudgetCode = erpCode;
                     budgetQ1.budgetAmount = String.valueOf(budget);
                     promotionalBudget.add(budgetQ1);
+                    }
                 }
                 
             }else{
@@ -194,37 +198,41 @@ public without sharing class YINPromotionalOrderUtils {
            }
         }else if(perviousQuarterYear.prevQuarter=='Q2'){
             Decimal budget = getBudgetValue(totalOrderValue,previousQuarterBudget);
-            totalOrderValue = totalOrderValue - previousQuarterBudget;
-            
-            YINPromotionalOrderActivityWrapper.Budget budgetQ1 = new YINPromotionalOrderActivityWrapper.Budget();
-            budgetQ1.promotionalBudgetCode = previousQuarterERP;
-            budgetQ1.budgetAmount = String.valueOf(budget);
-            promotionalBudget.add(budgetQ1);
-        
+            if(budget > 0){
+                totalOrderValue = totalOrderValue - previousQuarterBudget;
+                YINPromotionalOrderActivityWrapper.Budget budgetQ1 = new YINPromotionalOrderActivityWrapper.Budget();
+                budgetQ1.promotionalBudgetCode = previousQuarterERP;
+                budgetQ1.budgetAmount = String.valueOf(budget);
+                promotionalBudget.add(budgetQ1);
+            }
             if(totalOrderValue > 0){
                 budget = getBudgetValue(totalOrderValue,promotionalOrderBudget);
+                if(budget > 0){
                 totalOrderValue = totalOrderValue - promotionalOrderBudget;
 
                 YINPromotionalOrderActivityWrapper.Budget budgetQ2 = new YINPromotionalOrderActivityWrapper.Budget();
                 budgetQ2.promotionalBudgetCode = erpCode;
                 budgetQ2.budgetAmount = String.valueOf(budget);
                 promotionalBudget.add(budgetQ2);
+                }
             }
         
         }else if(perviousQuarterYear.prevQuarter=='Q3'){
             if(daysInCurrentQuarter < graceDay){ // between greace days
 
                 Decimal budget = getBudgetValue(totalOrderValue,previousToPreviousQuarterBudget);
+                if(budget > 0){
                 totalOrderValue = totalOrderValue - previousToPreviousQuarterBudget;
-
                 YINPromotionalOrderActivityWrapper.Budget budgetQ1 = new YINPromotionalOrderActivityWrapper.Budget();
                 budgetQ1.promotionalBudgetCode = previousToPreviousQuarterERP;
                 budgetQ1.budgetAmount = String.valueOf(budget);
         
                 promotionalBudget.add(budgetQ1);
+                }
 
                 if(totalOrderValue > 0){
                     budget = getBudgetValue(totalOrderValue,previousQuarterBudget);
+                    if(budget > 0){
                     totalOrderValue = totalOrderValue - previousQuarterBudget;
 
                     YINPromotionalOrderActivityWrapper.Budget budgetQ2 = new YINPromotionalOrderActivityWrapper.Budget();
@@ -232,10 +240,12 @@ public without sharing class YINPromotionalOrderUtils {
                     budgetQ2.budgetAmount = String.valueOf(budget);
 
                     promotionalBudget.add(budgetQ2);
+                    }
                 }
         
                 if(totalOrderValue > 0){
                     budget = getBudgetValue(totalOrderValue,promotionalOrderBudget);
+                    if(budget > 0){
                     totalOrderValue = totalOrderValue - promotionalOrderBudget;
 
                     YINPromotionalOrderActivityWrapper.Budget budgetQ3= new YINPromotionalOrderActivityWrapper.Budget();
@@ -243,6 +253,7 @@ public without sharing class YINPromotionalOrderUtils {
                     budgetQ3.budgetAmount = String.valueOf(budget);
                     
                     promotionalBudget.add(budgetQ3);
+                    }
                 }
             }else{
                 Decimal budget = getBudgetValue(totalOrderValue,promotionalOrderBudget);
