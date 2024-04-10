@@ -70,6 +70,8 @@ public without sharing class YINLedgerSelector extends LibSObjectSelector{
         query.selectField('Dealer_Code__r.Id');
         query.selectfield('RecordType.Name');
         query.selectfield('Dealer_Code__r.Name');
+        query.selectfield('Dealer_Code__r.ERP_Customer_Code__c');
+        query.selectfield('Dealer_Code__r.Combined_Address__c');
         query.setCondition('Dealer_Code__c = : dealerId AND RecordTypeId =: recordTypeId AND Posting_Date__c >= :dateStr1 AND Posting_Date__c <= :dateStr2');
         System.debug('Query is'+query.toSOQL());
         return Database.query(query.toSOQL());     
@@ -80,8 +82,11 @@ public without sharing class YINLedgerSelector extends LibSObjectSelector{
         query.selectField('Dealer_Code__r.Id');
         query.selectfield('RecordType.Name');
         query.selectfield('Dealer_Code__r.Name');
-        query.setCondition('Dealer_Code__c = : dealerId AND RecordTypeId =: recordTypeId AND Posting_Date__c >= :dateStr1 AND Posting_Date__c <= :dateStr2'); System.debug('Query is'+query.toSOQL());
-        return Database.query( query.toSOQL());     
+        query.selectfield('Dealer_Code__r.ERP_Customer_Code__c');
+        query.setCondition('Dealer_Code__c = : dealerId AND RecordTypeId =: recordTypeId AND Posting_Date__c >= :dateStr1 AND Posting_Date__c <= :dateStr2'); 
+        query.addOrdering('Posting_Date__c', LIBQueryFactory.SortOrder.ASCENDING);
+        System.debug('Query is'+query.toSOQL());
+       return Database.query( query.toSOQL());     
     }
     
     public List<YIN_Ledger__c> getSecDepositRec(Id dealerId,Id recordTypeId){
@@ -89,6 +94,8 @@ public without sharing class YINLedgerSelector extends LibSObjectSelector{
         query.selectField('Dealer_Code__r.Id');
         query.selectfield('RecordType.Name');
         query.selectfield('Dealer_Code__r.Name');
+        query.selectfield('Dealer_Code__r.ERP_Customer_Code__c');
+        query.selectfield('Dealer_Code__r.Combined_Address__c');
         query.setCondition('Dealer_Code__c = : dealerId AND RecordTypeId =: recordTypeId');
         System.debug('Query is'+query.toSOQL());
         return Database.query( query.toSOQL());     
@@ -99,7 +106,10 @@ public without sharing class YINLedgerSelector extends LibSObjectSelector{
         query.selectField('Dealer_Code__r.Id');
         query.selectfield('RecordType.Name');
         query.selectfield('Dealer_Code__r.Name');
+         query.selectfield('Dealer_Code__r.ERP_Customer_Code__c');
+        query.selectfield('Dealer_Code__r.Combined_Address__c');
         query.setCondition('Dealer_Code__c = : dealerId AND RecordTypeId =: recordTypeId');
+        query.addOrdering('Posting_Date__c', LIBQueryFactory.SortOrder.ASCENDING);
         System.debug('Query is'+query.toSOQL());
         return Database.query( query.toSOQL());     
     }

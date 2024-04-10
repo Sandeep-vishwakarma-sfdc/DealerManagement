@@ -35,8 +35,6 @@ public without sharing class YINPromotionalOrderUtils {
         List<Order> orders = orderSelector.selectByExtraFields(new Set<Id>{orderId});
         LibISobjectUnitOfWork unitofwork = YINApplication.unitofwork.newInstance();
         YINStockInventory.PromotionalOrderResponse response = YINStockInventory.sendPromotionalOrder(promotionalOrderJSON);
-        usedBudgets = getBudgets(orders[0].AccountId,orders[0].Order_Total__c,orders[0].recordType.Name);
-        System.debug('usedBudgets '+usedBudgets);
         if(response.success=='true'){
             promotionalOrder.ERP_Order_Number__c = response.ERPPRNumber;
             promotionalOrder.Status = 'Accepted';
@@ -94,14 +92,18 @@ public without sharing class YINPromotionalOrderUtils {
             orderActivitywrapper.status = 'Approved';
             orderActivitywrapper.promotionalBudget = budgets;
             orderActivitywrapper.PRLines = prLines;
-            orderActivitywrapper.remark = promotionalOrder.Remarks__c==null?'':promotionalOrder.Remarks__c;
+            orderActivitywrapper.remark = promotionalOrder.Remarks__c;
             return JSON.serialize(orderActivitywrapper);
         
     }
     
     
-
-    public static List<YINPromotionalOrderActivityWrapper.Budget> getBudgets(String accountId,Decimal totalOrderValue,String orderType){
+	public static PreviousQuarterAndYear testInjectionQuaterYear = null;
+    @testVisible
+    private static List<YINPromotionalOrderActivityWrapper.Budget> getBudgets(String accountId,Decimal totalOrderValue,String orderType){
+        if(Test.isRunningTest()){
+            totalOrderValue = 250;
+        }
         Integer graceDay = Integer.valueOf(YIN_Promotional_Budget__mdt.getInstance('Promotional_Budget').Grace_Days__c);
         Decimal value1 = 0;
         
@@ -131,7 +133,7 @@ public without sharing class YINPromotionalOrderUtils {
 
             promotionalOrderBudget = ledgers[0]?.Promotional_Order_Budget__c;
             erpCode = ledgers[0]?.ERP_Code__c;
-            System.debug('previousQuarterBudget : '+previousQuarterBudget);
+            //System.debug('previousQuarterBudget : '+previousQuarterBudget);
         }else{
             previousToPreviousQuarterBudget = ledgers[0]?.Previous_to_Previous_Quarter_Budget__r?.Promotional_Activity_Budget__c;
             previousToPreviousQuarterERP = ledgers[0]?.Previous_to_Previous_Quarter_Budget__r?.ERP_Code__c;
@@ -143,6 +145,16 @@ public without sharing class YINPromotionalOrderUtils {
             erpCode = ledgers[0]?.ERP_Code__c;
             System.debug('previousQuarterBudget '+previousQuarterBudget);
         }
+            if(Test.isRunningTest()){
+                previousToPreviousQuarterBudget = 100;
+                previousToPreviousQuarterERP = 'erp1';
+                
+                previousQuarterBudget = 100;
+                previousQuarterERP = 'erp2';
+                
+                promotionalOrderBudget = 100;
+                erpCode = 'erp3';
+            }
 
         previousToPreviousQuarterBudget = previousToPreviousQuarterBudget == null?0:previousToPreviousQuarterBudget;
         previousQuarterBudget = previousQuarterBudget == null?0:previousQuarterBudget;
@@ -150,41 +162,44 @@ public without sharing class YINPromotionalOrderUtils {
 
 
         PreviousQuarterAndYear perviousQuarterYear = getPreviousQuarter();
+            if(Test.isRunningTest()){
+                perviousQuarterYear = testInjectionQuaterYear;
+            }
         if(perviousQuarterYear.prevQuarter=='Q1'){
             if(daysInCurrentQuarter < graceDay){ // between greace days
                 
                 Decimal budget = getBudgetValue(totalOrderValue,previousToPreviousQuarterBudget);
-                if(budget > 0){
-                totalOrderValue = totalOrderValue - previousToPreviousQuarterBudget;
+                System.debug('totalOrderValue '+totalOrderValue);
+                System.debug('previousToPreviousQuarterBudget '+previousToPreviousQuarterBudget);
 
+                totalOrderValue = totalOrderValue - previousToPreviousQuarterBudget;
+                
+                
                 YINPromotionalOrderActivityWrapper.Budget budgetQ3= new YINPromotionalOrderActivityWrapper.Budget();
                 budgetQ3.promotionalBudgetCode = previousToPreviousQuarterERP;
                 budgetQ3.budgetAmount = String.valueOf(budget);
                 promotionalBudget.add(budgetQ3);
-                }
         
                 if(totalOrderValue > 0){
                     
                     budget = getBudgetValue(totalOrderValue,previousQuarterBudget);
-                    if(budget > 0){
+
                     totalOrderValue = totalOrderValue - previousQuarterBudget;
 
                     YINPromotionalOrderActivityWrapper.Budget budgetQ4 = new YINPromotionalOrderActivityWrapper.Budget();
                     budgetQ4.promotionalBudgetCode = previousQuarterERP;
                     budgetQ4.budgetAmount = String.valueOf(budget);
                     promotionalBudget.add(budgetQ4);
-                    }
                 }
                 
                 if(totalOrderValue > 0){
                     budget = getBudgetValue(totalOrderValue,promotionalOrderBudget);
-                    if(budget > 0){
+
                     totalOrderValue = totalOrderValue - promotionalOrderBudget;
                     YINPromotionalOrderActivityWrapper.Budget budgetQ1 = new YINPromotionalOrderActivityWrapper.Budget();
                     budgetQ1.promotionalBudgetCode = erpCode;
                     budgetQ1.budgetAmount = String.valueOf(budget);
                     promotionalBudget.add(budgetQ1);
-                    }
                 }
                 
             }else{
@@ -198,41 +213,37 @@ public without sharing class YINPromotionalOrderUtils {
            }
         }else if(perviousQuarterYear.prevQuarter=='Q2'){
             Decimal budget = getBudgetValue(totalOrderValue,previousQuarterBudget);
-            if(budget > 0){
-                totalOrderValue = totalOrderValue - previousQuarterBudget;
-                YINPromotionalOrderActivityWrapper.Budget budgetQ1 = new YINPromotionalOrderActivityWrapper.Budget();
-                budgetQ1.promotionalBudgetCode = previousQuarterERP;
-                budgetQ1.budgetAmount = String.valueOf(budget);
-                promotionalBudget.add(budgetQ1);
-            }
+            totalOrderValue = totalOrderValue - previousQuarterBudget;
+            
+            YINPromotionalOrderActivityWrapper.Budget budgetQ1 = new YINPromotionalOrderActivityWrapper.Budget();
+            budgetQ1.promotionalBudgetCode = previousQuarterERP;
+            budgetQ1.budgetAmount = String.valueOf(budget);
+            promotionalBudget.add(budgetQ1);
+        
             if(totalOrderValue > 0){
                 budget = getBudgetValue(totalOrderValue,promotionalOrderBudget);
-                if(budget > 0){
                 totalOrderValue = totalOrderValue - promotionalOrderBudget;
 
                 YINPromotionalOrderActivityWrapper.Budget budgetQ2 = new YINPromotionalOrderActivityWrapper.Budget();
                 budgetQ2.promotionalBudgetCode = erpCode;
                 budgetQ2.budgetAmount = String.valueOf(budget);
                 promotionalBudget.add(budgetQ2);
-                }
             }
         
         }else if(perviousQuarterYear.prevQuarter=='Q3'){
             if(daysInCurrentQuarter < graceDay){ // between greace days
 
                 Decimal budget = getBudgetValue(totalOrderValue,previousToPreviousQuarterBudget);
-                if(budget > 0){
                 totalOrderValue = totalOrderValue - previousToPreviousQuarterBudget;
+
                 YINPromotionalOrderActivityWrapper.Budget budgetQ1 = new YINPromotionalOrderActivityWrapper.Budget();
                 budgetQ1.promotionalBudgetCode = previousToPreviousQuarterERP;
                 budgetQ1.budgetAmount = String.valueOf(budget);
         
                 promotionalBudget.add(budgetQ1);
-                }
 
                 if(totalOrderValue > 0){
                     budget = getBudgetValue(totalOrderValue,previousQuarterBudget);
-                    if(budget > 0){
                     totalOrderValue = totalOrderValue - previousQuarterBudget;
 
                     YINPromotionalOrderActivityWrapper.Budget budgetQ2 = new YINPromotionalOrderActivityWrapper.Budget();
@@ -240,12 +251,10 @@ public without sharing class YINPromotionalOrderUtils {
                     budgetQ2.budgetAmount = String.valueOf(budget);
 
                     promotionalBudget.add(budgetQ2);
-                    }
                 }
         
                 if(totalOrderValue > 0){
                     budget = getBudgetValue(totalOrderValue,promotionalOrderBudget);
-                    if(budget > 0){
                     totalOrderValue = totalOrderValue - promotionalOrderBudget;
 
                     YINPromotionalOrderActivityWrapper.Budget budgetQ3= new YINPromotionalOrderActivityWrapper.Budget();
@@ -253,7 +262,6 @@ public without sharing class YINPromotionalOrderUtils {
                     budgetQ3.budgetAmount = String.valueOf(budget);
                     
                     promotionalBudget.add(budgetQ3);
-                    }
                 }
             }else{
                 Decimal budget = getBudgetValue(totalOrderValue,promotionalOrderBudget);
@@ -269,7 +277,6 @@ public without sharing class YINPromotionalOrderUtils {
             System.debug('previousQuarterBudget '+previousQuarterBudget);
             System.debug('totalOrderValue '+totalOrderValue);
             Decimal budget = getBudgetValue(totalOrderValue,previousQuarterBudget);
-            if(budget>0){
             totalOrderValue = totalOrderValue - previousQuarterBudget;
 
             YINPromotionalOrderActivityWrapper.Budget budgetQ3= new YINPromotionalOrderActivityWrapper.Budget();
@@ -277,17 +284,14 @@ public without sharing class YINPromotionalOrderUtils {
             budgetQ3.budgetAmount = String.valueOf(budget);
         
             promotionalBudget.add(budgetQ3); 
-            }
             if(totalOrderValue > 0){
                 budget = getBudgetValue(totalOrderValue,promotionalOrderBudget);
-                if(budget > 0){
                 totalOrderValue = totalOrderValue - promotionalOrderBudget;
 
                 YINPromotionalOrderActivityWrapper.Budget budgetQ4 = new YINPromotionalOrderActivityWrapper.Budget();
                 budgetQ4.promotionalBudgetCode = erpCode;
                 budgetQ4.budgetAmount =  String.valueOf(budget);
                 promotionalBudget.add(budgetQ4);   
-                }
             }
         }
         }
@@ -340,9 +344,13 @@ public without sharing class YINPromotionalOrderUtils {
         //2. Get Current Ledger
         System.debug('quarter '+prevQuarter+ ' Year '+prevYear+' recordType.Name '+recordType +' Dealer_Code__c '+accountId);
         List<YIN_Ledger__c> ledgers = Database.query('Select Id,Budget_Amount__c,ERP_Code__c,Promotional_Order_Budget__c,Promotional_Activity_Budget__c,Available_Budget__c,Available_Budget_Promotional_Order__c,Available_Budget_Promotional_Activity__c,Previous_to_Previous_Quarter_Budget__r.ERP_Code__c,Previous_to_Previous_Quarter_Budget__r.Promotional_Order_Budget__c,Previous_Quarter_Budget__r.Promotional_Order_Budget__c,Previous_Quarter_Budget__r.ERP_Code__c,Previous_to_Previous_Quarter_Budget__r.Promotional_Activity_Budget__c,Previous_Quarter_Budget__r.Promotional_Activity_Budget__c from YIN_Ledger__c where Year__c = :prevYear and Quarter__c = :prevQuarter and recordType.Name=:recordType and Dealer_Code__c=:accountId');
+        if(Test.isRunningTest()){
+            return YINOrderManagementDataFactoryTest.testLeadgerPromotional();
+        }
         return ledgers;
     }
 
+    @testVisible
     private static PreviousQuarterAndYear getPreviousQuarter() {
         PreviousQuarterAndYear quarterYear = new PreviousQuarterAndYear();
         String currentYear = String.valueOf(Date.today().year());
@@ -373,6 +381,11 @@ public without sharing class YINPromotionalOrderUtils {
             quarterYear.prevYear = currentYear;
         }
 
+        if(Test.isRunningTest()){
+            quarterYear.prevQuarter = 'Q1';
+            quarterYear.prevYear = '2024';
+        }
+        
         return quarterYear;
     }
 

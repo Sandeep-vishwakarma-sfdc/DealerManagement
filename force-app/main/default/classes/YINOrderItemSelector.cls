@@ -99,7 +99,7 @@ public without sharing class YINOrderItemSelector extends LibSObjectSelector{
 
     public List<OrderItem> getRecentOrderItemForPromotionalActivity(String recType,String recordId){
         List<OrderItem> orders = new List<OrderItem>();
-        String query =  'SELECT Description, Discount_Percent__c, Discount_Type__c, Discounted_Amount__c, GST_Amount__c, GST__c, Id, Order.AccountId, Order.Account.Name,Order.Sub_Status__c,Order.TotalAmount, Order.Allocated_Amount__c, Order.Description, Order.Remarks__c, Order.Status, OrderId, PricebookEntryId, Product2.Name, Product2Id, Quantity, TCS_Amount__c, TCS__c, TDS_Amount__c, TDS__c, TotalPrice, Total_Amount__c, UnitPrice, Variant__c FROM OrderItem WHERE Order.RecordType.Name =: recType and Order.Id =: recordId';
+        String query =  'SELECT Id, Order.AccountId, Order.Account.Name,Order.Sub_Status__c,Order.TotalAmount, Order.Allocated_Amount__c, Order.Description, Order.Remarks__c, Order.Status, OrderId, PricebookEntryId, Product2.Name, Product2Id, Quantity,TotalPrice, Total_Amount__c, UnitPrice FROM OrderItem WHERE Order.RecordType.Name =: recType and Order.Id =: recordId';
         return (List<OrderItem>) Database.query(query);
     }
 

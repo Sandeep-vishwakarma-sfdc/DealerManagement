@@ -9,6 +9,7 @@ public with sharing class YINOrderManagementDataFactoryTest {
     private static Order orderRecord = null;
     private static List<OrderItem> orderItemRecords = null;
     private static List<YIN_Variant__c> variantsRecord = null;
+    private static List<YIN_Ledger__c> ledgersPromtoional = null;
     
     private static List<YIN_Ledger__c> ledgerRecord = null;
     private static YIN_Payment__c paymentRecord = null;
@@ -123,40 +124,19 @@ public with sharing class YINOrderManagementDataFactoryTest {
         
         
         
-        YIN_Ledger__c ledgersPromotionalBudget0 = new YIN_Ledger__c(); // Q3-2023
-        ledgersPromotionalBudget0.Id = LibIDGenerator.generate(YIN_Ledger__c.SObjectType);
-        ledgersPromotionalBudget0.Dealer_Code__r = testAccount();
-        ledgersPromotionalBudget0.RecordTypeId = Schema.SObjectType.YIN_Ledger__c.getRecordTypeInfosByName().get('Promotional_Budget').getRecordTypeId();
-        ledgersPromotionalBudget0.Posting_Date__c = Date.today() - 1;
-        ledgersPromotionalBudget0.ERP_Code__c = '0';
-        ledgersPromotionalBudget0.Year__c = '2023';
-        ledgersPromotionalBudget0.Quarter__c = 'Q3';
-        ledgersPromotionalBudget0.Lapsed_Budget_Amount__c = 1212;
-        ledgersPromotionalBudget0.Budget_Amount__c = 6000;
-
-        YIN_Ledger__c ledgersPromotionalBudget1 = new YIN_Ledger__c(); // Q3-2023
-        ledgersPromotionalBudget1.Id = LibIDGenerator.generate(YIN_Ledger__c.SObjectType);
-        ledgersPromotionalBudget1.Dealer_Code__r = testAccount();
-        ledgersPromotionalBudget1.RecordTypeId = Schema.SObjectType.YIN_Ledger__c.getRecordTypeInfosByName().get('Promotional_Budget').getRecordTypeId();
-        ledgersPromotionalBudget1.Posting_Date__c = Date.today() - 1;
-        ledgersPromotionalBudget1.ERP_Code__c = '0'
-        ledgersPromotionalBudget1.Year__c = '2023';
-        ledgersPromotionalBudget1.Quarter__c = 'Q3';
-        ledgersPromotionalBudget1.Lapsed_Budget_Amount__c = 1212;
-        ledgersPromotionalBudget1.Budget_Amount__c = 6000;
-
-
-        
-        
+        YIN_Ledger__c ledgersPromotionalBudget = new YIN_Ledger__c();
+        ledgersPromotionalBudget.Id = LibIDGenerator.generate(YIN_Ledger__c.SObjectType);
+        ledgersPromotionalBudget.Dealer_Code__r = testAccount();
+        ledgersPromotionalBudget.RecordTypeId = Schema.SObjectType.YIN_Ledger__c.getRecordTypeInfosByName().get('Promotional_Budget').getRecordTypeId();
+        ledgersPromotionalBudget.Posting_Date__c = Date.today() - 1;
+        ledgersPromotionalBudget.Year__c = '2024';
+        ledgersPromotionalBudget.Quarter__c = 'Q1';
         
         
         ledgers.add(ledgerLedger);
         ledgers.add(ledgersSecurityDeposit);
         ledgers.add(ledgersTCSLedger);
         ledgers.add(ledgersPromotionalBudget);
-
-
-
         if(ledgerRecord==null){
             ledgerRecord = ledgers;
         }
@@ -479,7 +459,9 @@ public with sharing class YINOrderManagementDataFactoryTest {
 
         return mappings;
     }
-    
+    private static List<YIN_Ledger__c> testLedger(){
+        return new List<YIN_Ledger__c>();
+    }
     
     
 
@@ -491,10 +473,12 @@ public with sharing class YINOrderManagementDataFactoryTest {
         o.EffectiveDate = System.today();
         o.Ship_To_Party__c = testAccount().Id;
         o.Status = 'Open';
+        o.recordTypeId = Schema.SobjectType.Order.getRecordTypeInfosByName().get('Cart').getRecordTypeId();
+        List<Order> orders = new List<Order>();
         if(orderRecord==null){
-            orderRecord = o;
+            orders.add(o);
         }
-        return new List<Order>{orderRecord};
+        return orders;
     }
 
     public static List<OrderItem> getOrderItemTest(){
@@ -546,13 +530,38 @@ public with sharing class YINOrderManagementDataFactoryTest {
         return variantsRecord;
     }
     
-    public static List<YIN_Ledger__c> testLeadger(){
-        List<YIN_Ledger__c> ledgers = new List<YIN_Ledger__c>();
-        YIN_Ledger__c ledger = new YIN_Ledger__c();
-        ledger.Id=LibIDGenerator.generate(YIN_Ledger__c.SObjectType);
-        ledger.Dealer_Code__r = testAccount();
-        ledger.Dealer_Code__c = testAccount().Id;
+    public static List<YIN_Ledger__c> testLeadgerPromotional(){
+        List<YIN_Ledger__c> ledgersPromotionalBuds = new List<YIN_Ledger__c>();
+        YIN_Ledger__c ledgersPromotionalBudget = new YIN_Ledger__c();
+        ledgersPromotionalBudget.Id = LibIDGenerator.generate(YIN_Ledger__c.SObjectType);
+        ledgersPromotionalBudget.Dealer_Code__r = testAccount();
+        ledgersPromotionalBudget.RecordTypeId = Schema.SObjectType.YIN_Ledger__c.getRecordTypeInfosByName().get('Promotional_Budget').getRecordTypeId();
+        ledgersPromotionalBudget.Posting_Date__c = Date.today() - 1;
+        ledgersPromotionalBudget.Year__c = '2024';
+        ledgersPromotionalBudget.Quarter__c = 'Q1';
         
-        return ledgers;
+        YIN_Ledger__c ledgersPromotionalBudget1 = new YIN_Ledger__c();
+        ledgersPromotionalBudget1.Id = LibIDGenerator.generate(YIN_Ledger__c.SObjectType);
+        ledgersPromotionalBudget1.Dealer_Code__r = testAccount();
+        ledgersPromotionalBudget1.RecordTypeId = Schema.SObjectType.YIN_Ledger__c.getRecordTypeInfosByName().get('Promotional_Budget').getRecordTypeId();
+        ledgersPromotionalBudget1.Posting_Date__c = Date.today() - 1;
+        ledgersPromotionalBudget1.Year__c = '2023';
+        ledgersPromotionalBudget1.Quarter__c = 'Q4';
+        
+        YIN_Ledger__c ledgersPromotionalBudget2 = new YIN_Ledger__c();
+        ledgersPromotionalBudget2.Id = LibIDGenerator.generate(YIN_Ledger__c.SObjectType);
+        ledgersPromotionalBudget2.Dealer_Code__r = testAccount();
+        ledgersPromotionalBudget2.RecordTypeId = Schema.SObjectType.YIN_Ledger__c.getRecordTypeInfosByName().get('Promotional_Budget').getRecordTypeId();
+        ledgersPromotionalBudget2.Posting_Date__c = Date.today() - 1;
+        ledgersPromotionalBudget2.Year__c = '2023';
+        ledgersPromotionalBudget2.Quarter__c = 'Q3';
+        
+        ledgersPromotionalBuds.add(ledgersPromotionalBudget);
+        ledgersPromotionalBuds.add(ledgersPromotionalBudget1);
+        ledgersPromotionalBuds.add(ledgersPromotionalBudget2);
+        if(ledgersPromtoional==null){
+        	ledgersPromtoional=ledgersPromotionalBuds;
+        }
+        return ledgersPromtoional;
     }
 }

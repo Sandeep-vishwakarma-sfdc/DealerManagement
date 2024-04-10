@@ -16,7 +16,8 @@ public with sharing class YINOrderSelector extends LibSObjectSelector {
             Order.Name,
             // Order.Order_Status__c,
             Order.AccountId,
-            Order.Status,
+            Order.Allocated_Amount__c,
+            Order.Description,
             Order.GST_Amount__c,
             Order.TotalAmount,
             Order.EndDate,
@@ -51,6 +52,7 @@ public with sharing class YINOrderSelector extends LibSObjectSelector {
         .selectField('RecordType.Name')
         .selectField('Account.ERP_Customer_Code__c')
         .selectField('Account.Location__r.Location_Code__c')
+        .selectField('Account.Name')
         .setCondition('Id IN:recordIds')
         .setLimit(1)
         .toSOQL();  
@@ -77,8 +79,8 @@ public with sharing class YINOrderSelector extends LibSObjectSelector {
         );
     }
  
-    // Added by Saurabh Pandey
-    public List<Order> getRecentOrderForPromotionalActivity(String recType){
+    
+   /* public List<Order> getRecentOrderForPromotionalActivity(String recType){
         List<Order> orders = new List<Order>();
         String query =  newQueryFactory()
         .setCondition('RecordType.Name =: recType')
@@ -86,5 +88,5 @@ public with sharing class YINOrderSelector extends LibSObjectSelector {
         .setLimit(1)
         .toSOQL();  
         return (List<Order>) Database.query(query);
-    }
+    }*/
 }

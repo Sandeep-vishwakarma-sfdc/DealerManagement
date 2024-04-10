@@ -1,11 +1,11 @@
 /**
  * @description       : This class provides methods to select and query User records.
  * @author            : Saurabh Pandey
- * @group             : 
- * @last modified on  : 02-14-2024
+ * @group             : SKI
+ * @last modified on  : 03-12-2024
  * @last modified by  : saurabh.pandey@skinternational.com
  **/
-public with sharing class YINUserSelector extends LibSObjectSelector {
+public without sharing class YINUserSelector extends LibSObjectSelector {
 
     /**
      * @Description - Constructor for UserSelector class.
@@ -78,7 +78,11 @@ public with sharing class YINUserSelector extends LibSObjectSelector {
         );
     }
 
-    
+     /**
+     * @Description - Retrieves a User record by its ID.
+     * @param usr_id : ID of the User to retrieve.
+     * @return List<User> : List containing a single User record.
+     */
     public List<User> currentUser(String usr_id) {
         return Database.query(
             newQueryFactory()
@@ -147,10 +151,28 @@ public with sharing class YINUserSelector extends LibSObjectSelector {
                         .selectField('Contact.Account.RecordTypeId')
                         .selectField('Contact.Account.RecordType.Name')
                         .selectField('Contact.Account.Account_4S__c')
+                        .selectField('Contact.Account.Account_4S__r.Name')
                         .setCondition('Id =: userId')
                         .setLimit(1)
                         .toSOQL()
         );
     }
-
+    //Added by kalpesh chande
+ public List<User> getUsersByAccountId(String accountId){ 
+        return Database.query(
+                newQueryFactory()
+                        .setCondition('AccountId =: accountId')
+                        //.setLimit(10)
+                        .toSOQL()
+        );
+    }
+      //Added by kalpesh chande
+ public List<User> getUserByProfile(String profileName){ 
+        return Database.query(
+                newQueryFactory()
+                        .setCondition('Profile.Name =: profileName')
+                        //.setLimit(10)
+                        .toSOQL()
+        );
+    }
 }

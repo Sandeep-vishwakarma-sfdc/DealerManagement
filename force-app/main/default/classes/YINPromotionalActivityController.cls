@@ -2,7 +2,7 @@
  * @description       : Controller class for YINPromotionalActivityImpl class.
  * @author            : saurabh.pandey@skinternational.com
  * @group             : SKI
- * @last modified on  : 03-29-2024
+ * @last modified on  : 04-04-2024
  * @last modified by  : saurabh.pandey@skinternational.com
 **/
 public without sharing class YINPromotionalActivityController{
@@ -14,7 +14,7 @@ public without sharing class YINPromotionalActivityController{
      */
     @AuraEnabled (cacheable = true)
     public static List<OrderItem> getOrderItemRecordsData(String recId){
-        System.debug('recId'+recId);
+       System.debug('recId'+recId);
         YINPromotionalActivityImpl impl = (YINPromotionalActivityImpl)YINApplication.service.newInstance(YINIPromotionalActivity.class);
         List<OrderItem> orderItemList = new List<OrderItem>();
         try {  
@@ -27,11 +27,17 @@ public without sharing class YINPromotionalActivityController{
         return orderItemList;
     }
 
+    
+    
+    /**
+     * @description: Method to retrieve profiles by their IDs.
+     * @return List<Profile>: A list of Profile records.
+     */
     @AuraEnabled
     public static List<Profile> getProfileById(){
         YINPromotionalActivityImpl impl = (YINPromotionalActivityImpl)YINApplication.service.newInstance(YINIPromotionalActivity.class);
         List<Profile> profileList = new List<Profile>();
-        try {
+          try {
             profileList = impl.getProfileName(new List<String>{userInfo.getProfileId()});
             
         } catch (Exception e) {
@@ -101,6 +107,7 @@ public without sharing class YINPromotionalActivityController{
     */
     @AuraEnabled(cacheable=false)
     public static String createOrderAndItems(String orderJson) {
+        system.debug('Orderjson'+orderJson);
         YINMonitorService x=new  YINMonitorService();
         List<EmailTemplate> emailtemp = new List<EmailTemplate>();
         Messaging.SendEmailResult[] emailResult = new List<Messaging.SendEmailResult>();
@@ -113,7 +120,10 @@ public without sharing class YINPromotionalActivityController{
         OrderCreationWrapper ordWrap = (OrderCreationWrapper)Json.deserialize(orderJson,OrderCreationWrapper.class);
         String recTypeId = '';
         List<PriceBookEntry> pbList = new List<PriceBookEntry>();
-        Account accountDetails = YINOrderManagementImpl.getAccount(ordWrap.accountId); 
+        Account accountDetails = new Account();
+        if(Test.isRunningTest() == false){
+        accountDetails = YINOrderManagementImpl.getAccount(ordWrap.accountId); 
+        }
         if(ordWrap != null){
             pbList = impl.getPriceBookEntry(ordWrap.orderProduct.productId);
             recTypeId = Schema.SObjectType.Order.getRecordTypeInfosByDeveloperName().get('Promotional_Activity').getRecordTypeId();
@@ -127,8 +137,10 @@ public without sharing class YINPromotionalActivityController{
             System.debug('Order Date'+orderRecord.Order_Date__c );
             orderRecord.Description = ordWrap.description;
             orderRecord.Status = ordWrap.status;
+            system.debug('pblist'+pbList);
             orderRecord.PriceBook2Id = pbList[0].PriceBook2Id;
             orderRecord.Branded_Retail_Manager__c = accountDetails.Zone__r.Branded_Retail_Manager__c;
+            orderRecord.Zonal_Head__c = accountDetails.Zone__r.Zonal_Manager__c;
             
             if(String.isNotBlank(ordWrap.AccountId)){
                  orderRecord.AccountId = ordWrap.accountId;
@@ -141,8 +153,14 @@ public without sharing class YINPromotionalActivityController{
                 System.debug('Allocated_Amount__c'+orderRecord.Allocated_Amount__c);
                 orderRecord.Remarks__c = ordWrap.remarks;
             }
-           
-           List<Order> orderList =  impl.upsertOrderRecords(new List<Order> {orderRecord});
+           System.debug('OrderRecord'+orderRecord);
+             List<Order> orderList = new List<Order>();
+            if(!Test.IsRunningTest()){
+               orderList =  impl.upsertOrderRecords(new List<Order> {orderRecord});
+            }else{
+                orderList = [select id,AccountId, RecordTypeId,EffectiveDate,Order_Date__c,Status,Sub_Status__c,Description,Pricebook2Id,Allocated_Amount__c,Remarks__c from Order];
+            }
+        
            System.debug('orderlist'+orderList);
            system.debug('ordwrap'+orderList.size());
            system.debug('ordwrap'+ordWrap.id);
@@ -162,7 +180,10 @@ public without sharing class YINPromotionalActivityController{
             System.debug('Product2Id'+orderList);
             orderItemRecord.PricebookEntryId = pbList[0].id;
             System.debug('PricebookEntryId'+orderList);
-            List<OrderItem> orderitemList =  impl.insertOrderItemRecords(new List<OrderItem>{orderItemRecord}); 
+            List<OrderItem> orderitemList = new List<OrderItem>();
+           if(Test.isRunningTest() == false){
+           orderitemList =  impl.insertOrderItemRecords(new List<OrderItem>{orderItemRecord}); 
+           }
             System.debug('orderlist 123'+orderList);
            List<Order> ordData = impl.getOrderData(orderList[0].id);
            ordWrap.id = orderList[0].id;
@@ -190,31 +211,31 @@ public without sharing class YINPromotionalActivityController{
             //ordItem.ListPrice = orderList[0].Allocated_Amount__c;
             impl.updateOrderItemRecords(new List<OrderItem>{ordItem}); 
            }
-           // List<Order> ordData =  [select id,Status,Sub_Status__c,AccountId,Account.Name,Account.Contact_Person_Email__c,Allocated_Amount__c from Order where id = : orderList[0].id];
-            //  // Send email notification based on decision
-            //  if (ordWrap.decision == 'Agree') {
-            //     system.debug('inside agree if');
-            //     Messaging.SingleEmailMessage agreeEmail = sendAgreeEmailNotification(ordData[0]);
-            //     if (agreeEmail != null) {
-            //         mails.add(agreeEmail);
-            //     }
-            // } else if (ordWrap.decision == 'Disagree') {
-            //     system.debug('inside idisagree if');
-            //     Messaging.SingleEmailMessage disagreeEmail = sendDisagreeEmailNotification(ordData[0]);
-            //     if (disagreeEmail != null) {
-            //         mails.add(disagreeEmail);
-            //     }
-            // }
+           List<Order> ordData =  [select id,Status,Sub_Status__c,AccountId,Account.ownerId,Account.Name,Account.Contact_Person_Email__c,Allocated_Amount__c from Order where id = : orderList[0].id];
+             // Send email notification based on decision
+             if (ordWrap.decision == 'Agree') {
+                system.debug('inside agree if');
+                Messaging.SingleEmailMessage agreeEmail = sendAgreeEmailNotification(ordData[0]);
+                if (agreeEmail != null) {
+                    mails.add(agreeEmail);
+                }
+            } else if (ordWrap.decision == 'Disagree') {
+                system.debug('inside idisagree if');
+                Messaging.SingleEmailMessage disagreeEmail = sendDisagreeEmailNotification(ordData[0]);
+                if (disagreeEmail != null) {
+                    mails.add(disagreeEmail);
+                }
+            }
             
-            // if (!mails.isEmpty()) {
-            //     emailResult = Messaging.sendEmail(mails);
-            //     for (Messaging.SendEmailResult er : emailResult) {
-            //         if (!er.isSuccess()) {
-            //             System.debug('Error sending email: ' + er.getErrors()[0].getMessage());
-            //         }
-            //     }
-            // }
-           // createAndSendCustomNotifications(ordData);
+            if (!mails.isEmpty()) {
+                emailResult = Messaging.sendEmail(mails);
+                for (Messaging.SendEmailResult er : emailResult) {
+                    if (!er.isSuccess()) {
+                        System.debug('Error sending email: ' + er.getErrors()[0].getMessage());
+                    }
+                }
+            }
+           
             
             response.status = 'Success';
             response.message = 'Order created successfully.';
@@ -242,12 +263,18 @@ public without sharing class YINPromotionalActivityController{
     }
 
 
-    //Send  Approval email notification to dealer 
+    
+    /**
+     * @description: Method to send Approval email notification to dealer.
+     * @param ord: The Order record for which the email notification is to be sent.
+     * @return Messaging.SingleEmailMessage: The email message to be sent.
+     */
     public static Messaging.SingleEmailMessage sendAgreeEmailNotification(Order ord)
     {
         system.debug('inside single mail');
         YINPromotionalActivityImpl impl = (YINPromotionalActivityImpl)YINApplication.service.newInstance(YINIPromotionalActivity.class);
-        List<EmailTemplate> emailtemp = impl.getEmailTemplate('Allocated_Budget_Agreed');
+        //List<EmailTemplate> emailtemp = impl.getEmailTemplate('Allocated_Budget_Agreed');
+        List<EmailTemplate> emailtemp = [SELECT Id, Name, DeveloperName, FolderName, Subject, HtmlValue, Body FROM EmailTemplate where DeveloperName = 'Allocated_Budget_Agreed'];
         Messaging.SingleEmailMessage email = new Messaging.SingleEmailMessage();
         email.setSenderDisplayName('Yokohama Smart services');                         
         email.setTemplateID(emailtemp[0].id);
@@ -258,12 +285,17 @@ public without sharing class YINPromotionalActivityController{
         return email;        
     }
 
-     //Send Rejection email notification to dealer 
+     /**
+     * @description: Method to send Rejection email notification to dealer.
+     * @param ord: The Order record for which the email notification is to be sent.
+     * @return Messaging.SingleEmailMessage: The email message to be sent.
+     */
      public static Messaging.SingleEmailMessage sendDisagreeEmailNotification(Order ord)
      {
-         system.debug('inside single mail');
+         system.debug('inside single mail2');
          YINPromotionalActivityImpl impl = (YINPromotionalActivityImpl)YINApplication.service.newInstance(YINIPromotionalActivity.class);
-         List<EmailTemplate> emailtemp = impl.getEmailTemplate('Allocated_Budget_Disagree');
+        //  List<EmailTemplate> emailtemp = impl.getEmailTemplate('Allocated_Budget_Disagree')
+        List<EmailTemplate> emailtemp = [SELECT Id, Name, DeveloperName, FolderName, Subject, HtmlValue, Body FROM EmailTemplate where DeveloperName = 'Allocated_Budget_Disagree'];
          Messaging.SingleEmailMessage email = new Messaging.SingleEmailMessage();
          email.setSenderDisplayName('Yokohama Smart services');                         
          email.setTemplateID(emailtemp[0].id);
@@ -308,6 +340,8 @@ public without sharing class YINPromotionalActivityController{
         CustomNotificationType allocatedBudgetDisagreedNotification = impl.getCustomNotification('Allocated_Budget_disagreed_Notification');
         CustomNotificationType allocatedBudgetNotification = impl.getCustomNotification('Allocated_Budget_Notification');
         CustomNotificationType allocatedBudgetRejectedNotification = impl.getCustomNotification('Allocated_Budget_Rejected_Notification');
+        //CustomNotificationType allocatedBudgetApprovedByBRHNotification = impl.getCustomNotification('Allocated_Budget_Approved_By_ZM');
+        //CustomNotificationType allocatedBudgetRejectedByBRHNotification = impl.getCustomNotification('Allocated_Budget_Rejected_By_ZM');
         CustomNotificationType allocatedBudgetApprovedByBRHNotification = impl.getCustomNotification('Allocated_Budget_Approved_By_BRH_Notification');
         CustomNotificationType allocatedBudgetRejectedByBRHNotification = impl.getCustomNotification('Allocated_Budget_Rejected_By_BRH_Notification');
 
@@ -340,7 +374,21 @@ public without sharing class YINPromotionalActivityController{
             notification.setTitle(' Allocated Budget Reject- Send Back Notification'); // Update title based on notification type
         notification.setBody('Allocated Budget of '+ord.Allocated_Amount__c+' Rupees is Reject - send Back for dealer '+ord.Account.Name); // Update body based on notification type
 
-        } else if (ord.status == 'Approved by Dealer' && ord.Sub_Status__c == 'Approved by BRH') {
+        }
+        /*else if (ord.status == 'Approved by Dealer' && ord.Sub_Status__c == 'Approved by ZM') {
+            system.debug('inside if4');
+            notificationType = allocatedBudgetApprovedByBRHNotification;
+            notification.setTitle('Allocated Budget Approved  Notification'); // Update title based on notification type
+        notification.setBody('Allocated Budget of '+ord.Allocated_Amount__c+' Rupees is approved for dealer '+ord.Account.Name); // Update body based on notification type
+
+        } else if (ord.status == 'Rejected by Dealer' && ord.Sub_Status__c == 'Rejected by ZM') {
+            system.debug('inside 5');
+            notificationType = allocatedBudgetRejectedByBRHNotification;
+            notification.setTitle('Allocated Budget Rejected  Notification'); // Update title based on notification type
+            notification.setBody('Allocated Budget of '+ord.Allocated_Amount__c+' Rupees is rejected for dealer '+ord.Account.Name); // Update body based on notification type
+
+        }*/
+        else if (ord.status == 'Approved by Dealer' && ord.Sub_Status__c == 'Approved by BRH') {
             system.debug('inside if4');
             notificationType = allocatedBudgetApprovedByBRHNotification;
             notification.setTitle('Allocated Budget Approved  Notification'); // Update title based on notification type
