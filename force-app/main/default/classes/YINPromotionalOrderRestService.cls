@@ -2,26 +2,36 @@
 global with sharing class YINPromotionalOrderRestService {
     @HttpGet
     global static String getLedgerInfo(){
+        YINOrderRestCarts.ResponseWrapper res = new YINOrderRestCarts.ResponseWrapper();
         try{
             Map<String,String> params = RestContext.request.params;
             String accountId = params.get('accountId');
             String recordType = params.get('recordType');
             YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
             String response = JSON.serialize(orderService.getCurrentYearQuaterledger(accountId,recordType));
-            return response;
+            res.status = 'success';
+            res.data = response;
+            return JSON.serialize(res);
         }catch(Exception e){
-            return e.getMessage();
+            res.status = 'error';
+            res.message = e.getMessage();
+            return JSON.serialize(res);
         }
     }
 
     @HttpPost
     global static string sendForApproval(String productWrappers,String shipToCode){
+        YINOrderRestCarts.ResponseWrapper res = new YINOrderRestCarts.ResponseWrapper();
         try{
             YINIOrderManagement orderService = (YINIOrderManagement) YINApplication.Service.newInstance(YINIOrderManagement.class);
             String response = JSON.serialize(orderService.promotionalOrderSendForApproval(productWrappers,shipToCode));
-            return response;
+            res.status = 'success';
+            res.data = response;
+            return JSON.serialize(res);
         }catch(Exception e){
-            return e.getMessage();
+            res.status = 'error';
+            res.message = e.getMessage();
+            return JSON.serialize(res);
         }
     }
 

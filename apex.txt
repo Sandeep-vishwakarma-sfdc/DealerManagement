@@ -61,7 +61,7 @@ Parameters information
 5) productWrapper = String(JSON) : product and its information
 6) productWrappers = String(Array[JSON]) : multiple product and its information
 ---------------------------------------------------------------------------------------------------------------------
-1) GET : /services/apexrest/order/products?accountId=0010T00000fYTVBQA4&orderType=All&searchType=Normal
+1) GET : /services/apexrest/order/products?accountId=0010T00000fYTVBQA4&orderType=Normal&searchType=All
 Apex : YINOrderRestProducts.getProducts();
 body : No body 
 
@@ -269,3 +269,5 @@ System.debug(previousToPreviousQuarterERP);
 
 List<YINPromotionalOrderActivityWrapper.Budget> budget = YINPromotionalOrderUtils.getBudgets('0011m00000p9Mf1AAE',5000,'Promotional Order');
 System.debug('budget '+budget);
+
+System.debug('Day '+YINOrderManagementImpl.getAccountOverDueAmount('0010T00000hAfjx'));

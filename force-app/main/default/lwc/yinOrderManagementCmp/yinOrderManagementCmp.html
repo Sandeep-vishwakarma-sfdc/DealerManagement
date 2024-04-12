@@ -34,7 +34,7 @@
 
                 <input type="text" lwc:ref="searchinput" class="form-control"
                   style="text-align: left !important;padding-left: 10px !important;" name="x"
-                  placeholder="Search By Product Name, Size or Pattern" autocomplete="off" onkeypress={handleEnter} />
+                  placeholder="Search By Product Name, Size or Pattern" autocomplete="off" onkeypress={handleEnter} onkeyup={handleInputChange} />
                 <span class="input-group-btn">
                   <button class="btn btn-default" type="button" onclick={handleSearch}><i
                       class="fa fa-search"></i></button>
@@ -355,8 +355,8 @@
               <div class="product-title">{cartDetail.pricebookEntry.Name}</div>
               <div class="product-description">
                 <div>Product Code: <strong>{cartDetail.pricebookEntry.Product2.Product_Code__c}</strong></div>
-                <div>Rim Size: {cartDetail.pricebookEntry.Product2.Size__c} inch</div>
-                <div>Pattern: {cartDetail.pricebookEntry.Product2.Tread_Pattern__c}</div>
+                <div if:false={isPromotional}>Rim Size: {cartDetail.pricebookEntry.Product2.Size__c} inch</div>
+                <div if:false={isPromotional}>Pattern: {cartDetail.pricebookEntry.Product2.Tread_Pattern__c}</div>
                 <div lwc:if={cartDetail.variantCode}>Variant Code: {cartDetail.variantCode}</div>
                 <!-- <div>Item Number: {cartDetail.pricebookEntry.Product2.Product_Code__c}</div> -->
                 <div class="product-removal">
@@ -450,15 +450,16 @@
           <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
             <!-- <h2>Submitted Order</h2> -->
             <div class="col-md-12 col-xs-6">
-              <p>Submitted- inventory available / Item in Stock.</p>
-              <p>Open – Inventory not available now / Item out of stock.</p>
+              <!-- <p>Submitted- inventory available / Item in Stock.</p> -->
+              <!-- <p>Open – Inventory not available now / Item out of stock.</p> -->
+              
               <table class="slds-m-top_large">
                 <tr
                   style="background:#262626; color:#fff; font-weight:600; border-top-left-radius:4px; border-bottom-left-radius:4px; border-top-right-radius:4px; border-bottom-right-radius:4px; font-size:18px; padding:5px;">
                   <th style="border: 1px solid black;text-align: center;width: 150px;">Item Code</th>
                   <th style="border: 1px solid black;text-align: center;width: 150px">Item Description</th>
                   <th style="border: 1px solid black;text-align: center;width: 150px">Quantity</th>
-                  <th style="border: 1px solid black;text-align: center;width: 150px">Variant</th>
+                  <!-- <th style="border: 1px solid black;text-align: center;width: 150px">Variant</th> -->
                   <th style="border: 1px solid black;text-align: center;width: 150px">Inventory Status</th>
                 </tr>
                 <template for:each={orderPreview.Submitted} for:item="submitted">
@@ -466,8 +467,8 @@
                     <td style="border: 1px solid black;text-align: center;">{submitted.Product2.Product_Code__c}</td>
                     <td style="border: 1px solid rgb(141, 57, 57);text-align: center;">{submitted.Product2.Name}</td>
                     <td style="border: 1px solid black;text-align: center;">{submitted.Quantity}</td>
-                    <td style="border: 1px solid black;text-align: center;"><p lwc:if={submitted.VariantCode}>{submitted.VariantCode}</p><p lwc:else> N/A </p></td>
-                    <td style="border: 1px solid black;text-align: center;">Submitted</td>
+                    <!-- <td style="border: 1px solid black;text-align: center;"><p lwc:if={submitted.VariantCode}>{submitted.VariantCode}</p><p lwc:else> N/A </p></td> -->
+                    <td style="border: 1px solid black;text-align: center; color: green">In stock</td>
                   </tr>
                 </template>
                 <template for:each={orderPreview.Open} for:item="open">
@@ -475,11 +476,12 @@
                     <td style="border: 1px solid black;text-align: center;">{open.Product2.Product_Code__c}</td>
                     <td style="border: 1px solid black;text-align: center;">{open.Product2.Name}</td>
                     <td style="border: 1px solid black;text-align: center;">{open.Quantity}</td>
-                    <td style="border: 1px solid black;text-align: center;"><p lwc:if={open.VariantCode}>{open.VariantCode}</p><p lwc:else> N/A </p></td>
-                    <td style="border: 1px solid black;text-align: center;">Open</td>
+                    <!-- <td style="border: 1px solid black;text-align: center;"><p lwc:if={open.VariantCode}>{open.VariantCode}</p><p lwc:else> N/A </p></td> -->
+                    <td style="border: 1px solid black;text-align: center;">Out of stock</td>
                   </tr>
                 </template>
               </table>
+              <p style="margin-top:10px ;">Disclaimer: For the items that are out of stock, we will let you know once items are in stock.</p>
             </div>
           </div>
           <!-- Modal/Popup Box LWC footer starts here -->

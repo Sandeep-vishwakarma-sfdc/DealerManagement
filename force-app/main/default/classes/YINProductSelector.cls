@@ -70,6 +70,7 @@ public with sharing class YINProductSelector extends LibSObjectSelector{
             .selectField('Id')
             .selectField('Name')
             .selectField('Product_Code__c')
+            .selectField('size__c')
             .toSOQL()
         );
      }

@@ -144,6 +144,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
                 cartOrder.ShippingPostalCode= accountDetails.ShippingPostalCode;
                 cartOrder.ShippingCountry = accountDetails.ShippingCountry;
                 cartOrder.Branded_Retail_Manager__c = accountDetails.Zone__r.Branded_Retail_Manager__c;
+                cartOrder.Zonal_Head__c = accountDetails.Zone__r.Zonal_Manager__c;
 
                 cartOrder.Pricebook2Id = wrapperProduct.pricebookEntry.Pricebook2Id;
                 // cartOrder.Type__c = 'Normal';
@@ -460,12 +461,14 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         // 2. Check Credit Days
         Boolean checkCreditDays = checkCreditDays(docommit.accountId);
         if(!checkCreditDays){
-            throw new YINOrderManagementException('Credit Days Expired');
+            Decimal dueAmount = getAccountOverDueAmount(docommit.accountId);
+            throw new YINOrderManagementException('Credit Days Expired Kindly Pay Minimum Due Amount of ₹ '+ String.valueOf(dueAmount.format()));
         }
 
         // 3. Check Credit Limit
         Boolean checkCreditLimit = checkCreditLimit(docommit.accountId,docommit.grandTotal);
         if(!checkCreditLimit){
+            
             throw new YINOrderManagementException('Credit Limit Exceed');
         }
 
@@ -531,7 +534,7 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         List<Account> accounts = accountSelector.getAccounts(new List<String>{docommit.accountId});
         System.debug('docommit.shippingAccountCode account '+shippingAccounts);
         if(shippingAccounts.size()>0){
-            String key = shippingAccounts[0].Id == docommit.accountId?shippingAccounts[0].ERP_Customer_Code__c:shippingAccounts[0].ERP_Ship_To_Code__c;
+            String key = shippingAccounts[0].Id == docommit.accountId?shippingAccounts[0].ERP_Customer_Code__c:shippingAccounts[0].ERP_Customer_Code__c;
             shippingAccountMap.put(key,shippingAccounts[0]);
         }
         
@@ -1075,9 +1078,9 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
         List<Account> accounts = accountSelector.selectShippingAccounts(accountId);
         for(Account acc:accounts){
-            if(acc.Id==accountId){
+            //if(acc.Id==accountId){
                 acc.ERP_Ship_To_Code__c = acc.ERP_Customer_Code__c;
-            }
+            //}
         }
         return accounts;
     }
@@ -1203,14 +1206,17 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
     }
 
    public static Decimal getAccountOverDueAmount(String accountId){
-     /*  YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
+       YINAccountSelector accountSelector = (YINAccountSelector)YINApplication.selector.newInstance(Account.SObjectType);
         List<Account> accounts = accountSelector.getAccounts(new List<String>{accountId});
+        Integer day = accounts[0].Payment_Term__c==null?0:Integer.valueOf(accounts[0].Payment_Term__c.removeEnd('D'));
         Decimal amount = 0;
-        List<AggregateResult> aggregateResults = Database.query('SELECT SUM(Remaining_amount__c) FROM YIN_Ledger__c AND Account =:  AND RecordType.name  = 'Ledger' AND Open = True AND Posting Date < :'Dynamic Variable'');
+        String recordTypeName = 'Ledger';
+        List<AggregateResult> aggregateResults = Database.query('SELECT SUM(Remaining_amount__c) amount FROM YIN_Ledger__c WHERE Dealer_Code__c =:accountId  AND RecordType.name  =:recordTypeName AND Open__c = true AND Posting_Date__c < LAST_N_DAYS:'+day);
+        Decimal thresholdAmount = 0;
         if (!aggregateResults.isEmpty()) {
-            thresholdAmount = (Decimal)aggregateResults[0].get('amount');
-        } */
-        return 0;
+             thresholdAmount = (Decimal)aggregateResults[0].get('amount')!=null?(Decimal)aggregateResults[0].get('amount'):0;
+        } 
+        return thresholdAmount;
     }
 
     

@@ -125,6 +125,7 @@ public with sharing class YINStockInventory {
                 items = YINOrderManagementDataFactoryTest.getOrderItemTest();
             }
             String shipToCode = shipTo[0]?.ERP_Ship_To_Code__c;
+            // String shipToCode = shipTo[0]?.ERP_Customer_Code__c;
             if(submittingOrder.AccountId==submittingOrder.Ship_To_Party__c){// if selected shipping address is billing address then use customer code instead of ship to code
                 shipToCode = '';
             }

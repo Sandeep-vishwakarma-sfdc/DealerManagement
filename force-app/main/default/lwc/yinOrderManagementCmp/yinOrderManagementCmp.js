@@ -629,6 +629,15 @@ export default class YinOrderManagementCmp extends NavigationMixin(LightningElem
         }
     }
 
+    async handleInputChange(event){
+        clearTimeout(this.debounceTimeout);
+
+        // Set a new timeout to execute the function after a delay
+        this.debounceTimeout = setTimeout(async () => {
+            await this.handleSearch(event);
+        }, 500); // Adjust the delay time as needed (e.g., 500 milliseconds)
+    }
+
     // search bar button action
     async handleSearch(event){
         console.log('search ',this.refs.searchinput.value);
@@ -716,7 +725,7 @@ export default class YinOrderManagementCmp extends NavigationMixin(LightningElem
                     }
                 } catch (error) {
                     console.log('error ',error);
-                    if(error.body.message!='Credit Days Expired'){
+                    if(!error.body.message.includes('Credit Days Expired')){
                         this.showAlert(error.body.message,'error','Error');
                     }else{
                         this.showPrompt(error.body.message+" \n Redirect to payment screen ?",'error','Error');
