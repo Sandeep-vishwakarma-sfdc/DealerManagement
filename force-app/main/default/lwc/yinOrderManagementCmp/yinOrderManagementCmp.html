@@ -138,9 +138,9 @@
 
                     <div class="product__details">
                       <section class="product__name slds-truncate" title={productWrap.pricebookEntry.Product2.Name}>{productWrap.pricebookEntry.Product2.Name}</section>
-                      <section class="product__short-description slds-truncate" title={productWrap.pricebookEntry.Product2.Product_Code__c}>
+                      <section class="product__short-description" title={productWrap.pricebookEntry.Product2.Product_Code__c}>
                         <!-- Tyre Size: 145/80R13 75S | Tread Pattern: E400 | FG-F8669 -->
-                        <div if:false={isPromotional}>
+                        <div if:false={isPromotional} >
                         Rim Size: <span lwc:if={productWrap.productSize}>{productWrap.productSize}</span><span lwc:else>N/A</span> inches | Pattern:
                         {productWrap.pricebookEntry.Product2.Tread_Pattern__c} | <span
                           lwc:if={productWrap.variantCode}>Variant: {productWrap.variantCode}</span> |
@@ -256,9 +256,9 @@
             </div>
           </div>
 
-          <div class="col-md-1 col-xs-6" >
+          <div class="col-md-1 col-xs-6" style="padding: 0px !important;">
             <lightning-button  icon-name="utility:search" variant="brand" style="margin-top: 5px;"
-              class="slds-m-left_x-small" onclick={handleHideCart}></lightning-button>
+              class="slds-m-left_x-small" onclick={handleHideCart} label="Search"></lightning-button>
           </div>
         </div>
       </div>

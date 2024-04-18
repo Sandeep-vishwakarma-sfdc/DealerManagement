@@ -10,8 +10,12 @@ global with sharing class YINOrderRestCreate {
             res.data = response;
             return JSON.serialize(res);
         }catch(Exception e){
-            res.status = 'error';
             res.message = e.getMessage();
+            if(res.message?.contains('Credit Days Expired')){
+                res.status = 'expired';
+            }else{
+                res.status = 'error';
+            }
             return JSON.serialize(res);
         }
         

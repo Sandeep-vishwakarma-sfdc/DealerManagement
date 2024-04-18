@@ -229,7 +229,9 @@ export default class YinOrderManagementCmp extends NavigationMixin(LightningElem
         // Fetch Shipping Accounts
         this.shippingAccounts = await getShippingAccounts({accountId:this.accountId})
         let addresses = this.shippingAccounts.map(ele=>{
-            return ({label:ele?.Address__c+''+ele?.Address2__c,value:ele.ERP_Ship_To_Code__c})
+            let address1 = ele?.Address__c ? ele?.Address__c:'';
+            let address2 = ele?.Address2__c ? ele?.Address2__c:'';
+            return ({label:address1+' '+address2,value:ele.ERP_Ship_To_Code__c})
         });
         let none = {label:'Select Shipping Address',value:''};
         addresses.unshift(none);
