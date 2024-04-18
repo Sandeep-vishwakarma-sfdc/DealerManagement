@@ -40,6 +40,8 @@ public without sharing class YINPromotionalOrderUtils {
             promotionalOrder.Status = 'Accepted';
 
             for(YINPromotionalOrderActivityWrapper.Budget budget:usedBudgets){
+                System.debug('budget : '+budget);
+                if(budget.promotionalBudgetCode!=null){
                 YIN_Promotional_Budget_Used__c usedBudget = new YIN_Promotional_Budget_Used__c();
                 usedBudget.Promotional_Budget__r = new YIN_Ledger__c(ERP_Code__c=budget.promotionalBudgetCode);
                 usedBudget.Promotional_Order_Activity__c = orderId;
@@ -47,12 +49,39 @@ public without sharing class YINPromotionalOrderUtils {
                 usedBudget.Used_Amount__c = Decimal.valueOf(budget.budgetAmount);
                 usedBudget.Type__c = orders[0].recordType.Name;
                 unitofwork.registerNew(usedBudget); 
+                }
             }
 
             unitofwork.registerDirty(promotionalOrder); 
             unitofwork.commitWork();
+
+            YINMonitorService x=new  YINMonitorService();
+            YINMonitorLogWrap requestResponse = new YINMonitorLogWrap();
+            requestResponse.apexClass = 'YINPromotionalOrderUtils';
+            requestResponse.module = 'YINPromotionalOrderUtils';
+            requestResponse.userId = UserInfo.getUserId();
+            requestResponse.request = promotionalOrderJSON;
+            requestResponse.response = JSON.serialize(response);
+            requestResponse.statusCode = promotionalOrder.Status;
+            requestResponse.externalSystemName = 'YINErpServiceEx';
+            requestResponse.method = 'POST';
+            x.requestResponseLog(requestResponse);
+
             return 'success';
         }else{
+
+            YINMonitorService x=new  YINMonitorService();
+            YINMonitorLogWrap requestResponse = new YINMonitorLogWrap();
+            requestResponse.apexClass = 'YINPromotionalOrderUtils';
+            requestResponse.module = 'YINPromotionalOrderUtils';
+            requestResponse.userId = UserInfo.getUserId();
+            requestResponse.request = promotionalOrderJSON;
+            requestResponse.response = JSON.serialize(response);
+            requestResponse.statusCode = promotionalOrder.Status;
+            requestResponse.externalSystemName = 'YINErpServiceEx';
+            requestResponse.method = 'POST';
+            x.requestResponseLog(requestResponse);
+
             return response.error;
         }
     }
@@ -92,7 +121,7 @@ public without sharing class YINPromotionalOrderUtils {
             orderActivitywrapper.status = 'Approved';
             orderActivitywrapper.promotionalBudget = budgets;
             orderActivitywrapper.PRLines = prLines;
-            orderActivitywrapper.remark = promotionalOrder.Remarks__c;
+            orderActivitywrapper.remark = promotionalOrder.Remarks__c!=null?promotionalOrder.Remarks__c:'';
             return JSON.serialize(orderActivitywrapper);
         
     }
@@ -327,6 +356,7 @@ public without sharing class YINPromotionalOrderUtils {
             wrapperPRLine.GSTAmount = String.valueOf(item.GST_Amount__c);
             wrapperPRLine.HSNSACCode = item.Product2.HSNSAC__c;
             wrapperPRLine.totalAmount = String.valueOf(item.Total_Amount__c);
+            wrapperPRLine.type = recordTypeName=='Promotional Order'?'Item':'G/L Account';
             prlines.add(wrapperPRLine);
         }
         return prlines;

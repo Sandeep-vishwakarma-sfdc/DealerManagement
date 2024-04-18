@@ -28,6 +28,7 @@ public class YINPromotionalOrderActivityWrapper {
 		public String GSTAmount;
 		public String HSNSACCode;
 		public String totalAmount;
+		public String type;
 	}
 
 	

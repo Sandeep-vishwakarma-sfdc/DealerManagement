@@ -143,7 +143,7 @@
   
   /* Product Name */
   .blue .product__name {
-    font-size: 11px!important;
+    /* font-size: 11px!important; */
     font-weight: 700!important;
     margin-bottom: 5px!important;
     color:#e21e31!important;
@@ -151,7 +151,7 @@
   
   /* Product Price */
   .blue .product__price {
-    font-size: 20px!important;
+    /* font-size: 20px!important; */
     font-weight: 700!important;
     margin-bottom: 12px!important;
   }
