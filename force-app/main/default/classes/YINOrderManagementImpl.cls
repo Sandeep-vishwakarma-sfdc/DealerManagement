@@ -1193,9 +1193,8 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
             promotionalOrder.Ship_To_Party__c = accounts[0].Id;
             unitofwork.registerDirty(promotionalOrder);
 
-
-
             unitofwork.commitWork();
+            createUsedBudget(promotionalOrder.Id);
             return 'success';
         }else{
              throw new YINOrderManagementException('Product is not in Cart');
@@ -1203,8 +1202,29 @@ public without sharing class YINOrderManagementImpl implements YINIOrderManageme
         }
     }
 
-    private static void createUsedBudget(){
-        
+    private static void createUsedBudget(String orderId){
+        Order promotionalOrder = new Order();
+        YINOrderSelector orderSelector = (YINOrderSelector)YINApplication.selector.newInstance(Order.SObjectType);
+        List<Order> orders = orderSelector.selectByExtraFields(new Set<Id> {orderId});
+        LibISobjectUnitOfWork unitofwork = YINApplication.unitofwork.newInstance();        
+        if(orders.size()>0){
+            promotionalOrder = orders[0];
+        }
+        List<YINPromotionalOrderActivityWrapper.Budget> budgets = YINPromotionalOrderUtils.getBudgets(promotionalOrder.accountId,promotionalOrder.Order_Total__c,promotionalOrder.recordType.Name);
+
+        for(YINPromotionalOrderActivityWrapper.Budget budget:budgets){
+            System.debug('budget : '+budget);
+            if(budget.promotionalBudgetCode!=null){
+                YIN_Promotional_Budget_Used__c usedBudget = new YIN_Promotional_Budget_Used__c();
+                usedBudget.Promotional_Budget__r = new YIN_Ledger__c(ERP_Code__c=budget.promotionalBudgetCode);
+                usedBudget.Promotional_Order_Activity__c = orderId;
+                usedBudget.Ratio__c = String.valueOf(YIN_Promotional_Budget__mdt.getInstance('Promotional_Budget').Promotional_Order__c)+' : '+String.valueOf(YIN_Promotional_Budget__mdt.getInstance('Promotional_Budget').Promotional_Activity__c);
+                usedBudget.Used_Amount__c = Decimal.valueOf(budget.budgetAmount);
+                usedBudget.Type__c = orders[0].recordType.Name;
+                unitofwork.registerNew(usedBudget); 
+            }
+        }
+        unitofwork.commitWork();
     }
 
     @InvocableMethod(label='create Promotional Order' description='create Promotional Order or Activity in ERP' category='Order' callout=true)

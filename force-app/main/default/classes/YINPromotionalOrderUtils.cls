@@ -15,11 +15,13 @@ public without sharing class YINPromotionalOrderUtils {
         if(ledgers.size()>0){
             if(getCurrentDayInQuarter() < graceDay){ // if today is between than grace period
                 info.availableBudget = ledgers[0].Available_Budget_Promotional_Order__c;
-                info.totalBudget = ledgers[0].Available_Budget__c;
+                // info.totalBudget = ledgers[0].Available_Budget__c;
+                info.totalBudget = ledgers[0].Total_Available_Budget__c;
                 info.availableActivityBudget = ledgers[0].Available_Budget_Promotional_Activity__c;
             }else{
                 info.availableBudget = ledgers[0].Promotional_Order_Budget__c;
                 info.totalBudget = ledgers[0].Budget_Amount__c;
+                // info.totalBudget = ledgers[0].Total_Available_Budget__c;
                 info.availableActivityBudget = ledgers[0].Available_Budget_Promotional_Activity__c;
             }
         }
@@ -39,16 +41,18 @@ public without sharing class YINPromotionalOrderUtils {
             promotionalOrder.ERP_Order_Number__c = response.ERPPRNumber;
             promotionalOrder.Status = 'Accepted';
 
-            for(YINPromotionalOrderActivityWrapper.Budget budget:usedBudgets){
-                System.debug('budget : '+budget);
-                if(budget.promotionalBudgetCode!=null){
-                YIN_Promotional_Budget_Used__c usedBudget = new YIN_Promotional_Budget_Used__c();
-                usedBudget.Promotional_Budget__r = new YIN_Ledger__c(ERP_Code__c=budget.promotionalBudgetCode);
-                usedBudget.Promotional_Order_Activity__c = orderId;
-                usedBudget.Ratio__c = String.valueOf(YIN_Promotional_Budget__mdt.getInstance('Promotional_Budget').Promotional_Order__c)+' : '+String.valueOf(YIN_Promotional_Budget__mdt.getInstance('Promotional_Budget').Promotional_Activity__c);
-                usedBudget.Used_Amount__c = Decimal.valueOf(budget.budgetAmount);
-                usedBudget.Type__c = orders[0].recordType.Name;
-                unitofwork.registerNew(usedBudget); 
+            if(orders[0].recordType.Name!='Promotional Order'){
+                for(YINPromotionalOrderActivityWrapper.Budget budget:usedBudgets){
+                    System.debug('budget : '+budget);
+                    if(budget.promotionalBudgetCode!=null){
+                    YIN_Promotional_Budget_Used__c usedBudget = new YIN_Promotional_Budget_Used__c();
+                    usedBudget.Promotional_Budget__r = new YIN_Ledger__c(ERP_Code__c=budget.promotionalBudgetCode);
+                    usedBudget.Promotional_Order_Activity__c = orderId;
+                    usedBudget.Ratio__c = String.valueOf(YIN_Promotional_Budget__mdt.getInstance('Promotional_Budget').Promotional_Order__c)+' : '+String.valueOf(YIN_Promotional_Budget__mdt.getInstance('Promotional_Budget').Promotional_Activity__c);
+                    usedBudget.Used_Amount__c = Decimal.valueOf(budget.budgetAmount);
+                    usedBudget.Type__c = orders[0].recordType.Name;
+                    unitofwork.registerNew(usedBudget); 
+                    }
                 }
             }
 
@@ -128,8 +132,8 @@ public without sharing class YINPromotionalOrderUtils {
     
     
 	public static PreviousQuarterAndYear testInjectionQuaterYear = null;
-    @testVisible
-    private static List<YINPromotionalOrderActivityWrapper.Budget> getBudgets(String accountId,Decimal totalOrderValue,String orderType){
+    
+    public static List<YINPromotionalOrderActivityWrapper.Budget> getBudgets(String accountId,Decimal totalOrderValue,String orderType){
         if(Test.isRunningTest()){
             totalOrderValue = 250;
         }
@@ -373,7 +377,7 @@ public without sharing class YINPromotionalOrderUtils {
 
         //2. Get Current Ledger
         System.debug('quarter '+prevQuarter+ ' Year '+prevYear+' recordType.Name '+recordType +' Dealer_Code__c '+accountId);
-        List<YIN_Ledger__c> ledgers = Database.query('Select Id,Budget_Amount__c,ERP_Code__c,Promotional_Order_Budget__c,Promotional_Activity_Budget__c,Available_Budget__c,Available_Budget_Promotional_Order__c,Available_Budget_Promotional_Activity__c,Previous_to_Previous_Quarter_Budget__r.ERP_Code__c,Previous_to_Previous_Quarter_Budget__r.Promotional_Order_Budget__c,Previous_Quarter_Budget__r.Promotional_Order_Budget__c,Previous_Quarter_Budget__r.ERP_Code__c,Previous_to_Previous_Quarter_Budget__r.Promotional_Activity_Budget__c,Previous_Quarter_Budget__r.Promotional_Activity_Budget__c from YIN_Ledger__c where Year__c = :prevYear and Quarter__c = :prevQuarter and recordType.Name=:recordType and Dealer_Code__c=:accountId');
+        List<YIN_Ledger__c> ledgers = Database.query('Select Id,Budget_Amount__c,ERP_Code__c,Promotional_Order_Budget__c,Promotional_Activity_Budget__c,Available_Budget__c,Available_Budget_Promotional_Order__c,Available_Budget_Promotional_Activity__c,Previous_to_Previous_Quarter_Budget__r.ERP_Code__c,Previous_to_Previous_Quarter_Budget__r.Promotional_Order_Budget__c,Previous_Quarter_Budget__r.Promotional_Order_Budget__c,Previous_Quarter_Budget__r.ERP_Code__c,Previous_to_Previous_Quarter_Budget__r.Promotional_Activity_Budget__c,Previous_Quarter_Budget__r.Promotional_Activity_Budget__c,Total_Available_Budget__c from YIN_Ledger__c where Year__c = :prevYear and Quarter__c = :prevQuarter and recordType.Name=:recordType and Dealer_Code__c=:accountId');
         if(Test.isRunningTest()){
             return YINOrderManagementDataFactoryTest.testLeadgerPromotional();
         }
