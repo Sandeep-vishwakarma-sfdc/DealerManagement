@@ -1,3 +1,10 @@
+/**
+ * @description       : 
+ * @author            : saurabh.pandey@skinternational.com
+ * @group             : 
+ * @last modified on  : 04-19-2024
+ * @last modified by  : saurabh.pandey@skinternational.com
+**/
 public without sharing class YINPromotionalOrderUtils {
     
     public static List<YINPromotionalOrderActivityWrapper.Budget> usedBudgets = new List<YINPromotionalOrderActivityWrapper.Budget>();
@@ -41,6 +48,7 @@ public without sharing class YINPromotionalOrderUtils {
             promotionalOrder.ERP_Order_Number__c = response.ERPPRNumber;
             promotionalOrder.Status = 'Accepted';
 
+            /*
             if(orders[0].recordType.Name!='Promotional Order'){
                 for(YINPromotionalOrderActivityWrapper.Budget budget:usedBudgets){
                     System.debug('budget : '+budget);
@@ -51,13 +59,13 @@ public without sharing class YINPromotionalOrderUtils {
                     usedBudget.Ratio__c = String.valueOf(YIN_Promotional_Budget__mdt.getInstance('Promotional_Budget').Promotional_Order__c)+' : '+String.valueOf(YIN_Promotional_Budget__mdt.getInstance('Promotional_Budget').Promotional_Activity__c);
                     usedBudget.Used_Amount__c = Decimal.valueOf(budget.budgetAmount);
                     usedBudget.Type__c = orders[0].recordType.Name;
-                    unitofwork.registerNew(usedBudget); 
+                   // unitofwork.registerNew(usedBudget); 
                     }
                 }
-            }
+            }*/
 
-            unitofwork.registerDirty(promotionalOrder); 
-            unitofwork.commitWork();
+           unitofwork.registerDirty(promotionalOrder); 
+           unitofwork.commitWork();
 
             YINMonitorService x=new  YINMonitorService();
             YINMonitorLogWrap requestResponse = new YINMonitorLogWrap();
@@ -349,7 +357,7 @@ public without sharing class YINPromotionalOrderUtils {
             count = count + 10;
             YINPromotionalOrderActivityWrapper.PRLines wrapperPRLine = new YINPromotionalOrderActivityWrapper.PRLines();
             wrapperPRLine.itemNo = String.valueOf(count);
-            wrapperPRLine.itemCode = item.Product2.Product_Code__c;
+            wrapperPRLine.itemCode = recordTypeName == 'Promotional Order'?item.Product2.Product_Code__c:item.Product2.GL_Account_Code__c;
             wrapperPRLine.UOM = 'NOS';
             wrapperPRLine.description1 = null;
             wrapperPRLine.description2 = item.order.Description;
